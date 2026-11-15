@@ -44,6 +44,19 @@ export default function MatchesManagementPage() {
   ];
 
   const [stage, setStage] = useState("");
+  const predefinedStages = [
+    "Round of 64",
+    "Round of 32",
+    "Round of 16",
+    "Round 1",
+    "Round 2",
+    "Round 3",
+    "Quarter-Finals",
+    "Semi-Finals",
+    "Championship Final",
+  ];
+  const isCustomStage = stage !== "" && !predefinedStages.includes(stage);
+
   const [court, setCourt] = useState("");
   const [athlete1, setAthlete1] = useState("");
   const [athlete2, setAthlete2] = useState("");
@@ -160,6 +173,25 @@ export default function MatchesManagementPage() {
   const filteredMatches = matches.filter(
     (m) =>
       m.tournament === selectedTournament && m.category === selectedCategory,
+  );
+
+  // Dynamically extract all unique round names present in the filtered matches (or standard default list)
+  const defaultStagesList = [
+    "Round of 64",
+    "Round of 32",
+    "Round of 16",
+    "Round 1",
+    "Round 2",
+    "Round 3",
+    "Quarter-Finals",
+    "Semi-Finals",
+    "Championship Final",
+  ];
+  const dynamicRounds = Array.from(
+    new Set([
+      ...defaultStagesList,
+      ...filteredMatches.map((m) => m.roundName).filter(Boolean),
+    ]),
   );
 
   const totalPages = Math.ceil(filteredMatches.length / rowsPerPage) || 1;
@@ -350,7 +382,9 @@ export default function MatchesManagementPage() {
             >
               <option value="Yangon Masters 2026">Yangon Masters 2026</option>
               <option value="Mandalay Open Cup">Mandalay Open Cup</option>
-              <option value="Mandalay Open Cup">Inya Lake Junior Smash</option>
+              <option value="Inya Lake Junior Smash">
+                Inya Lake Junior Smash
+              </option>
             </select>
           </div>
 
@@ -412,7 +446,7 @@ export default function MatchesManagementPage() {
         </button>
       </div>
 
-      {/* SECTION A: Knockout Bracket Tree Progression (Mapped by Stage) */}
+      {/* SECTION A: Knockout Bracket Tree Progression (Mapped by Stage with Horizontal Scroll) */}
       <div
         style={{
           backgroundColor: "#ffffff",
@@ -474,554 +508,179 @@ export default function MatchesManagementPage() {
           </button>
         </div>
 
+        {/* Horizontal Scrollable Container for Bracket Columns */}
         <div
           style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(4, 1fr)",
+            display: "flex",
             gap: "16px",
             overflowX: "auto",
             paddingBottom: "10px",
           }}
         >
-          {/* 1. Round of 16 */}
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "12px" }}
-          >
-            <div
-              style={{
-                fontSize: "11px",
-                fontWeight: "bold",
-                color: "#64748b",
-                textTransform: "uppercase",
-              }}
-            >
-              Round of 16
-            </div>
-            {filteredMatches
-              .filter((m) => m.roundName?.includes("Round of 16"))
-              .map((m) => {
-                const isLive = m.status === "LIVE IN-PLAY";
-                const isCompleted = m.status === "COMPLETED";
-                const sets = matchSets[m.id] || [];
-                return (
-                  <div
-                    key={m.id}
-                    style={{
-                      backgroundColor: isLive
-                        ? "#fdf2f2"
-                        : isCompleted
-                          ? "#f8fafc"
-                          : "#f8fafc",
-                      border: isLive
-                        ? "1px solid #fecaca"
-                        : "1px solid #e2e8f0",
-                      borderRadius: "8px",
-                      padding: "12px",
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        fontSize: "10px",
-                        fontWeight: "bold",
-                        color: isLive ? "#dc2626" : "#64748b",
-                        marginBottom: "6px",
-                      }}
-                    >
-                      <span>
-                        {m.courtName} {isLive && "• LIVE"}{" "}
-                        {isCompleted && "• ✔ FINISHED"}
-                      </span>{" "}
-                      <span>{m.id}</span>
-                    </div>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        fontSize: "11px",
-                        marginBottom: "4px",
-                      }}
-                    >
-                      <span>
-                        <span
-                          style={{
-                            height: "8px",
-                            width: "8px",
-                            backgroundColor: "#dc2626",
-                            borderRadius: "50%",
-                            display: "inline-block",
-                            marginRight: "4px",
-                          }}
-                        ></span>{" "}
-                        {m.athlete1}
-                      </span>{" "}
-                      <span style={{ fontWeight: "bold" }}>
-                        {sets.map((s) => s.s1).join("  ")}
-                      </span>
-                    </div>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        fontSize: "11px",
-                        color: "#64748b",
-                        marginBottom: "8px",
-                      }}
-                    >
-                      <span>
-                        <span
-                          style={{
-                            height: "8px",
-                            width: "8px",
-                            backgroundColor: "#1e3a8a",
-                            borderRadius: "50%",
-                            display: "inline-block",
-                            marginRight: "4px",
-                          }}
-                        ></span>{" "}
-                        {m.athlete2}
-                      </span>{" "}
-                      <span>{sets.map((s) => s.s2).join("  ")}</span>
-                    </div>
-                    {!isLive && !isCompleted && (
-                      <button
-                        onClick={() => handleOpenEdit(m)}
-                        style={{
-                          width: "100%",
-                          padding: "5px",
-                          backgroundColor: "#f1f5f9",
-                          color: "#334155",
-                          border: "1px solid #cbd5e1",
-                          borderRadius: "4px",
-                          fontSize: "10px",
-                          fontWeight: "bold",
-                          cursor: "pointer",
-                        }}
-                      >
-                        ✏️ Edit Pairing / Court
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-          </div>
+          {dynamicRounds.map((roundTitle) => {
+            const stageMatches = filteredMatches.filter(
+              (m) => m.roundName?.toLowerCase() === roundTitle.toLowerCase(),
+            );
 
-          {/* 2. Quarter-Finals */}
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "12px" }}
-          >
-            <div
-              style={{
-                fontSize: "11px",
-                fontWeight: "bold",
-                color: "#64748b",
-                textTransform: "uppercase",
-              }}
-            >
-              Quarter-Finals
-            </div>
-            {filteredMatches
-              .filter((m) => m.roundName?.includes("Quarter-Final"))
-              .map((m) => {
-                const isLive = m.status === "LIVE IN-PLAY";
-                const isCompleted = m.status === "COMPLETED";
-                const sets = matchSets[m.id] || [];
-                return (
-                  <div
-                    key={m.id}
-                    style={{
-                      backgroundColor: isLive
-                        ? "#fdf2f2"
-                        : isCompleted
-                          ? "#f8fafc"
-                          : "#f8fafc",
-                      border: isLive
-                        ? "1px solid #fecaca"
-                        : "1px solid #e2e8f0",
-                      borderRadius: "8px",
-                      padding: "12px",
-                    }}
-                  >
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        fontSize: "10px",
-                        fontWeight: "bold",
-                        color: isLive ? "#dc2626" : "#64748b",
-                        marginBottom: "6px",
-                      }}
-                    >
-                      <span>
-                        {m.courtName} {isLive && "• LIVE"}{" "}
-                        {isCompleted && "• ✔ FINISHED"}
-                      </span>{" "}
-                      <span>{m.id}</span>
-                    </div>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        fontSize: "11px",
-                        marginBottom: "4px",
-                      }}
-                    >
-                      <span>
-                        <span
-                          style={{
-                            height: "8px",
-                            width: "8px",
-                            backgroundColor: "#dc2626",
-                            borderRadius: "50%",
-                            display: "inline-block",
-                            marginRight: "4px",
-                          }}
-                        ></span>{" "}
-                        {m.athlete1}
-                      </span>{" "}
-                      <span style={{ fontWeight: "bold" }}>
-                        {sets.map((s) => s.s1).join("  ")}
-                      </span>
-                    </div>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        fontSize: "11px",
-                        color: "#64748b",
-                        marginBottom: "8px",
-                      }}
-                    >
-                      <span>
-                        <span
-                          style={{
-                            height: "8px",
-                            width: "8px",
-                            backgroundColor: "#1e3a8a",
-                            borderRadius: "50%",
-                            display: "inline-block",
-                            marginRight: "4px",
-                          }}
-                        ></span>{" "}
-                        {m.athlete2}
-                      </span>{" "}
-                      <span>{sets.map((s) => s.s2).join("  ")}</span>
-                    </div>
-                    {!isLive && !isCompleted && (
-                      <button
-                        onClick={() => handleOpenEdit(m)}
-                        style={{
-                          width: "100%",
-                          padding: "5px",
-                          backgroundColor: "#f1f5f9",
-                          color: "#334155",
-                          border: "1px solid #cbd5e1",
-                          borderRadius: "4px",
-                          fontSize: "10px",
-                          fontWeight: "bold",
-                          cursor: "pointer",
-                        }}
-                      >
-                        ✏️ Edit Pairing / Court
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-          </div>
-
-          {/* 3. Semi-Finals */}
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "12px" }}
-          >
-            <div
-              style={{
-                fontSize: "11px",
-                fontWeight: "bold",
-                color: "#64748b",
-                textTransform: "uppercase",
-              }}
-            >
-              Semi-Finals
-            </div>
-            {filteredMatches.filter((m) => m.roundName?.includes("Semi-Final"))
-              .length > 0 ? (
-              filteredMatches
-                .filter((m) => m.roundName?.includes("Semi-Final"))
-                .map((m) => {
-                  const isLive = m.status === "LIVE IN-PLAY";
-                  const isCompleted = m.status === "COMPLETED";
-                  const sets = matchSets[m.id] || [];
-                  return (
-                    <div
-                      key={m.id}
-                      style={{
-                        backgroundColor: isLive ? "#fdf2f2" : "#f8fafc",
-                        border: isLive
-                          ? "1px solid #fecaca"
-                          : "1px solid #e2e8f0",
-                        borderRadius: "8px",
-                        padding: "12px",
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          fontSize: "10px",
-                          fontWeight: "bold",
-                          color: isLive ? "#dc2626" : "#64748b",
-                          marginBottom: "6px",
-                        }}
-                      >
-                        <span>
-                          {m.courtName} {isLive && "• LIVE"}{" "}
-                          {isCompleted && "• ✔ FINISHED"}
-                        </span>{" "}
-                        <span>{m.id}</span>
-                      </div>
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          fontSize: "11px",
-                          marginBottom: "4px",
-                        }}
-                      >
-                        <span>
-                          <span
-                            style={{
-                              height: "8px",
-                              width: "8px",
-                              backgroundColor: "#dc2626",
-                              borderRadius: "50%",
-                              display: "inline-block",
-                              marginRight: "4px",
-                            }}
-                          ></span>{" "}
-                          {m.athlete1}
-                        </span>{" "}
-                        <span style={{ fontWeight: "bold" }}>
-                          {sets.map((s) => s.s1).join("  ")}
-                        </span>
-                      </div>
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          fontSize: "11px",
-                          color: "#64748b",
-                          marginBottom: "8px",
-                        }}
-                      >
-                        <span>
-                          <span
-                            style={{
-                              height: "8px",
-                              width: "8px",
-                              backgroundColor: "#1e3a8a",
-                              borderRadius: "50%",
-                              display: "inline-block",
-                              marginRight: "4px",
-                            }}
-                          ></span>{" "}
-                          {m.athlete2}
-                        </span>{" "}
-                        <span>{sets.map((s) => s.s2).join("  ")}</span>
-                      </div>
-                      {!isLive && !isCompleted && (
-                        <button
-                          onClick={() => handleOpenEdit(m)}
-                          style={{
-                            width: "100%",
-                            padding: "5px",
-                            backgroundColor: "#f1f5f9",
-                            color: "#334155",
-                            border: "1px solid #cbd5e1",
-                            borderRadius: "4px",
-                            fontSize: "10px",
-                            fontWeight: "bold",
-                            cursor: "pointer",
-                          }}
-                        >
-                          ✏️ Edit Pairing / Court
-                        </button>
-                      )}
-                    </div>
-                  );
-                })
-            ) : (
+            return (
               <div
+                key={roundTitle}
                 style={{
-                  backgroundColor: "#f8fafc",
-                  border: "1px dashed #cbd5e1",
-                  borderRadius: "8px",
-                  padding: "16px",
-                  textAlign: "center",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "12px",
+                  minWidth: "240px",
+                  flex: "0 0 240px",
                 }}
               >
-                <span
-                  style={{
-                    fontSize: "11px",
-                    color: "#64748b",
-                    display: "block",
-                    marginBottom: "4px",
-                  }}
-                >
-                  Court 01 • Dec 07
-                </span>
-                <span
-                  style={{
-                    fontSize: "12px",
-                    fontWeight: "bold",
-                    color: "#0f172a",
-                  }}
-                >
-                  SF-01 (Awaiting QF)
-                </span>
-              </div>
-            )}
-          </div>
-
-          {/* 4. Championship Final */}
-          <div
-            style={{ display: "flex", flexDirection: "column", gap: "12px" }}
-          >
-            <div
-              style={{
-                fontSize: "11px",
-                fontWeight: "bold",
-                color: "#64748b",
-                textTransform: "uppercase",
-              }}
-            >
-              Championship Final
-            </div>
-            {filteredMatches.filter((m) =>
-              m.roundName?.includes("Championship Final"),
-            ).length > 0 ? (
-              filteredMatches
-                .filter((m) => m.roundName?.includes("Championship Final"))
-                .map((m) => {
-                  const isLive = m.status === "LIVE IN-PLAY";
-                  const isCompleted = m.status === "COMPLETED";
-                  const sets = matchSets[m.id] || [];
-                  return (
-                    <div
-                      key={m.id}
-                      style={{
-                        backgroundColor: isLive ? "#fdf2f2" : "#f8fafc",
-                        border: isLive
-                          ? "1px solid #fecaca"
-                          : "1px solid #e2e8f0",
-                        borderRadius: "8px",
-                        padding: "12px",
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          fontSize: "10px",
-                          fontWeight: "bold",
-                          color: isLive ? "#dc2626" : "#64748b",
-                          marginBottom: "6px",
-                        }}
-                      >
-                        <span>
-                          {m.courtName} {isLive && "• LIVE"}{" "}
-                          {isCompleted && "• ✔ FINISHED"}
-                        </span>{" "}
-                        <span>{m.id}</span>
-                      </div>
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          fontSize: "11px",
-                          marginBottom: "4px",
-                        }}
-                      >
-                        <span>
-                          <span
-                            style={{
-                              height: "8px",
-                              width: "8px",
-                              backgroundColor: "#dc2626",
-                              borderRadius: "50%",
-                              display: "inline-block",
-                              marginRight: "4px",
-                            }}
-                          ></span>{" "}
-                          {m.athlete1}
-                        </span>{" "}
-                        <span style={{ fontWeight: "bold" }}>
-                          {sets.map((s) => s.s1).join("  ")}
-                        </span>
-                      </div>
-                      <div
-                        style={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          fontSize: "11px",
-                          color: "#64748b",
-                          marginBottom: "8px",
-                        }}
-                      >
-                        <span>
-                          <span
-                            style={{
-                              height: "8px",
-                              width: "8px",
-                              backgroundColor: "#1e3a8a",
-                              borderRadius: "50%",
-                              display: "inline-block",
-                              marginRight: "4px",
-                            }}
-                          ></span>{" "}
-                          {m.athlete2}
-                        </span>{" "}
-                        <span>{sets.map((s) => s.s2).join("  ")}</span>
-                      </div>
-                    </div>
-                  );
-                })
-            ) : (
-              <div
-                style={{
-                  backgroundColor: "#fefce8",
-                  border: "1px solid #fef08a",
-                  borderRadius: "8px",
-                  padding: "16px",
-                  textAlign: "center",
-                }}
-              >
-                <span
-                  style={{
-                    fontSize: "11px",
-                    fontWeight: "bold",
-                    color: "#ca8a04",
-                  }}
-                >
-                  Gold Medal Match
-                </span>
                 <div
                   style={{
-                    fontSize: "12px",
+                    fontSize: "11px",
                     fontWeight: "bold",
-                    color: "#0f172a",
-                    margin: "6px 0",
+                    color: "#64748b",
+                    textTransform: "uppercase",
                   }}
                 >
-                  Final • Court 01
+                  {roundTitle}
                 </div>
-                <div style={{ fontSize: "10px", color: "#64748b" }}>
-                  Yangon National Arena
-                </div>
+
+                {stageMatches.length > 0 ? (
+                  stageMatches.map((m) => {
+                    const isLive = m.status === "LIVE IN-PLAY";
+                    const isCompleted = m.status === "COMPLETED";
+                    const sets = matchSets[m.id] || [];
+                    return (
+                      <div
+                        key={m.id}
+                        style={{
+                          backgroundColor: isLive ? "#fdf2f2" : "#f8fafc",
+                          border: isLive
+                            ? "1px solid #fecaca"
+                            : "1px solid #e2e8f0",
+                          borderRadius: "8px",
+                          padding: "12px",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            fontSize: "10px",
+                            fontWeight: "bold",
+                            color: isLive ? "#dc2626" : "#64748b",
+                            marginBottom: "6px",
+                          }}
+                        >
+                          <span>
+                            {m.courtName} {isLive && "• LIVE"}{" "}
+                            {isCompleted && "• ✔ FINISHED"}
+                          </span>{" "}
+                          <span>{m.id}</span>
+                        </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            fontSize: "11px",
+                            marginBottom: "4px",
+                          }}
+                        >
+                          <span>
+                            <span
+                              style={{
+                                height: "8px",
+                                width: "8px",
+                                backgroundColor: "#dc2626",
+                                borderRadius: "50%",
+                                display: "inline-block",
+                                marginRight: "4px",
+                              }}
+                            ></span>{" "}
+                            {m.athlete1}
+                          </span>{" "}
+                          <span style={{ fontWeight: "bold" }}>
+                            {sets.map((s) => s.s1).join("  ")}
+                          </span>
+                        </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            fontSize: "11px",
+                            color: "#64748b",
+                            marginBottom: "8px",
+                          }}
+                        >
+                          <span>
+                            <span
+                              style={{
+                                height: "8px",
+                                width: "8px",
+                                backgroundColor: "#1e3a8a",
+                                borderRadius: "50%",
+                                display: "inline-block",
+                                marginRight: "4px",
+                              }}
+                            ></span>{" "}
+                            {m.athlete2}
+                          </span>{" "}
+                          <span>{sets.map((s) => s.s2).join("  ")}</span>
+                        </div>
+                        {!isLive && !isCompleted && (
+                          <button
+                            onClick={() => handleOpenEdit(m)}
+                            style={{
+                              width: "100%",
+                              padding: "5px",
+                              backgroundColor: "#f1f5f9",
+                              color: "#334155",
+                              border: "1px solid #cbd5e1",
+                              borderRadius: "4px",
+                              fontSize: "10px",
+                              fontWeight: "bold",
+                              cursor: "pointer",
+                            }}
+                          >
+                            ✏️ Edit Pairing / Court
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })
+                ) : (
+                  <div
+                    style={{
+                      backgroundColor: "#f8fafc",
+                      border: "1px dashed #cbd5e1",
+                      borderRadius: "8px",
+                      padding: "16px",
+                      textAlign: "center",
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: "11px",
+                        color: "#64748b",
+                        display: "block",
+                        marginBottom: "4px",
+                      }}
+                    >
+                      Awaiting Pairing
+                    </span>
+                    <span
+                      style={{
+                        fontSize: "12px",
+                        fontWeight: "bold",
+                        color: "#0f172a",
+                      }}
+                    >
+                      No Match Assigned
+                    </span>
+                  </div>
+                )}
               </div>
-            )}
-          </div>
+            );
+          })}
         </div>
       </div>
 
@@ -1453,7 +1112,7 @@ export default function MatchesManagementPage() {
         </div>
       </div>
 
-      {/* MODAL 1: CREATE OR EDIT MATCH PAIRING */}
+      {/* MODAL 1: CREATE OR EDIT MATCH PAIRING (Updated with expanded stages & Other manual input) */}
       {showCreateModal && (
         <div
           style={{
@@ -1539,8 +1198,14 @@ export default function MatchesManagementPage() {
                   TOURNAMENT STAGE / ROUND *
                 </label>
                 <select
-                  value={stage}
-                  onChange={(e) => setStage(e.target.value)}
+                  value={isCustomStage ? "Other" : stage}
+                  onChange={(e) => {
+                    if (e.target.value === "Other") {
+                      setStage("");
+                    } else {
+                      setStage(e.target.value);
+                    }
+                  }}
                   style={{
                     width: "100%",
                     padding: "10px 12px",
@@ -1549,14 +1214,38 @@ export default function MatchesManagementPage() {
                     fontSize: "12px",
                     outline: "none",
                     backgroundColor: "#fff",
+                    marginBottom: isCustomStage ? "8px" : "0",
                   }}
                 >
                   <option value="">-- Select Stage --</option>
+                  <option value="Round of 64">Round of 64</option>
+                  <option value="Round of 32">Round of 32</option>
+                  <option value="Round of 16">Round of 16</option>
+                  <option value="Round 1">Round 1</option>
+                  <option value="Round 2">Round 2</option>
+                  <option value="Round 3">Round 3</option>
                   <option value="Quarter-Finals">Quarter-Finals (QF)</option>
                   <option value="Semi-Finals">Semi-Finals (SF)</option>
-                  <option value="Round of 16">Round of 16 (R16)</option>
                   <option value="Championship Final">Championship Final</option>
+                  <option value="Other">Other</option>
                 </select>
+                {isCustomStage && (
+                  <input
+                    type="text"
+                    value={stage}
+                    onChange={(e) => setStage(e.target.value)}
+                    placeholder="Type custom stage/round..."
+                    style={{
+                      width: "100%",
+                      padding: "10px 12px",
+                      borderRadius: "8px",
+                      border: "1px solid #cbd5e1",
+                      fontSize: "12px",
+                      outline: "none",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                )}
               </div>
               <div>
                 <label
@@ -1828,7 +1517,7 @@ export default function MatchesManagementPage() {
         </div>
       )}
 
-      {/* MODAL 2: UPDATE LIVE MATCH SCORE (Clear Player Names & Scores UI) */}
+      {/* MODAL 2: UPDATE LIVE MATCH SCORE */}
       {showUpdateScoreModal && activeMatch && (
         <div
           style={{
@@ -1980,7 +1669,6 @@ export default function MatchesManagementPage() {
               SET BY SET SCORE ENTRY (DIRECT NUMBER INPUT)
             </div>
 
-            {/* Display Completed Recorded Sets with Clear Player Names */}
             {completedSetsInModal.map((s, idx) => (
               <div
                 key={idx}
@@ -2045,7 +1733,6 @@ export default function MatchesManagementPage() {
               </div>
             ))}
 
-            {/* Active Current Set Input */}
             {activeSetInput && (
               <div
                 style={{
@@ -2165,7 +1852,6 @@ export default function MatchesManagementPage() {
               </div>
             )}
 
-            {/* Save Scores Button */}
             {activeSetInput && (
               <button
                 onClick={() => {
@@ -2192,7 +1878,7 @@ export default function MatchesManagementPage() {
                   border: "none",
                   borderRadius: "8px",
                   fontSize: "15px",
-                  fontWeight: "semi-bold",
+                  fontWeight: "bold",
                   cursor: "pointer",
                   marginBottom: "10px",
                 }}
@@ -2201,7 +1887,6 @@ export default function MatchesManagementPage() {
               </button>
             )}
 
-            {/* Add Another Set Button with styled icon */}
             {!activeSetInput && (
               <button
                 onClick={() => {
@@ -2233,7 +1918,6 @@ export default function MatchesManagementPage() {
               </button>
             )}
 
-            {/* Final Close / Save & Finalize Scores */}
             <div
               style={{
                 display: "flex",

@@ -1,8 +1,7 @@
 import React, { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   CloudUploadRounded,
-  CheckCircleRounded,
   LockOutlined,
   VisibilityOutlined,
   VisibilityOffOutlined,
@@ -68,7 +67,7 @@ export default function Signin2() {
       style={{
         minHeight: "100vh",
         width: "100%",
-        padding: "24px 20px 60px",
+        padding: "5px",
         background: "#f7f8fa",
         color: "#172033",
         fontFamily: "'Inter', sans-serif",
@@ -83,24 +82,25 @@ export default function Signin2() {
           maxWidth: "100%",
           display: "flex",
           flexDirection: "column",
-          gap: "24px",
+          gap: "18px",
+          boxSizing: "border-box",
         }}
       >
         {/* Header Title */}
         <div>
           <h1
             style={{
-              fontSize: "28px",
+              fontSize: "22px",
               fontWeight: "900",
               color: "#172033",
-              margin: "0 0 6px",
+              margin: "0 0 4px",
             }}
           >
             Athlete Registration Portal
           </h1>
           <p
             style={{
-              fontSize: "14.5px",
+              fontSize: "13px",
               color: "#596170",
               margin: 0,
               fontWeight: "600",
@@ -110,24 +110,25 @@ export default function Signin2() {
           </p>
         </div>
 
-        {/* Progress Bar & Stages (အပေါ်က အတုံးလေးများကို ပိုကြီးစေရန် padding/font ချိန်ညှိထားသည်) */}
+        {/* Progress Bar & Stages */}
         <div
           style={{
             background: "#fff",
             border: "1px solid #eef0f3",
             borderRadius: "14px",
-            padding: "20px",
+            padding: "16px",
             boxShadow: "0 4px 16px rgba(20, 30, 50, 0.03)",
             display: "flex",
             flexDirection: "column",
-            gap: "12px",
+            gap: "10px",
+            boxSizing: "border-box",
           }}
         >
           <div
             style={{
               display: "flex",
               justifyContent: "space-between",
-              fontSize: "13px",
+              fontSize: "12px",
               fontWeight: "800",
               color: "#64748b",
             }}
@@ -138,7 +139,7 @@ export default function Signin2() {
           <div
             style={{
               width: "100%",
-              height: "7px",
+              height: "6px",
               background: "#f1f5f9",
               borderRadius: "4px",
               overflow: "hidden",
@@ -157,9 +158,9 @@ export default function Signin2() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-              gap: "12px",
-              marginTop: "4px",
+              gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))",
+              gap: "8px",
+              marginTop: "2px",
             }}
           >
             <div
@@ -167,30 +168,30 @@ export default function Signin2() {
                 background: "#f8f9fa",
                 color: "#21865b",
                 border: "1px solid #21865b",
-                padding: "16px 20px",
+                padding: "12px 14px",
                 borderRadius: "10px",
-                fontSize: "15px",
+                fontSize: "13px",
                 fontWeight: "900",
               }}
             >
-              1. Personal & Categories <br />
-              <span style={{ fontSize: "11px", fontWeight: "700" }}>
-                Completed & Locked
+              1. Personal <br />
+              <span style={{ fontSize: "10px", fontWeight: "700" }}>
+                Completed
               </span>
             </div>
             <div
               style={{
                 background: "#ae1236",
                 color: "#fff",
-                padding: "16px 20px",
+                padding: "12px 14px",
                 borderRadius: "10px",
-                fontSize: "15px",
+                fontSize: "13px",
                 fontWeight: "900",
               }}
             >
-              2. ID Verification <br />
+              2. ID Verify <br />
               <span
-                style={{ fontSize: "11px", fontWeight: "700", opacity: 0.9 }}
+                style={{ fontSize: "10px", fontWeight: "700", opacity: 0.9 }}
               >
                 Active Stage
               </span>
@@ -200,14 +201,14 @@ export default function Signin2() {
                 background: "#f8f9fa",
                 color: "#94a3b8",
                 border: "1px solid #e2e8f0",
-                padding: "16px 20px",
+                padding: "12px 14px",
                 borderRadius: "10px",
-                fontSize: "15px",
+                fontSize: "13px",
                 fontWeight: "800",
               }}
             >
               3. Email OTP <br />
-              <span style={{ fontSize: "11px", fontWeight: "700" }}>
+              <span style={{ fontSize: "10px", fontWeight: "700" }}>
                 Up Next
               </span>
             </div>
@@ -216,7 +217,7 @@ export default function Signin2() {
 
         <form
           onSubmit={handleSubmit}
-          style={{ display: "flex", flexDirection: "column", gap: "24px" }}
+          style={{ display: "flex", flexDirection: "column", gap: "18px" }}
         >
           {/* 3. Birth Date / National ID Photo Verification */}
           <div
@@ -224,16 +225,17 @@ export default function Signin2() {
               background: "#fff",
               border: "1px solid #eef0f3",
               borderRadius: "16px",
-              padding: "26px",
+              padding: "20px 16px",
               boxShadow: "0 4px 16px rgba(20, 30, 50, 0.03)",
+              boxSizing: "border-box",
             }}
           >
             <h3
               style={{
-                fontSize: "17px",
+                fontSize: "16px",
                 fontWeight: "900",
                 color: "#172033",
-                margin: "0 0 6px",
+                margin: "0 0 4px",
                 display: "flex",
                 alignItems: "center",
                 gap: "8px",
@@ -243,8 +245,8 @@ export default function Signin2() {
                 style={{
                   background: "#ae1236",
                   color: "#fff",
-                  width: "6px",
-                  height: "18px",
+                  width: "5px",
+                  height: "16px",
                   borderRadius: "3px",
                   display: "inline-block",
                 }}
@@ -253,9 +255,9 @@ export default function Signin2() {
             </h3>
             <p
               style={{
-                fontSize: "13px",
+                fontSize: "12px",
                 color: "#727987",
-                margin: "0 0 20px",
+                margin: "0 0 16px",
                 fontWeight: "600",
               }}
             >
@@ -266,8 +268,9 @@ export default function Signin2() {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-                gap: "18px",
+                gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+                gap: "14px",
+                boxSizing: "border-box",
               }}
             >
               {/* Front Side Photo */}
@@ -275,10 +278,10 @@ export default function Signin2() {
                 <label
                   style={{
                     display: "block",
-                    fontSize: "12.5px",
+                    fontSize: "11.5px",
                     fontWeight: "800",
                     color: "#334155",
-                    marginBottom: "8px",
+                    marginBottom: "6px",
                   }}
                 >
                   Front Side Photo <span style={{ color: "#ef4444" }}>*</span>
@@ -289,17 +292,18 @@ export default function Signin2() {
                     flexDirection: "column",
                     alignItems: "center",
                     justifyContent: "center",
-                    gap: "10px",
+                    gap: "8px",
                     border: frontFile
                       ? "2px solid #21865b"
                       : "2px dashed #cbd5e1",
                     borderRadius: "12px",
-                    padding: "20px",
+                    padding: "16px",
                     background: frontFile ? "#e7f7ee" : "#f8f9fa",
                     cursor: "pointer",
                     textAlign: "center",
                     transition: "all 0.2s",
-                    minHeight: "140px",
+                    minHeight: "130px",
+                    boxSizing: "border-box",
                   }}
                 >
                   {frontPreview ? (
@@ -308,7 +312,7 @@ export default function Signin2() {
                         display: "flex",
                         flexDirection: "column",
                         alignItems: "center",
-                        gap: "6px",
+                        gap: "4px",
                       }}
                     >
                       <img
@@ -316,7 +320,7 @@ export default function Signin2() {
                         alt="Front ID Preview"
                         style={{
                           width: "100%",
-                          maxHeight: "90px",
+                          maxHeight: "80px",
                           objectFit: "contain",
                           borderRadius: "6px",
                           border: "1px solid #cbd5e1",
@@ -335,12 +339,12 @@ export default function Signin2() {
                   ) : (
                     <>
                       <CloudUploadRounded
-                        style={{ fontSize: 36, color: "#ae1236" }}
+                        style={{ fontSize: 32, color: "#ae1236" }}
                       />
                       <div>
                         <div
                           style={{
-                            fontSize: "13.5px",
+                            fontSize: "13px",
                             fontWeight: "900",
                             color: "#172033",
                           }}
@@ -349,10 +353,10 @@ export default function Signin2() {
                         </div>
                         <div
                           style={{
-                            fontSize: "11px",
+                            fontSize: "10.5px",
                             color: "#727987",
                             fontWeight: "600",
-                            marginTop: "3px",
+                            marginTop: "2px",
                           }}
                         >
                           JPG, PNG or PDF (Max 8MB)
@@ -374,10 +378,10 @@ export default function Signin2() {
                 <label
                   style={{
                     display: "block",
-                    fontSize: "12.5px",
+                    fontSize: "11.5px",
                     fontWeight: "800",
                     color: "#334155",
-                    marginBottom: "8px",
+                    marginBottom: "6px",
                   }}
                 >
                   Back Side Photo <span style={{ color: "#ef4444" }}>*</span>
@@ -388,17 +392,18 @@ export default function Signin2() {
                     flexDirection: "column",
                     alignItems: "center",
                     justifyContent: "center",
-                    gap: "10px",
+                    gap: "8px",
                     border: backFile
                       ? "2px solid #21865b"
                       : "2px dashed #cbd5e1",
                     borderRadius: "12px",
-                    padding: "20px",
+                    padding: "16px",
                     background: backFile ? "#e7f7ee" : "#f8f9fa",
                     cursor: "pointer",
                     textAlign: "center",
                     transition: "all 0.2s",
-                    minHeight: "140px",
+                    minHeight: "130px",
+                    boxSizing: "border-box",
                   }}
                 >
                   {backPreview ? (
@@ -407,7 +412,7 @@ export default function Signin2() {
                         display: "flex",
                         flexDirection: "column",
                         alignItems: "center",
-                        gap: "6px",
+                        gap: "4px",
                       }}
                     >
                       <img
@@ -415,7 +420,7 @@ export default function Signin2() {
                         alt="Back ID Preview"
                         style={{
                           width: "100%",
-                          maxHeight: "90px",
+                          maxHeight: "80px",
                           objectFit: "contain",
                           borderRadius: "6px",
                           border: "1px solid #cbd5e1",
@@ -434,12 +439,12 @@ export default function Signin2() {
                   ) : (
                     <>
                       <CloudUploadRounded
-                        style={{ fontSize: 36, color: "#ae1236" }}
+                        style={{ fontSize: 32, color: "#ae1236" }}
                       />
                       <div>
                         <div
                           style={{
-                            fontSize: "13.5px",
+                            fontSize: "13px",
                             fontWeight: "900",
                             color: "#172033",
                           }}
@@ -448,10 +453,10 @@ export default function Signin2() {
                         </div>
                         <div
                           style={{
-                            fontSize: "11px",
+                            fontSize: "10.5px",
                             color: "#727987",
                             fontWeight: "600",
-                            marginTop: "3px",
+                            marginTop: "2px",
                           }}
                         >
                           JPG, PNG or PDF (Max 8MB)
@@ -472,27 +477,27 @@ export default function Signin2() {
             {/* Document Guidelines Notice */}
             <div
               style={{
-                marginTop: "16px",
+                marginTop: "14px",
                 background: "#fff5f7",
                 border: "1px solid #f8d7da",
                 borderRadius: "10px",
-                padding: "12px 16px",
-                fontSize: "12px",
+                padding: "10px 14px",
+                fontSize: "11.5px",
                 color: "#991b1b",
                 fontWeight: "700",
                 display: "flex",
                 gap: "8px",
                 alignItems: "flex-start",
+                boxSizing: "border-box",
               }}
             >
               <WarningRounded
-                style={{ fontSize: 18, flexShrink: 0, marginTop: "1px" }}
+                style={{ fontSize: 16, flexShrink: 0, marginTop: "1px" }}
               />
               <div>
                 <b>Document Guidelines:</b> Ensure all 4 outer corners are
                 distinctly captured without glare or blur. Official registration
-                name, date of birth, and issuing authority seal must be legible
-                for official NYX sanctioned qualification.
+                name, date of birth, and issuing authority seal must be legible.
               </div>
             </div>
           </div>
@@ -503,16 +508,17 @@ export default function Signin2() {
               background: "#fff",
               border: "1px solid #eef0f3",
               borderRadius: "16px",
-              padding: "26px",
+              padding: "20px 16px",
               boxShadow: "0 4px 16px rgba(20, 30, 50, 0.03)",
+              boxSizing: "border-box",
             }}
           >
             <h3
               style={{
-                fontSize: "17px",
+                fontSize: "16px",
                 fontWeight: "900",
                 color: "#172033",
-                margin: "0 0 6px",
+                margin: "0 0 4px",
                 display: "flex",
                 alignItems: "center",
                 gap: "8px",
@@ -522,8 +528,8 @@ export default function Signin2() {
                 style={{
                   background: "#ae1236",
                   color: "#fff",
-                  width: "6px",
-                  height: "18px",
+                  width: "5px",
+                  height: "16px",
                   borderRadius: "3px",
                   display: "inline-block",
                 }}
@@ -532,22 +538,22 @@ export default function Signin2() {
             </h3>
             <p
               style={{
-                fontSize: "13px",
+                fontSize: "12px",
                 color: "#727987",
-                margin: "0 0 20px",
+                margin: "0 0 16px",
                 fontWeight: "600",
               }}
             >
               Set up credentials to securely sign in, verify official live match
-              draws, acknowledge umpire scores, and download player badge
-              passes.
+              draws, and download player badge passes.
             </p>
 
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-                gap: "18px",
+                gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+                gap: "14px",
+                boxSizing: "border-box",
               }}
             >
               {/* New Password */}
@@ -555,10 +561,10 @@ export default function Signin2() {
                 <label
                   style={{
                     display: "block",
-                    fontSize: "12.5px",
+                    fontSize: "11.5px",
                     fontWeight: "800",
                     color: "#334155",
-                    marginBottom: "6px",
+                    marginBottom: "5px",
                   }}
                 >
                   New Password <span style={{ color: "#ef4444" }}>*</span>
@@ -573,12 +579,12 @@ export default function Signin2() {
                   <span
                     style={{
                       position: "absolute",
-                      left: "14px",
+                      left: "12px",
                       color: "#94a3b8",
                       display: "flex",
                     }}
                   >
-                    <LockOutlined style={{ fontSize: "20px" }} />
+                    <LockOutlined style={{ fontSize: "18px" }} />
                   </span>
                   <input
                     type={showPassword ? "text" : "password"}
@@ -588,11 +594,11 @@ export default function Signin2() {
                     onChange={(e) => setNewPassword(e.target.value)}
                     style={{
                       width: "100%",
-                      padding: "12px 40px 12px 42px",
+                      padding: "11px 38px 11px 38px",
                       backgroundColor: "#f8fafc",
                       border: "1px solid #cbd5e1",
                       borderRadius: "10px",
-                      fontSize: "14px",
+                      fontSize: "13.5px",
                       color: "#0f172a",
                       outline: "none",
                       boxSizing: "border-box",
@@ -603,7 +609,7 @@ export default function Signin2() {
                     onClick={() => setShowPassword(!showPassword)}
                     style={{
                       position: "absolute",
-                      right: "12px",
+                      right: "10px",
                       background: "none",
                       border: "none",
                       cursor: "pointer",
@@ -612,9 +618,9 @@ export default function Signin2() {
                     }}
                   >
                     {showPassword ? (
-                      <VisibilityOffOutlined style={{ fontSize: "20px" }} />
+                      <VisibilityOffOutlined style={{ fontSize: "18px" }} />
                     ) : (
-                      <VisibilityOutlined style={{ fontSize: "20px" }} />
+                      <VisibilityOutlined style={{ fontSize: "18px" }} />
                     )}
                   </button>
                 </div>
@@ -625,10 +631,10 @@ export default function Signin2() {
                 <label
                   style={{
                     display: "block",
-                    fontSize: "12.5px",
+                    fontSize: "11.5px",
                     fontWeight: "800",
                     color: "#334155",
-                    marginBottom: "6px",
+                    marginBottom: "5px",
                   }}
                 >
                   Confirm Password <span style={{ color: "#ef4444" }}>*</span>
@@ -643,12 +649,12 @@ export default function Signin2() {
                   <span
                     style={{
                       position: "absolute",
-                      left: "14px",
+                      left: "12px",
                       color: "#94a3b8",
                       display: "flex",
                     }}
                   >
-                    <LockOutlined style={{ fontSize: "20px" }} />
+                    <LockOutlined style={{ fontSize: "18px" }} />
                   </span>
                   <input
                     type={showConfirmPassword ? "text" : "password"}
@@ -658,14 +664,14 @@ export default function Signin2() {
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     style={{
                       width: "100%",
-                      padding: "12px 40px 12px 42px",
+                      padding: "11px 38px 11px 38px",
                       backgroundColor: "#f8fafc",
                       border:
                         confirmPassword.length > 0 && !passwordsMatch
                           ? "2px solid #ef4444"
                           : "1px solid #cbd5e1",
                       borderRadius: "10px",
-                      fontSize: "14px",
+                      fontSize: "13.5px",
                       color: "#0f172a",
                       outline: "none",
                       boxSizing: "border-box",
@@ -676,7 +682,7 @@ export default function Signin2() {
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     style={{
                       position: "absolute",
-                      right: "12px",
+                      right: "10px",
                       background: "none",
                       border: "none",
                       cursor: "pointer",
@@ -685,9 +691,9 @@ export default function Signin2() {
                     }}
                   >
                     {showConfirmPassword ? (
-                      <VisibilityOffOutlined style={{ fontSize: "20px" }} />
+                      <VisibilityOffOutlined style={{ fontSize: "18px" }} />
                     ) : (
-                      <VisibilityOutlined style={{ fontSize: "20px" }} />
+                      <VisibilityOutlined style={{ fontSize: "18px" }} />
                     )}
                   </button>
                 </div>
@@ -698,10 +704,10 @@ export default function Signin2() {
             <div
               style={{
                 display: "flex",
-                gap: "16px",
-                marginTop: "12px",
+                gap: "12px",
+                marginTop: "10px",
                 flexWrap: "wrap",
-                fontSize: "12px",
+                fontSize: "11.5px",
                 fontWeight: "700",
               }}
             >
@@ -710,7 +716,7 @@ export default function Signin2() {
                   color: newPassword.length >= 8 ? "#21865b" : "#64748b",
                 }}
               >
-                {newPassword.length >= 8 ? "✔" : "•"} Minimum 8 characters
+                {newPassword.length >= 8 ? "✔" : "•"} Min 8 chars
               </span>
               <span
                 style={{
@@ -724,7 +730,7 @@ export default function Signin2() {
               >
                 {confirmPassword.length > 0
                   ? passwordsMatch
-                    ? "✔ Passwords match perfectly"
+                    ? "✔ Passwords match"
                     : "✖ Passwords do not match"
                   : "• Passwords must match"}
               </span>
@@ -737,15 +743,16 @@ export default function Signin2() {
               background: "#fff",
               border: "1px solid #eef0f3",
               borderRadius: "16px",
-              padding: "20px 24px",
+              padding: "16px",
               boxShadow: "0 4px 16px rgba(20, 30, 50, 0.03)",
+              boxSizing: "border-box",
             }}
           >
             <label
               style={{
                 display: "flex",
                 alignItems: "flex-start",
-                gap: "12px",
+                gap: "10px",
                 cursor: "pointer",
               }}
             >
@@ -754,19 +761,20 @@ export default function Signin2() {
                 checked={agreed}
                 onChange={(e) => setAgreed(e.target.checked)}
                 style={{
-                  width: "18px",
-                  height: "18px",
+                  width: "16px",
+                  height: "16px",
                   accentColor: "#ae1236",
                   cursor: "pointer",
                   marginTop: "2px",
+                  flexShrink: 0,
                 }}
               />
               <span
                 style={{
-                  fontSize: "13px",
+                  fontSize: "12px",
                   color: "#334155",
                   fontWeight: "700",
-                  lineHeight: "1.5",
+                  lineHeight: "1.4",
                 }}
               >
                 I agree to NYX Badminton Rules, Anti-Doping Regulations, and
@@ -774,24 +782,28 @@ export default function Signin2() {
                 <span
                   style={{
                     display: "block",
-                    fontSize: "11.5px",
+                    fontSize: "11px",
                     color: "#64748b",
                     fontWeight: "600",
                     marginTop: "2px",
                   }}
                 >
                   By submitting this registration, you officially certify that
-                  the submitted personal age, birth certificates, and national
-                  documents are authentic and unmodified. False declarations
-                  lead to immediate tournament forfeiture and ranking
-                  disqualification.
+                  submitted documents are authentic and unmodified.
                 </span>
               </span>
             </label>
           </div>
 
           {/* Navigation Buttons */}
-          <div style={{ display: "flex", gap: "14px", flexWrap: "wrap" }}>
+          <div
+            style={{
+              display: "flex",
+              gap: "10px",
+              flexWrap: "wrap",
+              boxSizing: "border-box",
+            }}
+          >
             <button
               type="button"
               onClick={() => navigate("/signin-1")}
@@ -800,30 +812,31 @@ export default function Signin2() {
                 color: "#334155",
                 border: "1px solid #cbd5e1",
                 borderRadius: "12px",
-                padding: "0 24px",
-                minHeight: "56px",
-                fontSize: "14px",
+                padding: "0 18px",
+                minHeight: "50px",
+                fontSize: "13px",
                 fontWeight: "900",
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
-                gap: "8px",
+                gap: "6px",
+                flex: "1 1 120px",
+                justifyContent: "center",
               }}
             >
-              <ArrowBackRounded style={{ fontSize: 18 }} /> Back to Step 1
+              <ArrowBackRounded style={{ fontSize: 16 }} /> Back to Step 1
             </button>
 
             <button
               type="submit"
               disabled={!isFormValid}
               style={{
-                flex: 1,
                 background: isFormValid ? "#ae1236" : "#cbd5e1",
                 color: "#fff",
                 border: "none",
                 borderRadius: "12px",
-                minHeight: "56px",
-                fontSize: "14px",
+                minHeight: "50px",
+                fontSize: "13px",
                 fontWeight: "900",
                 cursor: isFormValid ? "pointer" : "not-allowed",
                 boxShadow: isFormValid
@@ -832,12 +845,15 @@ export default function Signin2() {
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
-                gap: "8px",
+                gap: "6px",
                 transition: "background 0.2s",
+                flex: "2 1 200px",
+                padding: "0 16px",
+                boxSizing: "border-box",
               }}
             >
               STAGE 3: EMAIL VERIFICATION{" "}
-              <ArrowForwardRounded style={{ fontSize: 20 }} />
+              <ArrowForwardRounded style={{ fontSize: 18 }} />
             </button>
           </div>
         </form>

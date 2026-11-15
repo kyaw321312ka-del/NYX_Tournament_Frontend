@@ -1217,457 +1217,543 @@ export default function TournamentDetailsPage() {
             match structures.
           </p>
 
-          {categories.map((cat, idx) => (
-            <div
-              key={idx}
-              style={{
-                backgroundColor: "#f8fafc",
-                border: "1px solid #e2e8f0",
-                borderRadius: "12px",
-                padding: "24px",
-                marginBottom: "24px",
-              }}
-            >
+          {categories.map((cat, idx) => {
+            const seedOptions = [
+              "Single Elimination",
+              "Double Elimination",
+              "Round Robin",
+              "8 Seeded Positions",
+              "16 Seeded Positions",
+            ];
+            const isCustomSeed = !seedOptions.includes(cat.seeds);
+
+            const formatOptions = [
+              "Best of 3 Sets to 21",
+              "Best of 5 Sets to 11",
+              "Single Set to 30 Points",
+            ];
+            const isCustomFormat = !formatOptions.includes(cat.format);
+
+            return (
               <div
+                key={idx}
                 style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  marginBottom: "16px",
+                  backgroundColor: "#f8fafc",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: "12px",
+                  padding: "24px",
+                  marginBottom: "24px",
                 }}
               >
                 <div
-                  style={{ display: "flex", alignItems: "center", gap: "12px" }}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: "16px",
+                  }}
                 >
-                  <span
+                  <div
                     style={{
-                      fontSize: "13px",
-                      fontWeight: "bold",
-                      color: "#0f172a",
-                    }}
-                  >
-                    Category #{idx + 1} Configuration
-                  </span>
-                  <span
-                    style={{
-                      fontSize: "11px",
-                      backgroundColor: "#f0fdf4",
-                      color: "#16a34a",
-                      padding: "3px 8px",
-                      borderRadius: "4px",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    Active Roster
-                  </span>
-                </div>
-                {/* Hide delete button for the first category item (idx === 0) */}
-                {isEditing && idx > 0 && (
-                  <button
-                    onClick={() => handleRemoveCategory(idx)}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      color: "#dc2626",
-                      cursor: "pointer",
-                      fontSize: "12px",
-                      fontWeight: "bold",
                       display: "flex",
                       alignItems: "center",
-                      gap: "2px",
+                      gap: "12px",
                     }}
                   >
-                    <DeleteOutlineIcon style={{ fontSize: "16px" }} /> Delete
-                    Category
-                  </button>
-                )}
-              </div>
+                    <span
+                      style={{
+                        fontSize: "13px",
+                        fontWeight: "bold",
+                        color: "#0f172a",
+                      }}
+                    >
+                      Category #{idx + 1} Configuration
+                    </span>
+                    <span
+                      style={{
+                        fontSize: "11px",
+                        backgroundColor: "#f0fdf4",
+                        color: "#16a34a",
+                        padding: "3px 8px",
+                        borderRadius: "4px",
+                        fontWeight: "bold",
+                      }}
+                    >
+                      Active Roster
+                    </span>
+                  </div>
+                  {/* Hide delete button for the first category item (idx === 0) */}
+                  {isEditing && idx > 0 && (
+                    <button
+                      onClick={() => handleRemoveCategory(idx)}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "#dc2626",
+                        cursor: "pointer",
+                        fontSize: "12px",
+                        fontWeight: "bold",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "2px",
+                      }}
+                    >
+                      <DeleteOutlineIcon style={{ fontSize: "16px" }} /> Delete
+                      Category
+                    </button>
+                  )}
+                </div>
 
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 2fr",
-                  gap: "20px",
-                  marginBottom: "16px",
-                }}
-              >
-                <div>
-                  <label
-                    style={{
-                      display: "block",
-                      fontSize: "11px",
-                      fontWeight: "bold",
-                      color: "#334155",
-                      marginBottom: "6px",
-                    }}
-                  >
-                    Category Code *
-                  </label>
-                  <input
-                    type="text"
-                    value={cat.code}
-                    disabled={!isEditing}
-                    onChange={(e) => {
-                      const c = [...categories];
-                      c[idx].code = e.target.value;
-                      setCategories(c);
-                    }}
-                    style={{
-                      width: "100%",
-                      padding: "12px 16px",
-                      borderRadius: "8px",
-                      border:
-                        attemptedSubmit && !cat.code
-                          ? "1px solid #dc2626"
-                          : "1px solid #cbd5e1",
-                      fontSize: "12px",
-                      outline: "none",
-                      boxSizing: "border-box",
-                      backgroundColor: isEditing ? "#fff" : "#f8fafc",
-                      cursor: isEditing ? "text" : "not-allowed",
-                    }}
-                  />
-                  {attemptedSubmit && !cat.code && (
-                    <span
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 2fr",
+                    gap: "20px",
+                    marginBottom: "16px",
+                  }}
+                >
+                  <div>
+                    <label
                       style={{
-                        fontSize: "11px",
-                        color: "#dc2626",
-                        marginTop: "4px",
                         display: "block",
+                        fontSize: "11px",
+                        fontWeight: "bold",
+                        color: "#334155",
+                        marginBottom: "6px",
                       }}
                     >
-                      Code is required
-                    </span>
-                  )}
-                </div>
-                <div>
-                  <label
-                    style={{
-                      display: "block",
-                      fontSize: "11px",
-                      fontWeight: "bold",
-                      color: "#334155",
-                      marginBottom: "6px",
-                    }}
-                  >
-                    Category Name *
-                  </label>
-                  <input
-                    type="text"
-                    value={cat.name}
-                    disabled={!isEditing}
-                    onChange={(e) => {
-                      const c = [...categories];
-                      c[idx].name = e.target.value;
-                      setCategories(c);
-                    }}
-                    style={{
-                      width: "100%",
-                      padding: "12px 16px",
-                      borderRadius: "8px",
-                      border:
-                        attemptedSubmit && !cat.name
-                          ? "1px solid #dc2626"
-                          : "1px solid #cbd5e1",
-                      fontSize: "12px",
-                      outline: "none",
-                      boxSizing: "border-box",
-                      backgroundColor: isEditing ? "#fff" : "#f8fafc",
-                      cursor: isEditing ? "text" : "not-allowed",
-                    }}
-                  />
-                  {attemptedSubmit && !cat.name && (
-                    <span
+                      Category Code *
+                    </label>
+                    <input
+                      type="text"
+                      value={cat.code}
+                      disabled={!isEditing}
+                      onChange={(e) => {
+                        const c = [...categories];
+                        c[idx].code = e.target.value;
+                        setCategories(c);
+                      }}
                       style={{
-                        fontSize: "11px",
-                        color: "#dc2626",
-                        marginTop: "4px",
+                        width: "100%",
+                        padding: "12px 16px",
+                        borderRadius: "8px",
+                        border:
+                          attemptedSubmit && !cat.code
+                            ? "1px solid #dc2626"
+                            : "1px solid #cbd5e1",
+                        fontSize: "12px",
+                        outline: "none",
+                        boxSizing: "border-box",
+                        backgroundColor: isEditing ? "#fff" : "#f8fafc",
+                        cursor: isEditing ? "text" : "not-allowed",
+                      }}
+                    />
+                    {attemptedSubmit && !cat.code && (
+                      <span
+                        style={{
+                          fontSize: "11px",
+                          color: "#dc2626",
+                          marginTop: "4px",
+                          display: "block",
+                        }}
+                      >
+                        Code is required
+                      </span>
+                    )}
+                  </div>
+                  <div>
+                    <label
+                      style={{
                         display: "block",
+                        fontSize: "11px",
+                        fontWeight: "bold",
+                        color: "#334155",
+                        marginBottom: "6px",
                       }}
                     >
-                      Name is required
-                    </span>
-                  )}
+                      Category Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={cat.name}
+                      disabled={!isEditing}
+                      onChange={(e) => {
+                        const c = [...categories];
+                        c[idx].name = e.target.value;
+                        setCategories(c);
+                      }}
+                      style={{
+                        width: "100%",
+                        padding: "12px 16px",
+                        borderRadius: "8px",
+                        border:
+                          attemptedSubmit && !cat.name
+                            ? "1px solid #dc2626"
+                            : "1px solid #cbd5e1",
+                        fontSize: "12px",
+                        outline: "none",
+                        boxSizing: "border-box",
+                        backgroundColor: isEditing ? "#fff" : "#f8fafc",
+                        cursor: isEditing ? "text" : "not-allowed",
+                      }}
+                    />
+                    {attemptedSubmit && !cat.name && (
+                      <span
+                        style={{
+                          fontSize: "11px",
+                          color: "#dc2626",
+                          marginTop: "4px",
+                          display: "block",
+                        }}
+                      >
+                        Name is required
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
 
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr 1fr",
-                  gap: "20px",
-                  marginBottom: "16px",
-                }}
-              >
-                <div>
-                  <label
-                    style={{
-                      display: "block",
-                      fontSize: "11px",
-                      fontWeight: "bold",
-                      color: "#334155",
-                      marginBottom: "6px",
-                    }}
-                  >
-                    Seeds / Pairing Type
-                  </label>
-                  <select
-                    value={cat.seeds}
-                    disabled={!isEditing}
-                    onChange={(e) => {
-                      const c = [...categories];
-                      c[idx].seeds = e.target.value;
-                      setCategories(c);
-                    }}
-                    style={{
-                      width: "100%",
-                      padding: "12px 16px",
-                      borderRadius: "8px",
-                      border: "1px solid #cbd5e1",
-                      backgroundColor: isEditing ? "#fff" : "#f8fafc",
-                      fontSize: "12px",
-                      outline: "none",
-                      cursor: isEditing ? "pointer" : "not-allowed",
-                    }}
-                  >
-                    <option>Single Elimination</option>
-                    <option>Double Elimination</option>
-                    <option>Round Robin</option>
-                    <option>8 Seeded Positions</option>
-                    <option>16 Seeded Positions</option>
-                  </select>
-                </div>
-                <div>
-                  <label
-                    style={{
-                      display: "block",
-                      fontSize: "11px",
-                      fontWeight: "bold",
-                      color: "#334155",
-                      marginBottom: "6px",
-                    }}
-                  >
-                    Match Format
-                  </label>
-                  <select
-                    value={cat.format}
-                    disabled={!isEditing}
-                    onChange={(e) => {
-                      const c = [...categories];
-                      c[idx].format = e.target.value;
-                      setCategories(c);
-                    }}
-                    style={{
-                      width: "100%",
-                      padding: "12px 16px",
-                      borderRadius: "8px",
-                      border: "1px solid #cbd5e1",
-                      backgroundColor: isEditing ? "#fff" : "#f8fafc",
-                      fontSize: "12px",
-                      outline: "none",
-                      cursor: isEditing ? "pointer" : "not-allowed",
-                    }}
-                  >
-                    <option>Best of 3 Sets to 21</option>
-                    <option>Best of 5 Sets to 11</option>
-                    <option>Single Set to 30 Points</option>
-                  </select>
-                </div>
-                <div>
-                  <label
-                    style={{
-                      display: "block",
-                      fontSize: "11px",
-                      fontWeight: "bold",
-                      color: "#334155",
-                      marginBottom: "6px",
-                    }}
-                  >
-                    Entry Status Tag
-                  </label>
-                  <select
-                    value={cat.status}
-                    disabled={!isEditing}
-                    onChange={(e) => {
-                      const c = [...categories];
-                      c[idx].status = e.target.value;
-                      setCategories(c);
-                    }}
-                    style={{
-                      width: "100%",
-                      padding: "12px 16px",
-                      borderRadius: "8px",
-                      border: "1px solid #cbd5e1",
-                      backgroundColor: isEditing ? "#fff" : "#f8fafc",
-                      fontSize: "12px",
-                      outline: "none",
-                      cursor: isEditing ? "pointer" : "not-allowed",
-                    }}
-                  >
-                    <option>Open (Fast Closing)</option>
-                    <option>Enrollment Open</option>
-                    <option>Enrollment Closed</option>
-                  </select>
-                </div>
-              </div>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr 1fr",
+                    gap: "20px",
+                    marginBottom: "16px",
+                  }}
+                >
+                  {/* Seeds / Pairing Type */}
+                  <div>
+                    <label
+                      style={{
+                        display: "block",
+                        fontSize: "11px",
+                        fontWeight: "bold",
+                        color: "#334155",
+                        marginBottom: "6px",
+                      }}
+                    >
+                      Seeds / Pairing Type
+                    </label>
+                    <select
+                      value={isCustomSeed ? "Other" : cat.seeds}
+                      disabled={!isEditing}
+                      onChange={(e) => {
+                        const c = [...categories];
+                        if (e.target.value === "Other") {
+                          c[idx].seeds = ""; // Other ရွေးရင် အစက အလွတ်စပေးမယ်
+                        } else {
+                          c[idx].seeds = e.target.value;
+                        }
+                        setCategories(c);
+                      }}
+                      style={{
+                        width: "100%",
+                        padding: "12px 16px",
+                        borderRadius: "8px",
+                        border: "1px solid #cbd5e1",
+                        backgroundColor: isEditing ? "#fff" : "#f8fafc",
+                        fontSize: "12px",
+                        outline: "none",
+                        cursor: isEditing ? "pointer" : "not-allowed",
+                        marginBottom: isCustomSeed && isEditing ? "8px" : "0",
+                      }}
+                    >
+                      <option>Single Elimination</option>
+                      <option>Double Elimination</option>
+                      <option>Round Robin</option>
+                      <option>8 Seeded Positions</option>
+                      <option>16 Seeded Positions</option>
+                      <option>Other</option>
+                    </select>
+                    {isCustomSeed && (
+                      <input
+                        type="text"
+                        value={cat.seeds}
+                        disabled={!isEditing}
+                        onChange={(e) => {
+                          const c = [...categories];
+                          c[idx].seeds = e.target.value;
+                          setCategories(c);
+                        }}
+                        placeholder="Type custom seeds/pairing..."
+                        style={{
+                          width: "100%",
+                          padding: "10px 14px",
+                          borderRadius: "8px",
+                          border: "1px solid #cbd5e1",
+                          fontSize: "12px",
+                          outline: "none",
+                          boxSizing: "border-box",
+                          backgroundColor: isEditing ? "#fff" : "#f8fafc",
+                          cursor: isEditing ? "text" : "not-allowed",
+                        }}
+                      />
+                    )}
+                  </div>
 
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr 1fr",
-                  gap: "20px",
-                }}
-              >
-                <div>
-                  <label
-                    style={{
-                      display: "block",
-                      fontSize: "11px",
-                      fontWeight: "bold",
-                      color: "#334155",
-                      marginBottom: "6px",
-                    }}
-                  >
-                    Eligibility Criteria *
-                  </label>
-                  <input
-                    type="text"
-                    value={cat.criteria}
-                    disabled={!isEditing}
-                    onChange={(e) => {
-                      const c = [...categories];
-                      c[idx].criteria = e.target.value;
-                      setCategories(c);
-                    }}
-                    style={{
-                      width: "100%",
-                      padding: "12px 16px",
-                      borderRadius: "8px",
-                      border:
-                        attemptedSubmit && !cat.criteria
-                          ? "1px solid #dc2626"
-                          : "1px solid #cbd5e1",
-                      fontSize: "12px",
-                      outline: "none",
-                      boxSizing: "border-box",
-                      backgroundColor: isEditing ? "#fff" : "#f8fafc",
-                      cursor: isEditing ? "text" : "not-allowed",
-                    }}
-                  />
-                  {attemptedSubmit && !cat.criteria && (
-                    <span
+                  {/* Match Format */}
+                  <div>
+                    <label
                       style={{
-                        fontSize: "11px",
-                        color: "#dc2626",
-                        marginTop: "4px",
                         display: "block",
+                        fontSize: "11px",
+                        fontWeight: "bold",
+                        color: "#334155",
+                        marginBottom: "6px",
                       }}
                     >
-                      Criteria is required
-                    </span>
-                  )}
+                      Match Format
+                    </label>
+                    <select
+                      value={isCustomFormat ? "Other" : cat.format}
+                      disabled={!isEditing}
+                      onChange={(e) => {
+                        const c = [...categories];
+                        if (e.target.value === "Other") {
+                          c[idx].format = ""; // Other ရွေးရင် အစက အလွတ်စပေးမယ်
+                        } else {
+                          c[idx].format = e.target.value;
+                        }
+                        setCategories(c);
+                      }}
+                      style={{
+                        width: "100%",
+                        padding: "12px 16px",
+                        borderRadius: "8px",
+                        border: "1px solid #cbd5e1",
+                        backgroundColor: isEditing ? "#fff" : "#f8fafc",
+                        fontSize: "12px",
+                        outline: "none",
+                        cursor: isEditing ? "pointer" : "not-allowed",
+                        marginBottom: isCustomFormat && isEditing ? "8px" : "0",
+                      }}
+                    >
+                      <option>Best of 3 Sets to 21</option>
+                      <option>Best of 5 Sets to 11</option>
+                      <option>Single Set to 30 Points</option>
+                      <option>Other</option>
+                    </select>
+                    {isCustomFormat && (
+                      <input
+                        type="text"
+                        value={cat.format}
+                        disabled={!isEditing}
+                        onChange={(e) => {
+                          const c = [...categories];
+                          c[idx].format = e.target.value;
+                          setCategories(c);
+                        }}
+                        placeholder="Type custom match format..."
+                        style={{
+                          width: "100%",
+                          padding: "10px 14px",
+                          borderRadius: "8px",
+                          border: "1px solid #cbd5e1",
+                          fontSize: "12px",
+                          outline: "none",
+                          boxSizing: "border-box",
+                          backgroundColor: isEditing ? "#fff" : "#f8fafc",
+                          cursor: isEditing ? "text" : "not-allowed",
+                        }}
+                      />
+                    )}
+                  </div>
+
+                  <div>
+                    <label
+                      style={{
+                        display: "block",
+                        fontSize: "11px",
+                        fontWeight: "bold",
+                        color: "#334155",
+                        marginBottom: "6px",
+                      }}
+                    >
+                      Entry Status Tag
+                    </label>
+                    <select
+                      value={cat.status}
+                      disabled={!isEditing}
+                      onChange={(e) => {
+                        const c = [...categories];
+                        c[idx].status = e.target.value;
+                        setCategories(c);
+                      }}
+                      style={{
+                        width: "100%",
+                        padding: "12px 16px",
+                        borderRadius: "8px",
+                        border: "1px solid #cbd5e1",
+                        backgroundColor: isEditing ? "#fff" : "#f8fafc",
+                        fontSize: "12px",
+                        outline: "none",
+                        cursor: isEditing ? "pointer" : "not-allowed",
+                      }}
+                    >
+                      <option>Open (Fast Closing)</option>
+                      <option>Enrollment Open</option>
+                      <option>Enrollment Closed</option>
+                    </select>
+                  </div>
                 </div>
-                <div>
-                  <label
-                    style={{
-                      display: "block",
-                      fontSize: "11px",
-                      fontWeight: "bold",
-                      color: "#334155",
-                      marginBottom: "6px",
-                    }}
-                  >
-                    Category Points Pool *
-                  </label>
-                  <input
-                    type="text"
-                    value={cat.pointsPool}
-                    disabled={!isEditing}
-                    onChange={(e) => {
-                      const c = [...categories];
-                      c[idx].pointsPool = e.target.value;
-                      setCategories(c);
-                    }}
-                    style={{
-                      width: "100%",
-                      padding: "12px 16px",
-                      borderRadius: "8px",
-                      border:
-                        attemptedSubmit && !cat.pointsPool
-                          ? "1px solid #dc2626"
-                          : "1px solid #cbd5e1",
-                      fontSize: "12px",
-                      outline: "none",
-                      boxSizing: "border-box",
-                      backgroundColor: isEditing ? "#fff" : "#f8fafc",
-                      cursor: isEditing ? "text" : "not-allowed",
-                    }}
-                  />
-                  {attemptedSubmit && !cat.pointsPool && (
-                    <span
+
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr 1fr",
+                    gap: "20px",
+                  }}
+                >
+                  <div>
+                    <label
                       style={{
-                        fontSize: "11px",
-                        color: "#dc2626",
-                        marginTop: "4px",
                         display: "block",
+                        fontSize: "11px",
+                        fontWeight: "bold",
+                        color: "#334155",
+                        marginBottom: "6px",
                       }}
                     >
-                      Points pool is required
-                    </span>
-                  )}
-                </div>
-                <div>
-                  <label
-                    style={{
-                      display: "block",
-                      fontSize: "11px",
-                      fontWeight: "bold",
-                      color: "#334155",
-                      marginBottom: "6px",
-                    }}
-                  >
-                    Official Shuttle *
-                  </label>
-                  <input
-                    type="text"
-                    value={cat.shuttle}
-                    disabled={!isEditing}
-                    onChange={(e) => {
-                      const c = [...categories];
-                      c[idx].shuttle = e.target.value;
-                      setCategories(c);
-                    }}
-                    style={{
-                      width: "100%",
-                      padding: "12px 16px",
-                      borderRadius: "8px",
-                      border:
-                        attemptedSubmit && !cat.shuttle
-                          ? "1px solid #dc2626"
-                          : "1px solid #cbd5e1",
-                      fontSize: "12px",
-                      outline: "none",
-                      boxSizing: "border-box",
-                      backgroundColor: isEditing ? "#fff" : "#f8fafc",
-                      cursor: isEditing ? "text" : "not-allowed",
-                    }}
-                  />
-                  {attemptedSubmit && !cat.shuttle && (
-                    <span
+                      Eligibility Criteria *
+                    </label>
+                    <input
+                      type="text"
+                      value={cat.criteria}
+                      disabled={!isEditing}
+                      onChange={(e) => {
+                        const c = [...categories];
+                        c[idx].criteria = e.target.value;
+                        setCategories(c);
+                      }}
                       style={{
-                        fontSize: "11px",
-                        color: "#dc2626",
-                        marginTop: "4px",
+                        width: "100%",
+                        padding: "12px 16px",
+                        borderRadius: "8px",
+                        border:
+                          attemptedSubmit && !cat.criteria
+                            ? "1px solid #dc2626"
+                            : "1px solid #cbd5e1",
+                        fontSize: "12px",
+                        outline: "none",
+                        boxSizing: "border-box",
+                        backgroundColor: isEditing ? "#fff" : "#f8fafc",
+                        cursor: isEditing ? "text" : "not-allowed",
+                      }}
+                    />
+                    {attemptedSubmit && !cat.criteria && (
+                      <span
+                        style={{
+                          fontSize: "11px",
+                          color: "#dc2626",
+                          marginTop: "4px",
+                          display: "block",
+                        }}
+                      >
+                        Criteria is required
+                      </span>
+                    )}
+                  </div>
+                  <div>
+                    <label
+                      style={{
                         display: "block",
+                        fontSize: "11px",
+                        fontWeight: "bold",
+                        color: "#334155",
+                        marginBottom: "6px",
                       }}
                     >
-                      Shuttle is required
-                    </span>
-                  )}
+                      Category Points Pool *
+                    </label>
+                    <input
+                      type="text"
+                      value={cat.pointsPool}
+                      disabled={!isEditing}
+                      onChange={(e) => {
+                        const c = [...categories];
+                        c[idx].pointsPool = e.target.value;
+                        setCategories(c);
+                      }}
+                      style={{
+                        width: "100%",
+                        padding: "12px 16px",
+                        borderRadius: "8px",
+                        border:
+                          attemptedSubmit && !cat.pointsPool
+                            ? "1px solid #dc2626"
+                            : "1px solid #cbd5e1",
+                        fontSize: "12px",
+                        outline: "none",
+                        boxSizing: "border-box",
+                        backgroundColor: isEditing ? "#fff" : "#f8fafc",
+                        cursor: isEditing ? "text" : "not-allowed",
+                      }}
+                    />
+                    {attemptedSubmit && !cat.pointsPool && (
+                      <span
+                        style={{
+                          fontSize: "11px",
+                          color: "#dc2626",
+                          marginTop: "4px",
+                          display: "block",
+                        }}
+                      >
+                        Points pool is required
+                      </span>
+                    )}
+                  </div>
+                  <div>
+                    <label
+                      style={{
+                        display: "block",
+                        fontSize: "11px",
+                        fontWeight: "bold",
+                        color: "#334155",
+                        marginBottom: "6px",
+                      }}
+                    >
+                      Official Shuttle *
+                    </label>
+                    <input
+                      type="text"
+                      value={cat.shuttle}
+                      disabled={!isEditing}
+                      onChange={(e) => {
+                        const c = [...categories];
+                        c[idx].shuttle = e.target.value;
+                        setCategories(c);
+                      }}
+                      style={{
+                        width: "100%",
+                        padding: "12px 16px",
+                        borderRadius: "8px",
+                        border:
+                          attemptedSubmit && !cat.shuttle
+                            ? "1px solid #dc2626"
+                            : "1px solid #cbd5e1",
+                        fontSize: "12px",
+                        outline: "none",
+                        boxSizing: "border-box",
+                        backgroundColor: isEditing ? "#fff" : "#f8fafc",
+                        cursor: isEditing ? "text" : "not-allowed",
+                      }}
+                    />
+                    {attemptedSubmit && !cat.shuttle && (
+                      <span
+                        style={{
+                          fontSize: "11px",
+                          color: "#dc2626",
+                          marginTop: "4px",
+                          display: "block",
+                        }}
+                      >
+                        Shuttle is required
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* SECTION 5: Leaderboard Points Allocation */}

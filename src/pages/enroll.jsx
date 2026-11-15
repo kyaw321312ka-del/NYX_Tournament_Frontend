@@ -28,7 +28,7 @@ export default function Enroll() {
   const [showErrorModal, setShowErrorModal] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
 
-  // Mock registered players list for Doubles partner selection (Real data မှာ API ကနေ လာပါမယ်)
+  // Mock registered players list for Doubles partner selection
   const availablePartners = [
     { id: "p1", name: "Aung Thiha (YGN Badminton Club)", gender: "Male" },
     { id: "p2", name: "Nilar Kyaw (Mandalay Racquet Club)", gender: "Female" },
@@ -114,81 +114,324 @@ export default function Enroll() {
   };
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        width: "100%",
-        padding: "16px 24px 40px",
-        background: "#f7f8fa",
-        color: "#172033",
-        fontFamily: "'Inter', sans-serif",
-        boxSizing: "border-box",
-      }}
-    >
-      <div
+    <>
+      <style>{`
+        /* Responsive Grid & Layout Adjustments for Mobile */
+        @media (max-width: 900px) {
+          .nyx-summary-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+          }
+          .nyx-gateway-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+          }
+          .nyx-transfer-box {
+            grid-template-columns: 1fr !important;
+          }
+        }
+        @media (max-width: 540px) {
+          .nyx-summary-grid {
+            grid-template-columns: 1fr !important;
+          }
+          .nyx-gateway-grid {
+            grid-template-columns: 1fr !important;
+          }
+        }
+      `}</style>
+
+      <main
         style={{
+          minHeight: "100vh",
           width: "100%",
-          maxWidth: "100%",
-          margin: "0",
-          display: "flex",
-          flexDirection: "column",
-          gap: "16px",
+          padding: "5px",
+          background: "#f7f8fa",
+          color: "#172033",
+          fontFamily: "'Inter', sans-serif",
+          boxSizing: "border-box",
         }}
       >
-        {/* Header Info */}
-        <div>
-          <h1
-            style={{
-              fontSize: "24px",
-              fontWeight: "900",
-              color: "#172033",
-              margin: "0 0 4px",
-            }}
-          >
-            Tournament Enrollment Portal
-          </h1>
-          <p
-            style={{
-              fontSize: "13.5px",
-              color: "#596170",
-              margin: 0,
-              fontWeight: "600",
-            }}
-          >
-            Secure your slot & complete registration fee payment for upcoming
-            seeded brackets.
-          </p>
-        </div>
-
-        <form
-          onSubmit={handleSubmit}
+        <div
           style={{
+            width: "100%",
+            maxWidth: "100%",
+            margin: "0",
             display: "flex",
             flexDirection: "column",
             gap: "16px",
-            width: "100%",
           }}
         >
-          {/* 1. Registration Summary & Partner Selection */}
-          <div
+          {/* Header Info */}
+          <div>
+            <h1
+              style={{
+                fontSize: "24px",
+                fontWeight: "900",
+                color: "#172033",
+                margin: "0 0 4px",
+              }}
+            >
+              Tournament Enrollment Portal
+            </h1>
+            <p
+              style={{
+                fontSize: "13.5px",
+                color: "#596170",
+                margin: 0,
+                fontWeight: "600",
+              }}
+            >
+              Secure your slot & complete registration fee payment for upcoming
+              seeded brackets.
+            </p>
+          </div>
+
+          <form
+            onSubmit={handleSubmit}
             style={{
-              background: "#fff",
-              border: "1px solid #eef0f3",
-              borderRadius: "12px",
-              padding: "18px 24px",
-              boxShadow: "0 4px 16px rgba(20, 30, 50, 0.03)",
+              display: "flex",
+              flexDirection: "column",
+              gap: "16px",
               width: "100%",
-              boxSizing: "border-box",
             }}
           >
+            {/* 1. Registration Summary & Partner Selection */}
             <div
               style={{
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "12px",
-                flexWrap: "wrap",
-                gap: "10px",
+                background: "#fff",
+                border: "1px solid #eef0f3",
+                borderRadius: "12px",
+                padding: "18px 24px",
+                boxShadow: "0 4px 16px rgba(20, 30, 50, 0.03)",
+                width: "100%",
+                boxSizing: "border-box",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: "12px",
+                  flexWrap: "wrap",
+                  gap: "10px",
+                }}
+              >
+                <h3
+                  style={{
+                    fontSize: "18px",
+                    fontWeight: "900",
+                    color: "#172033",
+                    margin: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                  }}
+                >
+                  <span
+                    style={{
+                      background: "#ae1236",
+                      color: "#fff",
+                      width: "5px",
+                      height: "16px",
+                      borderRadius: "3px",
+                      display: "inline-block",
+                    }}
+                  ></span>
+                  1. Registration Summary & Player Info
+                </h3>
+                <span
+                  style={{
+                    background: "#fde9ee",
+                    color: "#ae1236",
+                    fontSize: "11.5px",
+                    fontWeight: "800",
+                    padding: "3px 10px",
+                    borderRadius: "6px",
+                  }}
+                >
+                  NYX ID: #YGN-8842
+                </span>
+              </div>
+
+              <div
+                className="nyx-summary-grid"
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+                  gap: "16px",
+                  background: "#f8f9fa",
+                  padding: "14px 18px",
+                  borderRadius: "10px",
+                  border: "1px solid #edf0f3",
+                  marginBottom: isDoublesCategory ? "16px" : "0",
+                }}
+              >
+                <div>
+                  <div
+                    style={{
+                      fontSize: "10.5px",
+                      fontWeight: "800",
+                      color: "#727987",
+                      marginBottom: "3px",
+                    }}
+                  >
+                    PRIMARY PLAYER
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "13.5px",
+                      fontWeight: "900",
+                      color: "#172033",
+                    }}
+                  >
+                    Min Thant Aung
+                  </div>
+                </div>
+                <div>
+                  <div
+                    style={{
+                      fontSize: "10.5px",
+                      fontWeight: "800",
+                      color: "#727987",
+                      marginBottom: "3px",
+                    }}
+                  >
+                    TEAM / CLUB
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "13.5px",
+                      fontWeight: "900",
+                      color: "#172033",
+                    }}
+                  >
+                    📍 Yangon Club
+                  </div>
+                </div>
+                <div>
+                  <div
+                    style={{
+                      fontSize: "10.5px",
+                      fontWeight: "800",
+                      color: "#727987",
+                      marginBottom: "3px",
+                    }}
+                  >
+                    TOURNAMENT
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "13.5px",
+                      fontWeight: "900",
+                      color: "#172033",
+                    }}
+                  >
+                    🏆 {tournamentData?.title || "Mandalay Open Cup"}
+                  </div>
+                </div>
+                <div>
+                  <div
+                    style={{
+                      fontSize: "10.5px",
+                      fontWeight: "800",
+                      color: "#727987",
+                      marginBottom: "3px",
+                    }}
+                  >
+                    EVENT CATEGORY
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "12px",
+                      fontWeight: "800",
+                      color: "#ae1236",
+                      background: "#fde9ee",
+                      padding: "2px 8px",
+                      borderRadius: "6px",
+                      display: "inline-block",
+                    }}
+                  >
+                    {categoryData || "Mixed Doubles"}
+                  </div>
+                </div>
+              </div>
+
+              {/* Doubles Partner Selection Dropdown */}
+              {isDoublesCategory && (
+                <div
+                  style={{
+                    background: "#fff9fa",
+                    border: "1px dashed #ae1236",
+                    borderRadius: "10px",
+                    padding: "16px 18px",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "8px",
+                  }}
+                >
+                  <label
+                    style={{
+                      fontSize: "12.5px",
+                      fontWeight: "900",
+                      color: "#ae1236",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                    }}
+                  >
+                    <GroupAddRounded style={{ fontSize: 18 }} />
+                    Select Team Partner for {categoryData}{" "}
+                    <span style={{ color: "#ef4444" }}>*</span>
+                  </label>
+                  <p
+                    style={{
+                      fontSize: "11.5px",
+                      color: "#64748b",
+                      margin: 0,
+                      fontWeight: "600",
+                    }}
+                  >
+                    Choose a registered partner from the portal network to
+                    complete your tournament pair registration.
+                  </p>
+                  <select
+                    value={selectedPartner}
+                    onChange={(e) => setSelectedPartner(e.target.value)}
+                    style={{
+                      width: "100%",
+                      padding: "10px 14px",
+                      borderRadius: "8px",
+                      border: "1px solid #cbd5e1",
+                      backgroundColor: "#fff",
+                      fontSize: "13px",
+                      fontWeight: "700",
+                      color: "#0f172a",
+                      outline: "none",
+                      marginTop: "4px",
+                    }}
+                  >
+                    <option value="">
+                      -- Choose Partner from Registered Accounts --
+                    </option>
+                    {availablePartners.map((partner) => (
+                      <option key={partner.id} value={partner.name}>
+                        {partner.name} ({partner.gender})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+
+            {/* 2. Choose Payment Gateway Method */}
+            <div
+              style={{
+                background: "#fff",
+                border: "1px solid #eef0f3",
+                borderRadius: "12px",
+                padding: "18px 24px",
+                boxShadow: "0 4px 16px rgba(20, 30, 50, 0.03)",
+                width: "100%",
+                boxSizing: "border-box",
               }}
             >
               <h3
@@ -196,7 +439,7 @@ export default function Enroll() {
                   fontSize: "18px",
                   fontWeight: "900",
                   color: "#172033",
-                  margin: 0,
+                  margin: "0 0 14px",
                   display: "flex",
                   alignItems: "center",
                   gap: "8px",
@@ -212,810 +455,619 @@ export default function Enroll() {
                     display: "inline-block",
                   }}
                 ></span>
-                1. Registration Summary & Player Info
+                2. Choose Payment Gateway Method
               </h3>
-              <span
-                style={{
-                  background: "#fde9ee",
-                  color: "#ae1236",
-                  fontSize: "11.5px",
-                  fontWeight: "800",
-                  padding: "3px 10px",
-                  borderRadius: "6px",
-                }}
-              >
-                NYX ID: #YGN-8842
-              </span>
-            </div>
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-                gap: "16px",
-                background: "#f8f9fa",
-                padding: "14px 18px",
-                borderRadius: "10px",
-                border: "1px solid #edf0f3",
-                marginBottom: isDoublesCategory ? "16px" : "0",
-              }}
-            >
-              <div>
-                <div
-                  style={{
-                    fontSize: "10.5px",
-                    fontWeight: "800",
-                    color: "#727987",
-                    marginBottom: "3px",
-                  }}
-                >
-                  PRIMARY PLAYER
-                </div>
-                <div
-                  style={{
-                    fontSize: "13.5px",
-                    fontWeight: "900",
-                    color: "#172033",
-                  }}
-                >
-                  Min Thant Aung
-                </div>
-              </div>
-              <div>
-                <div
-                  style={{
-                    fontSize: "10.5px",
-                    fontWeight: "800",
-                    color: "#727987",
-                    marginBottom: "3px",
-                  }}
-                >
-                  TEAM / CLUB
-                </div>
-                <div
-                  style={{
-                    fontSize: "13.5px",
-                    fontWeight: "900",
-                    color: "#172033",
-                  }}
-                >
-                  📍 Yangon Club
-                </div>
-              </div>
-              <div>
-                <div
-                  style={{
-                    fontSize: "10.5px",
-                    fontWeight: "800",
-                    color: "#727987",
-                    marginBottom: "3px",
-                  }}
-                >
-                  TOURNAMENT
-                </div>
-                <div
-                  style={{
-                    fontSize: "13.5px",
-                    fontWeight: "900",
-                    color: "#172033",
-                  }}
-                >
-                  🏆 {tournamentData?.title || "Mandalay Open Cup"}
-                </div>
-              </div>
-              <div>
-                <div
-                  style={{
-                    fontSize: "10.5px",
-                    fontWeight: "800",
-                    color: "#727987",
-                    marginBottom: "3px",
-                  }}
-                >
-                  EVENT CATEGORY
-                </div>
-                <div
-                  style={{
-                    fontSize: "12px",
-                    fontWeight: "800",
-                    color: "#ae1236",
-                    background: "#fde9ee",
-                    padding: "2px 8px",
-                    borderRadius: "6px",
-                    display: "inline-block",
-                  }}
-                >
-                  {categoryData || "Mixed Doubles"}
-                </div>
-              </div>
-            </div>
-
-            {/* Doubles Partner Selection Dropdown (Only appears if it's a doubles category) */}
-            {isDoublesCategory && (
+              {/* Gateway Cards Layout - Responsive Grid */}
               <div
+                className="nyx-gateway-grid"
                 style={{
-                  background: "#fff9fa",
-                  border: "1px dashed #ae1236",
-                  borderRadius: "10px",
-                  padding: "16px 18px",
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "8px",
+                  display: "grid",
+                  gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
+                  gap: "12px",
+                  marginBottom: "18px",
                 }}
               >
-                <label
-                  style={{
-                    fontSize: "12.5px",
-                    fontWeight: "900",
-                    color: "#ae1236",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "6px",
-                  }}
-                >
-                  <GroupAddRounded style={{ fontSize: 18 }} />
-                  Select Team Partner for {categoryData}{" "}
-                  <span style={{ color: "#ef4444" }}>*</span>
-                </label>
-                <p
-                  style={{
-                    fontSize: "11.5px",
-                    color: "#64748b",
-                    margin: 0,
-                    fontWeight: "600",
-                  }}
-                >
-                  Choose a registered partner from the portal network to
-                  complete your tournament pair registration.
-                </p>
-                <select
-                  value={selectedPartner}
-                  onChange={(e) => setSelectedPartner(e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: "10px 14px",
-                    borderRadius: "8px",
-                    border: "1px solid #cbd5e1",
-                    backgroundColor: "#fff",
-                    fontSize: "13px",
-                    fontWeight: "700",
-                    color: "#0f172a",
-                    outline: "none",
-                    marginTop: "4px",
-                  }}
-                >
-                  <option value="">
-                    -- Choose Partner from Registered Accounts --
-                  </option>
-                  {availablePartners.map((partner) => (
-                    <option key={partner.id} value={partner.name}>
-                      {partner.name} ({partner.gender})
-                    </option>
-                  ))}
-                </select>
+                {Object.keys(paymentDetails).map((gateway) => {
+                  const info = paymentDetails[gateway];
+                  const isSelected = selectedGateway === gateway;
+                  return (
+                    <div
+                      key={gateway}
+                      onClick={() => setSelectedGateway(gateway)}
+                      style={{
+                        border: isSelected
+                          ? "2px solid #ae1236"
+                          : "1px solid #e2e8f0",
+                        background: isSelected ? "#fff5f7" : "#f8f9fa",
+                        borderRadius: "10px",
+                        padding: "15px 16px",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        transition: "all 0.2s",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "10px",
+                          minWidth: 0,
+                        }}
+                      >
+                        <img
+                          src={info.logo}
+                          alt={gateway}
+                          style={{
+                            width: "36px",
+                            height: "36px",
+                            borderRadius: "50%",
+                            objectFit: "cover",
+                            border: "1px solid #cbd5e1",
+                            flexShrink: 0,
+                          }}
+                        />
+                        <span
+                          style={{
+                            fontWeight: "900",
+                            fontSize: "15px",
+                            color: "#172033",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
+                          {gateway}
+                        </span>
+                      </div>
+                      {isSelected && (
+                        <CheckCircleRounded
+                          style={{
+                            fontSize: 18,
+                            color: "#ae1236",
+                            flexShrink: 0,
+                          }}
+                        />
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-            )}
-          </div>
 
-          {/* 2. Choose Payment Gateway Method */}
-          <div
-            style={{
-              background: "#fff",
-              border: "1px solid #eef0f3",
-              borderRadius: "12px",
-              padding: "18px 24px",
-              boxShadow: "0 4px 16px rgba(20, 30, 50, 0.03)",
-              width: "100%",
-              boxSizing: "border-box",
-            }}
-          >
-            <h3
-              style={{
-                fontSize: "18px",
-                fontWeight: "900",
-                color: "#172033",
-                margin: "0 0 14px",
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-              }}
-            >
-              <span
+              {/* Official Transfer Details Box - Responsive Grid */}
+              <div
+                className="nyx-transfer-box"
                 style={{
-                  background: "#ae1236",
-                  color: "#fff",
-                  width: "5px",
-                  height: "16px",
-                  borderRadius: "3px",
-                  display: "inline-block",
+                  background: "#f8f9fa",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: "12px",
+                  padding: "20px 24px",
+                  display: "grid",
+                  gridTemplateColumns: "1fr 280px",
+                  gap: "30px",
+                  alignItems: "center",
+                  width: "100%",
+                  boxSizing: "border-box",
                 }}
-              ></span>
-              2. Choose Payment Gateway Method
-            </h3>
-
-            {/* Gateway Cards Layout - 4 columns full width */}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-                gap: "12px",
-                marginBottom: "18px",
-              }}
-            >
-              {Object.keys(paymentDetails).map((gateway) => {
-                const info = paymentDetails[gateway];
-                const isSelected = selectedGateway === gateway;
-                return (
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "14px",
+                    minWidth: 0,
+                  }}
+                >
                   <div
-                    key={gateway}
-                    onClick={() => setSelectedGateway(gateway)}
                     style={{
-                      border: isSelected
-                        ? "2px solid #ae1236"
-                        : "1px solid #e2e8f0",
-                      background: isSelected ? "#fff5f7" : "#f8f9fa",
-                      borderRadius: "10px",
-                      padding: "15px 16px",
-                      cursor: "pointer",
                       display: "flex",
-                      alignItems: "center",
                       justifyContent: "space-between",
-                      transition: "all 0.2s",
+                      alignItems: "center",
+                      flexWrap: "wrap",
+                      gap: "6px",
                     }}
                   >
                     <div
                       style={{
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "10px",
+                        fontSize: "14px",
+                        fontWeight: "900",
+                        color: "#172033",
                       }}
                     >
-                      <img
-                        src={info.logo}
-                        alt={gateway}
-                        style={{
-                          width: "40px",
-                          height: "40px",
-                          borderRadius: "50%",
-                          objectFit: "cover",
-                          border: "1px solid #cbd5e1",
-                        }}
-                      />
+                      {selectedGateway} Official Transfer Details
+                    </div>
+                    <span
+                      style={{
+                        fontSize: "10.5px",
+                        fontWeight: "800",
+                        color: "#475569",
+                        background: "#e2e8f0",
+                        padding: "3px 8px",
+                        borderRadius: "6px",
+                      }}
+                    >
+                      🔒 Official Escrow
+                    </span>
+                  </div>
+
+                  <div>
+                    <div
+                      style={{
+                        fontSize: "10.5px",
+                        fontWeight: "800",
+                        color: "#727987",
+                      }}
+                    >
+                      ACCOUNT RECEIVER NAME
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "15px",
+                        fontWeight: "900",
+                        color: "#172033",
+                      }}
+                    >
+                      {currentPayment.name}
+                    </div>
+                  </div>
+
+                  <div>
+                    <div
+                      style={{
+                        fontSize: "10.5px",
+                        fontWeight: "800",
+                        color: "#727987",
+                      }}
+                    >
+                      {selectedGateway.toUpperCase()} PHONE / WALLET ID
+                    </div>
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        flexWrap: "wrap",
+                        gap: "10px",
+                        marginTop: "4px",
+                      }}
+                    >
                       <span
                         style={{
+                          fontSize: "15.5px",
                           fontWeight: "900",
-                          fontSize: "17px",
                           color: "#172033",
+                          background: "#fff",
+                          padding: "6px 12px",
+                          borderRadius: "6px",
+                          border: "1px solid #cbd5e1",
                         }}
                       >
-                        {gateway}
+                        {currentPayment.phone}
                       </span>
+                      {selectedGateway !== "Cash on" && (
+                        <button
+                          type="button"
+                          onClick={handleCopy}
+                          style={{
+                            background: "#172033",
+                            color: "#fff",
+                            border: "none",
+                            padding: "8px 14px",
+                            borderRadius: "6px",
+                            fontSize: "11.5px",
+                            fontWeight: "800",
+                            cursor: "pointer",
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: "5px",
+                          }}
+                        >
+                          <ContentCopyRounded style={{ fontSize: 13 }} />{" "}
+                          {copied ? "Copied!" : "Copy"}
+                        </button>
+                      )}
                     </div>
-                    {isSelected && (
-                      <CheckCircleRounded
-                        style={{ fontSize: 18, color: "#ae1236" }}
-                      />
-                    )}
                   </div>
-                );
-              })}
-            </div>
 
-            {/* Official Transfer Details Box - Full Width Grid */}
-            <div
-              style={{
-                background: "#f8f9fa",
-                border: "1px solid #e2e8f0",
-                borderRadius: "12px",
-                padding: "20px 24px",
-                display: "grid",
-                gridTemplateColumns: "1fr 280px",
-                gap: "30px",
-                alignItems: "center",
-                width: "100%",
-                boxSizing: "border-box",
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "14px",
-                }}
-              >
+                  <div>
+                    <div
+                      style={{
+                        fontSize: "10.5px",
+                        fontWeight: "800",
+                        color: "#727987",
+                      }}
+                    >
+                      TOTAL ENROLLMENT FEE
+                    </div>
+                    <div
+                      style={{
+                        fontSize: "22px",
+                        fontWeight: "900",
+                        color: "#ae1236",
+                      }}
+                    >
+                      25,000 MMK
+                    </div>
+                  </div>
+
+                  <div
+                    style={{
+                      background: "#fff5f7",
+                      border: "1px solid #f8d7da",
+                      borderRadius: "6px",
+                      padding: "10px 14px",
+                      fontSize: "12px",
+                      color: "#991b1b",
+                      fontWeight: "700",
+                      wordBreak: "break-word",
+                    }}
+                  >
+                    ⚠️ <b>Note:</b> Type reference note:{" "}
+                    <span
+                      style={{ fontFamily: "monospace", fontWeight: "900" }}
+                    >
+                      {currentPayment.note}
+                    </span>
+                  </div>
+                </div>
+
+                {/* QR Code Image Box */}
                 <div
                   style={{
                     display: "flex",
-                    justifyContent: "space-between",
+                    flexDirection: "column",
                     alignItems: "center",
+                    textAlign: "center",
+                    background: "#fff",
+                    padding: "16px",
+                    borderRadius: "10px",
+                    border: "1px solid #cbd5e1",
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.02)",
+                    justifySelf: "center",
+                    width: "100%",
+                    maxWidth: "240px",
+                    boxSizing: "border-box",
                   }}
                 >
                   <div
                     style={{
-                      fontSize: "14px",
-                      fontWeight: "900",
-                      color: "#172033",
+                      width: "130px",
+                      height: "130px",
+                      background: "#fff",
+                      borderRadius: "8px",
+                      display: "grid",
+                      placeItems: "center",
+                      border: "1px solid #e2e8f0",
+                      overflow: "hidden",
                     }}
                   >
-                    {selectedGateway} Official Transfer Details
+                    <img
+                      src="https://api.qrserver.com/v1/create-qr-code/?size=130x130&data=NYX-Badminton-Payment-Escrow"
+                      alt="QR Code"
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "contain",
+                      }}
+                    />
                   </div>
                   <span
                     style={{
                       fontSize: "10.5px",
-                      fontWeight: "800",
-                      color: "#475569",
-                      background: "#e2e8f0",
-                      padding: "3px 8px",
-                      borderRadius: "6px",
+                      fontWeight: "700",
+                      color: "#64748b",
+                      marginTop: "10px",
+                      lineHeight: "1.3",
                     }}
                   >
-                    🔒 Official Escrow
+                    {currentPayment.qrText}
                   </span>
                 </div>
-
-                <div>
-                  <div
-                    style={{
-                      fontSize: "10.5px",
-                      fontWeight: "800",
-                      color: "#727987",
-                    }}
-                  >
-                    ACCOUNT RECEIVER NAME
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "15px",
-                      fontWeight: "900",
-                      color: "#172033",
-                    }}
-                  >
-                    {currentPayment.name}
-                  </div>
-                </div>
-
-                <div>
-                  <div
-                    style={{
-                      fontSize: "10.5px",
-                      fontWeight: "800",
-                      color: "#727987",
-                    }}
-                  >
-                    {selectedGateway.toUpperCase()} PHONE / WALLET ID
-                  </div>
-                  <div
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "10px",
-                      marginTop: "4px",
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: "15.5px",
-                        fontWeight: "900",
-                        color: "#172033",
-                        background: "#fff",
-                        padding: "6px 12px",
-                        borderRadius: "6px",
-                        border: "1px solid #cbd5e1",
-                      }}
-                    >
-                      {currentPayment.phone}
-                    </span>
-                    {selectedGateway !== "Cash on" && (
-                      <button
-                        type="button"
-                        onClick={handleCopy}
-                        style={{
-                          background: "#172033",
-                          color: "#fff",
-                          border: "none",
-                          padding: "8px 14px",
-                          borderRadius: "6px",
-                          fontSize: "11.5px",
-                          fontWeight: "800",
-                          cursor: "pointer",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "5px",
-                        }}
-                      >
-                        <ContentCopyRounded style={{ fontSize: 13 }} />{" "}
-                        {copied ? "Copied!" : "Copy"}
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                <div>
-                  <div
-                    style={{
-                      fontSize: "10.5px",
-                      fontWeight: "800",
-                      color: "#727987",
-                    }}
-                  >
-                    TOTAL ENROLLMENT FEE
-                  </div>
-                  <div
-                    style={{
-                      fontSize: "22px",
-                      fontWeight: "900",
-                      color: "#ae1236",
-                    }}
-                  >
-                    25,000 MMK
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    background: "#fff5f7",
-                    border: "1px solid #f8d7da",
-                    borderRadius: "6px",
-                    padding: "10px 14px",
-                    fontSize: "12px",
-                    color: "#991b1b",
-                    fontWeight: "700",
-                  }}
-                >
-                  ⚠️ <b>Note:</b> Type reference note:{" "}
-                  <span style={{ fontFamily: "monospace", fontWeight: "900" }}>
-                    {currentPayment.note}
-                  </span>
-                </div>
-              </div>
-
-              {/* QR Code Image Box */}
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "center",
-                  textAlign: "center",
-                  background: "#fff",
-                  padding: "16px",
-                  borderRadius: "10px",
-                  border: "1px solid #cbd5e1",
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.02)",
-                }}
-              >
-                <div
-                  style={{
-                    width: "140px",
-                    height: "140px",
-                    background: "#fff",
-                    borderRadius: "8px",
-                    display: "grid",
-                    placeItems: "center",
-                    border: "1px solid #e2e8f0",
-                    overflow: "hidden",
-                  }}
-                >
-                  <img
-                    src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=NYX-Badminton-Payment-Escrow"
-                    alt="QR Code"
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "contain",
-                    }}
-                  />
-                </div>
-                <span
-                  style={{
-                    fontSize: "10.5px",
-                    fontWeight: "700",
-                    color: "#64748b",
-                    marginTop: "10px",
-                    lineHeight: "1.3",
-                  }}
-                >
-                  {currentPayment.qrText}
-                </span>
               </div>
             </div>
-          </div>
 
-          {/* 3. Upload Payment Slip / Screenshot */}
-          <div
-            style={{
-              background: "#fff",
-              border: "1px solid #eef0f3",
-              borderRadius: "12px",
-              padding: "18px 24px",
-              boxShadow: "0 4px 16px rgba(20, 30, 50, 0.03)",
-              width: "100%",
-              boxSizing: "border-box",
-            }}
-          >
-            <h3
+            {/* 3. Upload Payment Slip / Screenshot */}
+            <div
               style={{
-                fontSize: "15px",
-                fontWeight: "900",
-                color: "#172033",
-                margin: "0 0 4px",
-                display: "flex",
-                alignItems: "center",
-                gap: "8px",
-              }}
-            >
-              <span
-                style={{
-                  background: "#ae1236",
-                  color: "#fff",
-                  width: "5px",
-                  height: "16px",
-                  borderRadius: "3px",
-                  display: "inline-block",
-                }}
-              ></span>
-              3. Upload Payment Slip / Screenshot{" "}
-              <span style={{ color: "#ae1236" }}>*</span>
-            </h3>
-            <p
-              style={{
-                fontSize: "12px",
-                color: "#727987",
-                margin: "0 0 12px",
-                fontWeight: "600",
-              }}
-            >
-              Please upload your successful transaction screenshot or slip (JPG,
-              PNG - Max 5MB).
-            </p>
-
-            <label
-              style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                gap: "8px",
-                border: slipFile ? "2px solid #21865b" : "2px dashed #cbd5e1",
-                borderRadius: "10px",
-                padding: "22px",
-                background: slipFile ? "#e7f7ee" : "#f8f9fa",
-                cursor: "pointer",
-                textAlign: "center",
-                transition: "all 0.2s",
+                background: "#fff",
+                border: "1px solid #eef0f3",
+                borderRadius: "12px",
+                padding: "18px 24px",
+                boxShadow: "0 4px 16px rgba(20, 30, 50, 0.03)",
                 width: "100%",
                 boxSizing: "border-box",
               }}
             >
-              {slipFile ? (
-                <CheckCircleRounded
-                  style={{ fontSize: 34, color: "#21865b" }}
-                />
-              ) : (
-                <CloudUploadRounded
-                  style={{ fontSize: 34, color: "#ae1236" }}
-                />
-              )}
-              <div>
-                <div
+              <h3
+                style={{
+                  fontSize: "15px",
+                  fontWeight: "900",
+                  color: "#172033",
+                  margin: "0 0 4px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                }}
+              >
+                <span
                   style={{
-                    fontSize: "13.5px",
-                    fontWeight: "900",
-                    color: slipFile ? "#21865b" : "#172033",
+                    background: "#ae1236",
+                    color: "#fff",
+                    width: "5px",
+                    height: "16px",
+                    borderRadius: "3px",
+                    display: "inline-block",
                   }}
-                >
-                  {slipFile
-                    ? `Selected File: ${slipFile}`
-                    : "Tap or Drag Payment Slip Screenshot here"}
+                ></span>
+                3. Upload Payment Slip / Screenshot{" "}
+                <span style={{ color: "#ae1236" }}>*</span>
+              </h3>
+              <p
+                style={{
+                  fontSize: "12px",
+                  color: "#727987",
+                  margin: "0 0 12px",
+                  fontWeight: "600",
+                }}
+              >
+                Please upload your successful transaction screenshot or slip
+                (JPG, PNG - Max 5MB).
+              </p>
+
+              <label
+                style={{
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: "8px",
+                  border: slipFile ? "2px solid #21865b" : "2px dashed #cbd5e1",
+                  borderRadius: "10px",
+                  padding: "22px",
+                  background: slipFile ? "#e7f7ee" : "#f8f9fa",
+                  cursor: "pointer",
+                  textAlign: "center",
+                  transition: "all 0.2s",
+                  width: "100%",
+                  boxSizing: "border-box",
+                }}
+              >
+                {slipFile ? (
+                  <CheckCircleRounded
+                    style={{ fontSize: 34, color: "#21865b" }}
+                  />
+                ) : (
+                  <CloudUploadRounded
+                    style={{ fontSize: 34, color: "#ae1236" }}
+                  />
+                )}
+                <div>
+                  <div
+                    style={{
+                      fontSize: "13.5px",
+                      fontWeight: "900",
+                      color: slipFile ? "#21865b" : "#172033",
+                      wordBreak: "break-all",
+                    }}
+                  >
+                    {slipFile
+                      ? `Selected File: ${slipFile}`
+                      : "Tap or Drag Payment Slip Screenshot here"}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "11px",
+                      color: "#727987",
+                      fontWeight: "600",
+                      marginTop: "3px",
+                    }}
+                  >
+                    {slipFile
+                      ? "Click to change image"
+                      : "High resolution clear capture of transaction ID & date"}
+                  </div>
                 </div>
-                <div
-                  style={{
-                    fontSize: "11px",
-                    color: "#727987",
-                    fontWeight: "600",
-                    marginTop: "3px",
-                  }}
-                >
-                  {slipFile
-                    ? "Click to change image"
-                    : "High resolution clear capture of transaction ID & date"}
-                </div>
-              </div>
-              <input
-                type="file"
-                accept="image/png, image/jpeg, image/jpg"
-                onChange={handleFileUpload}
-                style={{ display: "none" }}
-              />
-            </label>
-          </div>
-
-          {/* Confirm & Submit Button */}
-          <button
-            type="submit"
-            style={{
-              background: "#ae1236",
-              color: "#fff",
-              border: "none",
-              borderRadius: "12px",
-              minHeight: "52px",
-              fontSize: "14.5px",
-              fontWeight: "900",
-              cursor: "pointer",
-              boxShadow: "0 4px 16px rgba(174, 18, 54, 0.3)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: "8px",
-              transition: "background 0.2s",
-              width: "100%",
-            }}
-          >
-            CONFIRM & SUBMIT TOURNAMENT ENROLLMENT{" "}
-            <ArrowForwardRounded style={{ fontSize: 18 }} />
-          </button>
-        </form>
-      </div>
-
-      {/* SUCCESS MODAL */}
-      {showSuccessModal && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 1000,
-            background: "rgba(9, 17, 29, 0.6)",
-            backdropFilter: "blur(5px)",
-            display: "grid",
-            placeItems: "center",
-            padding: "20px",
-          }}
-        >
-          <div
-            style={{
-              background: "#fff",
-              borderRadius: "16px",
-              padding: "30px",
-              maxWidth: "400px",
-              width: "100%",
-              textAlign: "center",
-              boxShadow: "0 20px 40px rgba(0,0,0,0.2)",
-            }}
-          >
-            <div
-              style={{
-                width: "60px",
-                height: "60px",
-                borderRadius: "50%",
-                background: "#e7f7ee",
-                color: "#21865b",
-                display: "grid",
-                placeItems: "center",
-                margin: "0 auto 16px",
-              }}
-            >
-              <CheckRounded style={{ fontSize: 32 }} />
+                <input
+                  type="file"
+                  accept="image/png, image/jpeg, image/jpg"
+                  onChange={handleFileUpload}
+                  style={{ display: "none" }}
+                />
+              </label>
             </div>
-            <h2
-              style={{
-                fontSize: "20px",
-                fontWeight: "900",
-                color: "#172033",
-                margin: "0 0 8px",
-              }}
-            >
-              Enrollment Successful!
-            </h2>
-            <p
-              style={{
-                fontSize: "13px",
-                color: "#64748b",
-                margin: "0 0 24px",
-                lineHeight: "1.5",
-              }}
-            >
-              {isDoublesCategory
-                ? `Your pair registration with ${selectedPartner} has been submitted successfully.`
-                : "Your tournament slot & payment slip have been submitted successfully."}
-              Our admin team will verify shortly.
-            </p>
-            <button
-              onClick={() => navigate("/tournaments")}
-              style={{
-                width: "100%",
-                background: "#21865b",
-                color: "#fff",
-                border: "none",
-                padding: "12px",
-                borderRadius: "10px",
-                fontWeight: "900",
-                fontSize: "14px",
-                cursor: "pointer",
-              }}
-            >
-              Return to Tournaments
-            </button>
-          </div>
-        </div>
-      )}
 
-      {/* ERROR MODAL */}
-      {showErrorModal && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 1000,
-            background: "rgba(9, 17, 29, 0.6)",
-            backdropFilter: "blur(5px)",
-            display: "grid",
-            placeItems: "center",
-            padding: "20px",
-          }}
-        >
-          <div
-            style={{
-              background: "#fff",
-              borderRadius: "16px",
-              padding: "30px",
-              maxWidth: "400px",
-              width: "100%",
-              textAlign: "center",
-              boxShadow: "0 20px 40px rgba(0,0,0,0.2)",
-            }}
-          >
-            <div
-              style={{
-                width: "60px",
-                height: "60px",
-                borderRadius: "50%",
-                background: "#fef2f2",
-                color: "#dc2626",
-                display: "grid",
-                placeItems: "center",
-                margin: "0 auto 16px",
-              }}
-            >
-              <WarningRounded style={{ fontSize: 32 }} />
-            </div>
-            <h2
-              style={{
-                fontSize: "20px",
-                fontWeight: "900",
-                color: "#172033",
-                margin: "0 0 8px",
-              }}
-            >
-              Action Required
-            </h2>
-            <p
-              style={{
-                fontSize: "13px",
-                color: "#64748b",
-                margin: "0 0 24px",
-                lineHeight: "1.5",
-              }}
-            >
-              {errorMessage}
-            </p>
+            {/* Confirm & Submit Button */}
             <button
-              onClick={() => setShowErrorModal(false)}
+              type="submit"
               style={{
-                width: "100%",
                 background: "#ae1236",
                 color: "#fff",
                 border: "none",
-                padding: "12px",
-                borderRadius: "10px",
+                borderRadius: "12px",
+                minHeight: "52px",
+                fontSize: "14.5px",
                 fontWeight: "900",
-                fontSize: "14px",
                 cursor: "pointer",
+                boxShadow: "0 4px 16px rgba(174, 18, 54, 0.3)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: "8px",
+                transition: "background 0.2s",
+                width: "100%",
+                boxSizing: "border-box",
               }}
             >
-              Got it, I'll Fix
+              CONFIRM TOURNAMENT ENROLLMENT{" "}
+              <ArrowForwardRounded style={{ fontSize: 18 }} />
             </button>
-          </div>
+          </form>
         </div>
-      )}
-    </main>
+
+        {/* SUCCESS MODAL */}
+        {showSuccessModal && (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 1000,
+              background: "rgba(9, 17, 29, 0.6)",
+              backdropFilter: "blur(5px)",
+              display: "grid",
+              placeItems: "center",
+              padding: "20px",
+            }}
+          >
+            <div
+              style={{
+                background: "#fff",
+                borderRadius: "16px",
+                padding: "30px",
+                maxWidth: "400px",
+                width: "100%",
+                textAlign: "center",
+                boxShadow: "0 20px 40px rgba(0,0,0,0.2)",
+                boxSizing: "border-box",
+              }}
+            >
+              <div
+                style={{
+                  width: "60px",
+                  height: "60px",
+                  borderRadius: "50%",
+                  background: "#e7f7ee",
+                  color: "#21865b",
+                  display: "grid",
+                  placeItems: "center",
+                  margin: "0 auto 16px",
+                }}
+              >
+                <CheckRounded style={{ fontSize: 32 }} />
+              </div>
+              <h2
+                style={{
+                  fontSize: "20px",
+                  fontWeight: "900",
+                  color: "#172033",
+                  margin: "0 0 8px",
+                }}
+              >
+                Enrollment Successful!
+              </h2>
+              <p
+                style={{
+                  fontSize: "13px",
+                  color: "#64748b",
+                  margin: "0 0 24px",
+                  lineHeight: "1.5",
+                }}
+              >
+                {isDoublesCategory
+                  ? `Your pair registration with ${selectedPartner} has been submitted successfully.`
+                  : "Your tournament slot & payment slip have been submitted successfully."}
+                Our admin team will verify shortly.
+              </p>
+              <button
+                onClick={() => navigate("/tournaments")}
+                style={{
+                  width: "100%",
+                  background: "#21865b",
+                  color: "#fff",
+                  border: "none",
+                  padding: "12px",
+                  borderRadius: "10px",
+                  fontWeight: "900",
+                  fontSize: "14px",
+                  cursor: "pointer",
+                }}
+              >
+                Return to Tournaments
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ERROR MODAL */}
+        {showErrorModal && (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              zIndex: 1000,
+              background: "rgba(9, 17, 29, 0.6)",
+              backdropFilter: "blur(5px)",
+              display: "grid",
+              placeItems: "center",
+              padding: "20px",
+            }}
+          >
+            <div
+              style={{
+                background: "#fff",
+                borderRadius: "16px",
+                padding: "30px",
+                maxWidth: "400px",
+                width: "100%",
+                textAlign: "center",
+                boxShadow: "0 20px 40px rgba(0,0,0,0.2)",
+                boxSizing: "border-box",
+              }}
+            >
+              <div
+                style={{
+                  width: "60px",
+                  height: "60px",
+                  borderRadius: "50%",
+                  background: "#fef2f2",
+                  color: "#dc2626",
+                  display: "grid",
+                  placeItems: "center",
+                  margin: "0 auto 16px",
+                }}
+              >
+                <WarningRounded style={{ fontSize: 32 }} />
+              </div>
+              <h2
+                style={{
+                  fontSize: "20px",
+                  fontWeight: "900",
+                  color: "#172033",
+                  margin: "0 0 8px",
+                }}
+              >
+                Action Required
+              </h2>
+              <p
+                style={{
+                  fontSize: "13px",
+                  color: "#64748b",
+                  margin: "0 0 24px",
+                  lineHeight: "1.5",
+                }}
+              >
+                {errorMessage}
+              </p>
+              <button
+                onClick={() => setShowErrorModal(false)}
+                style={{
+                  width: "100%",
+                  background: "#ae1236",
+                  color: "#fff",
+                  border: "none",
+                  padding: "12px",
+                  borderRadius: "10px",
+                  fontWeight: "900",
+                  fontSize: "14px",
+                  cursor: "pointer",
+                }}
+              >
+                Got it, I'll Fix
+              </button>
+            </div>
+          </div>
+        )}
+      </main>
+    </>
   );
 }

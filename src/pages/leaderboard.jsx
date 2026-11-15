@@ -657,7 +657,7 @@ export default function WebLeaderboard() {
           .leaderboard-top-controls { grid-template-columns: 1fr; }
           .rank-row-item { grid-template-columns: 50px 1.5fr 80px; }
           .col-record { display: none; }
-          .leaderboard-page { padding: 16px 12px; }
+          .leaderboard-page { padding: 16px 5px; }
         }
       `}</style>
 

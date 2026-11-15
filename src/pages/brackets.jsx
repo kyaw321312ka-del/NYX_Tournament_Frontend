@@ -5,7 +5,6 @@ import {
   ScheduleRounded,
   CheckCircleRounded,
   PlayCircleFilledRounded,
-  SportsTennis,
 } from "@mui/icons-material";
 
 // Mock Database with Category & Date mapping for dynamic filtering
@@ -70,7 +69,7 @@ const matchesDatabase = [
     id: 2,
     category: "Women's Singles (WS)",
     date: "2026-12-06",
-
+    upcoming: null,
     live: [
       {
         court: "COURT B",
@@ -133,7 +132,6 @@ export default function BracketsSchedule() {
     "Mixed Doubles (XD)",
   ];
 
-  // Find matching data based on selected category & date
   const currentData = matchesDatabase.find(
     (item) => item.category === selectedCategory && item.date === selectedDate,
   ) || { upcoming: null, live: [], fixtures: [], completed: [] };
@@ -143,8 +141,9 @@ export default function BracketsSchedule() {
       style={{
         display: "flex",
         flexDirection: "column",
-        gap: "22px",
+        gap: "20px",
         width: "100%",
+        boxSizing: "border-box",
       }}
     >
       {/* Top Filter Bar: Category Dropdown & Match Schedule Calendar Button */}
@@ -153,29 +152,29 @@ export default function BracketsSchedule() {
           background: "#fff",
           border: "1px solid #eef0f3",
           borderRadius: "16px",
-          padding: "18px 24px",
+          padding: "16px 20px",
           boxShadow: "0 4px 16px rgba(20, 30, 50, 0.03)",
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
           flexWrap: "wrap",
-          gap: "14px",
+          gap: "12px",
         }}
       >
         {/* Category Dropdown */}
-        <div style={{ position: "relative", minWidth: "240px" }}>
+        <div style={{ position: "relative", flex: 1, minWidth: "220px" }}>
           <button
             onClick={() => setShowCatDropdown((v) => !v)}
             style={{
               width: "100%",
-              minHeight: "48px",
+              minHeight: "46px",
               padding: "0 16px",
               border: "1px solid #cbd5e1",
               borderRadius: "12px",
               background: "#f8f9fa",
               color: "#172033",
               fontWeight: "800",
-              fontSize: "14.5px",
+              fontSize: "14px",
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
@@ -210,14 +209,14 @@ export default function BracketsSchedule() {
                   }}
                   style={{
                     width: "100%",
-                    padding: "12px 14px",
+                    padding: "10px 12px",
                     border: "none",
                     borderRadius: "8px",
                     background:
                       selectedCategory === cat ? "#fde9ee" : "transparent",
                     color: selectedCategory === cat ? "#ae1236" : "#354052",
                     fontWeight: "800",
-                    fontSize: "13.5px",
+                    fontSize: "13px",
                     textAlign: "left",
                     cursor: "pointer",
                   }}
@@ -229,7 +228,7 @@ export default function BracketsSchedule() {
           )}
         </div>
 
-        {/* Match Schedule Button with Hidden Calendar Picker */}
+        {/* Match Schedule Button */}
         <div style={{ position: "relative" }}>
           <button
             onClick={() =>
@@ -239,21 +238,22 @@ export default function BracketsSchedule() {
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "10px",
-              minHeight: "48px",
-              padding: "0 20px",
+              gap: "8px",
+              minHeight: "46px",
+              padding: "0 18px",
               border: "none",
               borderRadius: "12px",
               background: "#172033",
               color: "#fff",
               fontWeight: "800",
-              fontSize: "14px",
+              fontSize: "13.5px",
               cursor: "pointer",
               boxShadow: "0 4px 12px rgba(23, 32, 51, 0.2)",
+              whiteSpace: "nowrap",
             }}
           >
-            <CalendarMonthRounded style={{ fontSize: 20, color: "#ff3366" }} />
-            <span>Match Schedule </span>
+            <CalendarMonthRounded style={{ fontSize: 18, color: "#ff3366" }} />
+            <span>Match Schedule</span>
           </button>
 
           <input
@@ -279,7 +279,7 @@ export default function BracketsSchedule() {
             background: "linear-gradient(135deg, #fff5f7 0%, #fff 100%)",
             border: "1px solid #f8d7da",
             borderRadius: "16px",
-            padding: "22px 24px",
+            padding: "20px",
             boxShadow: "0 4px 16px rgba(174, 18, 54, 0.06)",
           }}
         >
@@ -288,21 +288,19 @@ export default function BracketsSchedule() {
               display: "flex",
               justifyContent: "space-between",
               alignItems: "center",
-              marginBottom: "14px",
+              marginBottom: "12px",
               flexWrap: "wrap",
-              gap: "8px",
+              gap: "6px",
             }}
           >
             <span
               style={{
-                fontSize: "125px",
+                fontSize: "11.5px",
                 fontWeight: "900",
                 color: "#ae1236",
                 display: "flex",
                 alignItems: "center",
-                gap: "6px",
-                letterSpacing: "0.5px",
-                fontSize: "12px",
+                gap: "5px",
               }}
             >
               <PlayCircleFilledRounded fontSize="small" /> YOUR UPCOMING MATCH •{" "}
@@ -310,12 +308,12 @@ export default function BracketsSchedule() {
             </span>
             <span
               style={{
-                fontSize: "12px",
+                fontSize: "11px",
                 fontWeight: "800",
                 color: "#b45309",
                 background: "#fef3c7",
-                padding: "4px 10px",
-                borderRadius: "8px",
+                padding: "3px 8px",
+                borderRadius: "6px",
               }}
             >
               {currentData.upcoming.countdown}
@@ -328,8 +326,8 @@ export default function BracketsSchedule() {
               justifyContent: "space-between",
               alignItems: "center",
               background: "#fff",
-              padding: "18px 22px",
-              borderRadius: "14px",
+              padding: "16px",
+              borderRadius: "12px",
               border: "1px solid #f1f3f6",
               flexWrap: "wrap",
               gap: "12px",
@@ -339,42 +337,50 @@ export default function BracketsSchedule() {
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: "12px",
+                gap: "10px",
                 fontWeight: "900",
-                fontSize: "15px",
+                fontSize: "14px",
                 color: "#172033",
+                flex: 1,
+                minWidth: "130px",
               }}
             >
               <span
                 style={{
-                  width: "38px",
-                  height: "38px",
+                  width: "34px",
+                  height: "34px",
                   borderRadius: "50%",
                   background: "#faebd7",
                   color: "#b8860b",
                   display: "grid",
                   placeItems: "center",
-                  fontSize: "13px",
+                  fontSize: "12px",
+                  flexShrink: 0,
                 }}
               >
                 {currentData.upcoming.player1.avatar}
               </span>
-              <div>
-                {currentData.upcoming.player1.name}{" "}
-                <span
-                  style={{
-                    fontSize: "12px",
-                    color: "#727987",
-                    fontWeight: "700",
-                  }}
-                >
-                  {currentData.upcoming.player1.seed}
-                </span>
+              <div style={{ minWidth: 0 }}>
                 <div
                   style={{
-                    fontSize: "11.5px",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {currentData.upcoming.player1.name}{" "}
+                  <span style={{ fontSize: "11px", color: "#727987" }}>
+                    {currentData.upcoming.player1.seed}
+                  </span>
+                </div>
+                <div
+                  style={{
+                    fontSize: "11px",
                     color: "#727987",
                     fontWeight: "700",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
                   }}
                 >
                   {currentData.upcoming.player1.org}
@@ -384,12 +390,13 @@ export default function BracketsSchedule() {
 
             <div
               style={{
-                fontSize: "13.5px",
+                fontSize: "12.5px",
                 fontWeight: "900",
                 color: "#727987",
                 background: "#f1f3f6",
-                padding: "8px 16px",
-                borderRadius: "10px",
+                padding: "6px 12px",
+                borderRadius: "8px",
+                flexShrink: 0,
               }}
             >
               {currentData.upcoming.time}
@@ -399,29 +406,37 @@ export default function BracketsSchedule() {
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: "12px",
+                gap: "10px",
                 fontWeight: "900",
-                fontSize: "15px",
+                fontSize: "14px",
                 color: "#172033",
                 textAlign: "right",
+                flex: 1,
+                justifyContent: "flex-end",
+                minWidth: "130px",
               }}
             >
-              <div>
-                {currentData.upcoming.player2.name}{" "}
-                <span
-                  style={{
-                    fontSize: "12px",
-                    color: "#727987",
-                    fontWeight: "700",
-                  }}
-                >
-                  {currentData.upcoming.player2.seed}
-                </span>
+              <div style={{ minWidth: 0, textAlign: "right" }}>
                 <div
                   style={{
-                    fontSize: "11.5px",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {currentData.upcoming.player2.name}{" "}
+                  <span style={{ fontSize: "11px", color: "#727987" }}>
+                    {currentData.upcoming.player2.seed}
+                  </span>
+                </div>
+                <div
+                  style={{
+                    fontSize: "11px",
                     color: "#727987",
                     fontWeight: "700",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
                   }}
                 >
                   {currentData.upcoming.player2.org}
@@ -429,14 +444,15 @@ export default function BracketsSchedule() {
               </div>
               <span
                 style={{
-                  width: "38px",
-                  height: "38px",
+                  width: "34px",
+                  height: "34px",
                   borderRadius: "50%",
                   background: "#eef0f3",
                   color: "#354052",
                   display: "grid",
                   placeItems: "center",
-                  fontSize: "13px",
+                  fontSize: "12px",
+                  flexShrink: 0,
                 }}
               >
                 {currentData.upcoming.player2.avatar}
@@ -450,10 +466,10 @@ export default function BracketsSchedule() {
             background: "#fff",
             border: "1px solid #eef0f3",
             borderRadius: "16px",
-            padding: "20px",
+            padding: "18px",
             textAlign: "center",
             color: "#727987",
-            fontSize: "13.5px",
+            fontSize: "13px",
             fontWeight: "700",
           }}
         >
@@ -462,13 +478,13 @@ export default function BracketsSchedule() {
         </div>
       )}
 
-      {/* Live Matches Now (Dynamic Active Court Count) */}
+      {/* Live Matches Now */}
       <div
         style={{
           background: "#fff",
           border: "1px solid #eef0f3",
           borderRadius: "16px",
-          padding: "24px",
+          padding: "20px",
           boxShadow: "0 4px 16px rgba(20, 30, 50, 0.03)",
         }}
       >
@@ -477,24 +493,24 @@ export default function BracketsSchedule() {
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            marginBottom: "16px",
+            marginBottom: "14px",
           }}
         >
           <h4
             style={{
-              fontSize: "16.5px",
+              fontSize: "16px",
               fontWeight: "900",
               color: "#172033",
               margin: 0,
               display: "flex",
               alignItems: "center",
-              gap: "10px",
+              gap: "8px",
             }}
           >
             <span
               style={{
-                width: "10px",
-                height: "10px",
+                width: "9px",
+                height: "9px",
                 borderRadius: "50%",
                 background: "#dc2626",
                 display: "inline-block",
@@ -502,18 +518,22 @@ export default function BracketsSchedule() {
             />
             Live Matches Now{" "}
             <span
-              style={{ fontSize: "12px", color: "#727987", fontWeight: "700" }}
+              style={{
+                fontSize: "11.5px",
+                color: "#727987",
+                fontWeight: "700",
+              }}
             >
               • Court In-Play
             </span>
           </h4>
           <span
             style={{
-              fontSize: "11.5px",
+              fontSize: "11px",
               fontWeight: "900",
               color: "#dc2626",
               background: "#fde9ee",
-              padding: "4px 10px",
+              padding: "3px 8px",
               borderRadius: "6px",
             }}
           >
@@ -524,14 +544,14 @@ export default function BracketsSchedule() {
 
         {currentData.live.length > 0 ? (
           <div
-            style={{ display: "flex", flexDirection: "column", gap: "14px" }}
+            style={{ display: "flex", flexDirection: "column", gap: "12px" }}
           >
             {currentData.live.map((match, idx) => (
               <div
                 key={idx}
                 style={{
                   border: "1px solid #cbd5e1",
-                  borderRadius: "14px",
+                  borderRadius: "12px",
                   overflow: "hidden",
                 }}
               >
@@ -539,11 +559,13 @@ export default function BracketsSchedule() {
                   style={{
                     background: "#172033",
                     color: "#fff",
-                    padding: "10px 18px",
-                    fontSize: "12px",
+                    padding: "8px 16px",
+                    fontSize: "11.5px",
                     fontWeight: "900",
                     display: "flex",
                     justifyContent: "space-between",
+                    flexWrap: "wrap",
+                    gap: "6px",
                   }}
                 >
                   <span>
@@ -553,10 +575,10 @@ export default function BracketsSchedule() {
                 </div>
                 <div
                   style={{
-                    padding: "16px 20px",
+                    padding: "14px 16px",
                     display: "flex",
                     flexDirection: "column",
-                    gap: "12px",
+                    gap: "10px",
                     background: "#fff",
                   }}
                 >
@@ -566,22 +588,30 @@ export default function BracketsSchedule() {
                       justifyContent: "space-between",
                       alignItems: "center",
                       fontWeight: "900",
-                      fontSize: "15px",
+                      fontSize: "14px",
                       color: "#172033",
                     }}
                   >
-                    <div>
+                    <div
+                      style={{
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        marginRight: "10px",
+                      }}
+                    >
                       {match.player1.name}{" "}
-                      <span style={{ fontSize: "12px", color: "#727987" }}>
+                      <span style={{ fontSize: "11px", color: "#727987" }}>
                         {match.player1.org}
                       </span>
                     </div>
                     <div
                       style={{
                         display: "flex",
-                        gap: "16px",
+                        gap: "12px",
                         color: "#475569",
-                        fontSize: "16px",
+                        fontSize: "15px",
+                        flexShrink: 0,
                       }}
                     >
                       {match.player1.scores.map((s, i) => (
@@ -603,22 +633,30 @@ export default function BracketsSchedule() {
                       justifyContent: "space-between",
                       alignItems: "center",
                       fontWeight: "900",
-                      fontSize: "15px",
+                      fontSize: "14px",
                       color: "#172033",
                     }}
                   >
-                    <div>
+                    <div
+                      style={{
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        marginRight: "10px",
+                      }}
+                    >
                       {match.player2.name}{" "}
-                      <span style={{ fontSize: "12px", color: "#727987" }}>
+                      <span style={{ fontSize: "11px", color: "#727987" }}>
                         {match.player2.org}
                       </span>
                     </div>
                     <div
                       style={{
                         display: "flex",
-                        gap: "16px",
+                        gap: "12px",
                         color: "#475569",
-                        fontSize: "16px",
+                        fontSize: "15px",
+                        flexShrink: 0,
                       }}
                     >
                       {match.player2.scores.map((s, i) => (
@@ -641,12 +679,12 @@ export default function BracketsSchedule() {
         ) : (
           <div
             style={{
-              padding: "20px",
+              padding: "18px",
               textAlign: "center",
               background: "#f8f9fa",
-              borderRadius: "12px",
+              borderRadius: "10px",
               color: "#727987",
-              fontSize: "13.5px",
+              fontSize: "13px",
               fontWeight: "700",
             }}
           >
@@ -662,7 +700,7 @@ export default function BracketsSchedule() {
           background: "#fff",
           border: "1px solid #eef0f3",
           borderRadius: "16px",
-          padding: "24px",
+          padding: "20px",
           boxShadow: "0 4px 16px rgba(20, 30, 50, 0.03)",
         }}
       >
@@ -671,25 +709,25 @@ export default function BracketsSchedule() {
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            marginBottom: "16px",
+            marginBottom: "14px",
           }}
         >
           <h4
             style={{
-              fontSize: "16.5px",
+              fontSize: "16px",
               fontWeight: "900",
               color: "#172033",
               margin: 0,
               display: "flex",
               alignItems: "center",
-              gap: "10px",
+              gap: "8px",
             }}
           >
-            <ScheduleRounded style={{ fontSize: 20, color: "#ae1236" }} /> Order
+            <ScheduleRounded style={{ fontSize: 18, color: "#ae1236" }} /> Order
             of Play & Fixtures ({selectedDate})
           </h4>
           <span
-            style={{ fontSize: "12px", fontWeight: "800", color: "#727987" }}
+            style={{ fontSize: "11.5px", fontWeight: "800", color: "#727987" }}
           >
             {currentData.fixtures.length} Scheduled
           </span>
@@ -697,15 +735,15 @@ export default function BracketsSchedule() {
 
         {currentData.fixtures.length > 0 ? (
           <div
-            style={{ display: "flex", flexDirection: "column", gap: "14px" }}
+            style={{ display: "flex", flexDirection: "column", gap: "12px" }}
           >
             {currentData.fixtures.map((fix, idx) => (
               <div
                 key={idx}
                 style={{
                   border: "1px solid #eef0f3",
-                  borderRadius: "14px",
-                  padding: "16px 20px",
+                  borderRadius: "12px",
+                  padding: "14px 16px",
                   background: "#f8f9fa",
                 }}
               >
@@ -713,10 +751,12 @@ export default function BracketsSchedule() {
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
-                    fontSize: "12px",
+                    fontSize: "11.5px",
                     fontWeight: "800",
                     color: "#727987",
-                    marginBottom: "8px",
+                    marginBottom: "6px",
+                    flexWrap: "wrap",
+                    gap: "4px",
                   }}
                 >
                   <span>
@@ -736,8 +776,8 @@ export default function BracketsSchedule() {
                   style={{
                     display: "flex",
                     flexDirection: "column",
-                    gap: "6px",
-                    fontSize: "14.5px",
+                    gap: "4px",
+                    fontSize: "14px",
                     fontWeight: "900",
                     color: "#172033",
                   }}
@@ -751,12 +791,12 @@ export default function BracketsSchedule() {
         ) : (
           <div
             style={{
-              padding: "20px",
+              padding: "18px",
               textAlign: "center",
               background: "#f8f9fa",
-              borderRadius: "12px",
+              borderRadius: "10px",
               color: "#727987",
-              fontSize: "13.5px",
+              fontSize: "13px",
               fontWeight: "700",
             }}
           >
@@ -772,7 +812,7 @@ export default function BracketsSchedule() {
           background: "#fff",
           border: "1px solid #eef0f3",
           borderRadius: "16px",
-          padding: "24px",
+          padding: "20px",
           boxShadow: "0 4px 16px rgba(20, 30, 50, 0.03)",
         }}
       >
@@ -781,25 +821,25 @@ export default function BracketsSchedule() {
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            marginBottom: "16px",
+            marginBottom: "14px",
           }}
         >
           <h4
             style={{
-              fontSize: "16.5px",
+              fontSize: "16px",
               fontWeight: "900",
               color: "#172033",
               margin: 0,
               display: "flex",
               alignItems: "center",
-              gap: "10px",
+              gap: "8px",
             }}
           >
-            <CheckCircleRounded style={{ fontSize: 20, color: "#087b59" }} />{" "}
+            <CheckCircleRounded style={{ fontSize: 18, color: "#087b59" }} />{" "}
             Completed Matches
           </h4>
           <span
-            style={{ fontSize: "12px", fontWeight: "800", color: "#727987" }}
+            style={{ fontSize: "11.5px", fontWeight: "800", color: "#727987" }}
           >
             Official Scored
           </span>
@@ -807,15 +847,15 @@ export default function BracketsSchedule() {
 
         {currentData.completed.length > 0 ? (
           <div
-            style={{ display: "flex", flexDirection: "column", gap: "14px" }}
+            style={{ display: "flex", flexDirection: "column", gap: "12px" }}
           >
             {currentData.completed.map((comp, idx) => (
               <div
                 key={idx}
                 style={{
                   border: "1px solid #eef0f3",
-                  borderRadius: "14px",
-                  padding: "16px 20px",
+                  borderRadius: "12px",
+                  padding: "14px 16px",
                   background: "#fff",
                 }}
               >
@@ -823,10 +863,12 @@ export default function BracketsSchedule() {
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
-                    fontSize: "12px",
+                    fontSize: "11.5px",
                     fontWeight: "800",
                     color: "#727987",
-                    marginBottom: "8px",
+                    marginBottom: "6px",
+                    flexWrap: "wrap",
+                    gap: "4px",
                   }}
                 >
                   <span>
@@ -839,30 +881,37 @@ export default function BracketsSchedule() {
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
-                    fontSize: "14.5px",
+                    fontSize: "14px",
                     fontWeight: "900",
                     color: "#172033",
                     marginBottom: "6px",
                   }}
                 >
-                  <div>
-                    {comp.p1.name}{" "}
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    <span>{comp.p1.name}</span>
                     {comp.p1.win && (
                       <span
                         style={{
                           background: "#e4f7ef",
                           color: "#087b59",
-                          fontSize: "11px",
-                          padding: "2px 8px",
-                          borderRadius: "6px",
-                          marginLeft: "6px",
+                          fontSize: "10px",
+                          padding: "2px 6px",
+                          borderRadius: "4px",
+                          fontWeight: "900",
                         }}
                       >
                         WINNER
                       </span>
                     )}
                   </div>
-                  <div style={{ display: "flex", gap: "16px" }}>
+                  <div style={{ display: "flex", gap: "12px", flexShrink: 0 }}>
                     {comp.p1.scores.map((sc, i) => (
                       <span key={i}>{sc}</span>
                     ))}
@@ -873,13 +922,13 @@ export default function BracketsSchedule() {
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
-                    fontSize: "14.5px",
+                    fontSize: "14px",
                     fontWeight: "800",
                     color: "#727987",
                   }}
                 >
                   <div>{comp.p2.name}</div>
-                  <div style={{ display: "flex", gap: "16px" }}>
+                  <div style={{ display: "flex", gap: "12px", flexShrink: 0 }}>
                     {comp.p2.scores.map((sc, i) => (
                       <span key={i}>{sc}</span>
                     ))}
@@ -891,12 +940,12 @@ export default function BracketsSchedule() {
         ) : (
           <div
             style={{
-              padding: "20px",
+              padding: "18px",
               textAlign: "center",
               background: "#f8f9fa",
-              borderRadius: "12px",
+              borderRadius: "10px",
               color: "#727987",
-              fontSize: "13.5px",
+              fontSize: "13px",
               fontWeight: "700",
             }}
           >

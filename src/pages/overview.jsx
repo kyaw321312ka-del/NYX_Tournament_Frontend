@@ -17,8 +17,9 @@ export default function Overview({ tournament }) {
       style={{
         display: "flex",
         flexDirection: "column",
-        gap: "24px",
+        gap: "16px",
         width: "100%",
+        boxSizing: "border-box",
       }}
     >
       {/* Tournament Overview & Official Rules */}
@@ -26,31 +27,31 @@ export default function Overview({ tournament }) {
         style={{
           background: "#fff",
           border: "1px solid #eef0f3",
-          borderRadius: "16px",
-          padding: "24px",
+          borderRadius: "14px",
+          padding: "18px 16px",
           boxShadow: "0 4px 16px rgba(20, 30, 50, 0.03)",
         }}
       >
         <h3
           style={{
-            fontSize: "18px",
+            fontSize: "16px",
             fontWeight: "800",
             color: "#172033",
-            margin: "0 0 12px",
+            margin: "0 0 10px",
             display: "flex",
             alignItems: "center",
-            gap: "10px",
+            gap: "8px",
           }}
         >
-          <InfoOutlined style={{ fontSize: 22, color: "#ae1236" }} /> Tournament
+          <InfoOutlined style={{ fontSize: 20, color: "#ae1236" }} /> Tournament
           Overview & Official Rules
         </h3>
         <p
           style={{
-            fontSize: "15px",
-            lineHeight: "1.75",
+            fontSize: "13.5px",
+            lineHeight: "1.65",
             color: "#4b5563",
-            margin: "0 0 20px",
+            margin: "0 0 16px",
           }}
         >
           {tournament.description}
@@ -59,8 +60,8 @@ export default function Overview({ tournament }) {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-            gap: "16px",
+            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+            gap: "12px",
           }}
         >
           {[
@@ -89,24 +90,24 @@ export default function Overview({ tournament }) {
               key={idx}
               style={{
                 display: "flex",
-                gap: "14px",
+                gap: "12px",
                 background: "#f8f9fa",
-                padding: "16px",
-                borderRadius: "12px",
+                padding: "14px",
+                borderRadius: "10px",
                 border: "1px solid #edf0f3",
               }}
             >
               <div
                 style={{
-                  width: "28px",
-                  height: "28px",
+                  width: "26px",
+                  height: "26px",
                   background: "#fde9ee",
                   color: "#ae1236",
-                  borderRadius: "8px",
+                  borderRadius: "6px",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  fontSize: "12px",
+                  fontSize: "11px",
                   fontWeight: "800",
                   flexShrink: 0,
                 }}
@@ -116,8 +117,8 @@ export default function Overview({ tournament }) {
               <div>
                 <h4
                   style={{
-                    margin: "0 0 4px",
-                    fontSize: "14px",
+                    margin: "0 0 3px",
+                    fontSize: "13.5px",
                     fontWeight: "800",
                     color: "#172033",
                   }}
@@ -127,9 +128,9 @@ export default function Overview({ tournament }) {
                 <p
                   style={{
                     margin: 0,
-                    fontSize: "12.5px",
+                    fontSize: "12px",
                     color: "#6b7280",
-                    lineHeight: "1.5",
+                    lineHeight: "1.45",
                   }}
                 >
                   {rule.desc}
@@ -145,8 +146,8 @@ export default function Overview({ tournament }) {
         style={{
           background: "#fff",
           border: "1px solid #eef0f3",
-          borderRadius: "16px",
-          padding: "24px",
+          borderRadius: "14px",
+          padding: "18px 16px",
           boxShadow: "0 4px 16px rgba(20, 30, 50, 0.03)",
         }}
       >
@@ -155,73 +156,72 @@ export default function Overview({ tournament }) {
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            marginBottom: "4px",
+            marginBottom: "12px",
             flexWrap: "wrap",
             gap: "8px",
           }}
         >
           <h3
             style={{
-              fontSize: "18px",
+              fontSize: "16px",
               fontWeight: "800",
               color: "#172033",
               margin: 0,
               display: "flex",
               alignItems: "center",
-              gap: "10px",
+              gap: "8px",
             }}
           >
-            <EmojiEventsOutlined style={{ fontSize: 22, color: "#ae1236" }} />{" "}
+            <EmojiEventsOutlined style={{ fontSize: 20, color: "#ae1236" }} />{" "}
             Leaderboard Points Allocation
           </h3>
           <span
             style={{
-              fontSize: "11px",
+              fontSize: "10.5px",
               fontWeight: "700",
               color: "#596170",
               background: "#f1f3f6",
-              padding: "4px 10px",
+              padding: "3px 8px",
               borderRadius: "6px",
             }}
           >
-            Pure Ranking Points • No Monetary Purse
+            Pure Ranking Points
           </span>
         </div>
-        <div style={{ height: "14px" }} />
 
         {[
           {
             rank: "Champion",
             desc: "Tournament Trophy + Gold Medallion",
             pts: "1,000 PTS",
-            icon: <EmojiEvents style={{ color: "#d97706", fontSize: 20 }} />,
+            icon: <EmojiEvents style={{ color: "#d97706", fontSize: 18 }} />,
           },
           {
             rank: "Runner-up",
             desc: "Finalist Silver Medallion",
             pts: "700 PTS",
-            icon: <MilitaryTech style={{ color: "#64748b", fontSize: 20 }} />,
+            icon: <MilitaryTech style={{ color: "#64748b", fontSize: 18 }} />,
           },
           {
             rank: "Semi-Finalists (3rd & 4th)",
             desc: "Bronze Medallion Placements",
             pts: "400 PTS",
             icon: (
-              <WorkspacePremium style={{ color: "#b45309", fontSize: 20 }} />
+              <WorkspacePremium style={{ color: "#b45309", fontSize: 18 }} />
             ),
           },
           {
             rank: "Quarter-Finalists",
             desc: "Top 8 Bracket Finish",
             pts: "200 PTS",
-            icon: <Star style={{ color: "#475569", fontSize: 18 }} />,
+            icon: <Star style={{ color: "#475569", fontSize: 16 }} />,
           },
           {
             rank: "Round of 16",
             desc: "Stage 1 Progression",
             pts: "100 PTS",
             icon: (
-              <RadioButtonChecked style={{ color: "#0284c7", fontSize: 16 }} />
+              <RadioButtonChecked style={{ color: "#0284c7", fontSize: 15 }} />
             ),
           },
           {
@@ -229,7 +229,7 @@ export default function Overview({ tournament }) {
             desc: "Verified Tournament Check-in",
             pts: "50 PTS",
             icon: (
-              <RadioButtonChecked style={{ color: "#0d9488", fontSize: 16 }} />
+              <RadioButtonChecked style={{ color: "#0d9488", fontSize: 15 }} />
             ),
           },
         ].map((item, idx) => (
@@ -239,39 +239,65 @@ export default function Overview({ tournament }) {
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
-              padding: "14px 0",
+              padding: "12px 0",
               borderBottom: idx === 5 ? "none" : "1px solid #f1f3f6",
+              gap: "8px",
             }}
           >
             <div
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: "12px",
-                fontSize: "14.5px",
+                gap: "10px",
+                fontSize: "13px",
                 fontWeight: "700",
                 color: "#172033",
+                flex: 1,
+                minWidth: 0,
               }}
             >
-              <span style={{ display: "flex", alignItems: "center" }}>
+              <span
+                style={{ display: "flex", alignItems: "center", flexShrink: 0 }}
+              >
                 {item.icon}
               </span>
-              {item.rank}{" "}
-              <span
+              <div
                 style={{
-                  fontSize: "13px",
-                  color: "#727987",
-                  fontWeight: "500",
+                  display: "flex",
+                  flexDirection: "column",
+                  minWidth: 0,
                 }}
               >
-                {item.desc}
-              </span>
+                <span
+                  style={{
+                    fontWeight: "800",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {item.rank}
+                </span>
+                <span
+                  style={{
+                    fontSize: "11px",
+                    color: "#727987",
+                    fontWeight: "500",
+                    whiteSpace: "nowrap",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                  }}
+                >
+                  {item.desc}
+                </span>
+              </div>
             </div>
             <div
               style={{
-                fontSize: "15.5px",
+                fontSize: "14px",
                 fontWeight: "900",
                 color: "#ae1236",
+                flexShrink: 0,
               }}
             >
               {item.pts}
@@ -285,8 +311,8 @@ export default function Overview({ tournament }) {
         style={{
           background: "#fff",
           border: "1px solid #eef0f3",
-          borderRadius: "16px",
-          padding: "24px",
+          borderRadius: "14px",
+          padding: "18px 16px",
           boxShadow: "0 4px 16px rgba(20, 30, 50, 0.03)",
         }}
       >
@@ -295,27 +321,27 @@ export default function Overview({ tournament }) {
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            marginBottom: "16px",
+            marginBottom: "12px",
           }}
         >
           <h3
             style={{
-              fontSize: "18px",
+              fontSize: "16px",
               fontWeight: "800",
               color: "#172033",
               margin: 0,
               display: "flex",
               alignItems: "center",
-              gap: "10px",
+              gap: "8px",
             }}
           >
             <FormatListNumberedOutlined
-              style={{ fontSize: 22, color: "#ae1236" }}
+              style={{ fontSize: 20, color: "#ae1236" }}
             />{" "}
-            Included Categories & Draw Caps
+            Included Categories
           </h3>
           <span
-            style={{ fontSize: "12px", fontWeight: "800", color: "#727987" }}
+            style={{ fontSize: "11px", fontWeight: "800", color: "#727987" }}
           >
             4 Events Active
           </span>
@@ -324,30 +350,30 @@ export default function Overview({ tournament }) {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-            gap: "16px",
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gap: "12px",
           }}
         >
           {[
             {
               title: "Men's Singles",
               code: "MS",
-              sub: "Individual Knockout • Single Player",
+              sub: "Individual Knockout",
             },
             {
               title: "Women's Singles",
               code: "WS",
-              sub: "Individual Knockout • Single Player",
+              sub: "Individual Knockout",
             },
             {
               title: "Men's Doubles",
               code: "MD",
-              sub: "Pairs Knockout • Two Players per Team",
+              sub: "Pairs Knockout",
             },
             {
               title: "Mixed Doubles",
               code: "XD",
-              sub: "Male + Female Tandem • Knockout",
+              sub: "Male + Female Tandem",
             },
           ].map((cat, idx) => (
             <div
@@ -355,8 +381,8 @@ export default function Overview({ tournament }) {
               style={{
                 background: "#f8f9fa",
                 border: "1px solid #eef0f3",
-                borderRadius: "12px",
-                padding: "18px",
+                borderRadius: "10px",
+                padding: "14px",
                 position: "relative",
               }}
             >
@@ -365,47 +391,35 @@ export default function Overview({ tournament }) {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
-                  marginBottom: "8px",
+                  marginBottom: "6px",
                 }}
               >
                 <span
                   style={{
                     background: "#172033",
                     color: "#fff",
-                    fontSize: "11px",
+                    fontSize: "10px",
                     fontWeight: "800",
-                    padding: "3px 8px",
-                    borderRadius: "6px",
+                    padding: "2px 6px",
+                    borderRadius: "4px",
                   }}
                 >
                   {cat.code}
                 </span>
-                <span
-                  style={{
-                    background: "#fde9ee",
-                    color: "#ae1236",
-                    fontSize: "11px",
-                    fontWeight: "800",
-                    padding: "3px 8px",
-                    borderRadius: "6px",
-                  }}
-                >
-                  {cat.left}
-                </span>
               </div>
               <h4
                 style={{
-                  fontSize: "15px",
+                  fontSize: "14px",
                   fontWeight: "800",
                   color: "#172033",
-                  margin: "0 0 4px",
+                  margin: "0 0 2px",
                 }}
               >
                 {cat.title}
               </h4>
               <p
                 style={{
-                  fontSize: "12px",
+                  fontSize: "11.5px",
                   color: "#6b7280",
                   margin: 0,
                   fontWeight: "500",
@@ -423,29 +437,29 @@ export default function Overview({ tournament }) {
         style={{
           background: "#fff",
           border: "1px solid #eef0f3",
-          borderRadius: "16px",
-          padding: "24px",
+          borderRadius: "14px",
+          padding: "18px 16px",
           boxShadow: "0 4px 16px rgba(20, 30, 50, 0.03)",
         }}
       >
         <h3
           style={{
-            fontSize: "18px",
+            fontSize: "16px",
             fontWeight: "800",
             color: "#172033",
-            margin: "0 0 10px",
+            margin: "0 0 8px",
             display: "flex",
             alignItems: "center",
-            gap: "10px",
+            gap: "8px",
           }}
         >
-          <LocationOnOutlined style={{ fontSize: 22, color: "#ae1236" }} />{" "}
+          <LocationOnOutlined style={{ fontSize: 20, color: "#ae1236" }} />{" "}
           Location Address
         </h3>
         <p
           style={{
             margin: 0,
-            fontSize: "14.5px",
+            fontSize: "13.5px",
             color: "#4b5563",
             fontWeight: "600",
           }}

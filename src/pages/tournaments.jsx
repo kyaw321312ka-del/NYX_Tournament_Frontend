@@ -600,19 +600,14 @@ function Tournaments() {
           color: #ae1236;
         }
 
-        .tournament-card-actions {
-          display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 10px;
-        }
-
+      
         .tournament-details-button,
         .tournament-enroll-button {
           display: flex;
           align-items: center;
           justify-content: center;
           gap: 6px;
-          min-width: 0;
+          min-width: 100%;
           min-height: 44px;
           padding: 8px;
           border: 1px solid transparent;
@@ -903,7 +898,7 @@ function Tournaments() {
         }
 
         @media (max-width: 1050px) {
-          .tournament-page { padding: 28px 20px 50px; }
+          .tournament-page { padding: 28px 5px 50px; }
           .tournament-grid { gap: 20px; }
           .tournament-card-image-wrapper { height: 200px; }
           .tournament-tier-badge { max-width: 50%; font-size: 10px; }
@@ -917,7 +912,7 @@ function Tournaments() {
             grid-template-columns: 1fr;
             gap: 20px;
           }
-          .tournament-page { padding: 24px 16px 40px; }
+          .tournament-page { padding: 24px 5px 40px; }
           .tournament-header { align-items: flex-start; gap: 16px; flex-direction: column; }
           .tournament-main-title { font-size: 32px; }
           .tournament-description { font-size: 14px; }
@@ -937,8 +932,8 @@ function Tournaments() {
         }
 
         @media (max-width: 480px) {
-          .tournament-page { padding: 20px 12px 32px; }
-          .tournament-filters { padding: 13px; }
+          .tournament-page { padding: 20px 5px 32px; }
+          .tournament-filters { padding: 11px; }
           .tournament-category-section { flex-direction: column; gap: 9px; }
           .tournament-category-label { padding-top: 0; }
           .tournament-category-list { width: 100%; gap: 7px; }
@@ -1203,19 +1198,11 @@ function Tournaments() {
 
                     <div className="tournament-card-actions">
                       <button
-                        className="tournament-details-button"
+                        className="tournament-enroll-button"
                         onClick={() => handleViewDetails(item)}
                       >
                         View Details
                         <ArrowForward />
-                      </button>
-
-                      <button
-                        className="tournament-enroll-button"
-                        onClick={() => handleEnroll(item)}
-                      >
-                        <PersonAddAlt1Outlined />
-                        Enroll Now
                       </button>
                     </div>
                   </div>
