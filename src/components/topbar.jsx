@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import HomeIcon from "@mui/icons-material/Home";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
@@ -6,10 +6,12 @@ import ScoreboardIcon from "@mui/icons-material/Scoreboard";
 import LeaderboardIcon from "@mui/icons-material/Leaderboard";
 import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
 import LogoImg from "../assets/hero.png";
+import { useAuth } from "../features/auth/useAuth";
 
 export default function Topbar() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { session } = useAuth();
   const [showName, setShowName] = useState(false);
 
   const isTournamentDetails = location.pathname.startsWith(
@@ -207,7 +209,40 @@ export default function Topbar() {
           )}
 
           {/* ညာဘက်ခြမ်း: Profile Picture (Admin မျက်နှာပြင်နှင့် Auth မျက်နှာပြင်များတွင် မပေါ်စေရန် ပြင်ဆင်ထားသည်) */}
-          {!isAdminPage && !isAuthPage && (
+          {!isAdminPage && !isAuthPage && !session && (
+            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <Link
+                to="/login"
+                style={{
+                  color: "#ffffff",
+                  fontSize: "12px",
+                  fontWeight: "700",
+                  padding: "8px 10px",
+                  textDecoration: "none",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Login
+              </Link>
+              <Link
+                to="/signin-1"
+                style={{
+                  backgroundColor: "#ff3366",
+                  borderRadius: "7px",
+                  color: "#ffffff",
+                  fontSize: "12px",
+                  fontWeight: "700",
+                  padding: "8px 12px",
+                  textDecoration: "none",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                Register
+              </Link>
+            </div>
+          )}
+
+          {!isAdminPage && !isAuthPage && session && (
             <div
               onClick={() => navigate("/profile")}
               onMouseEnter={() => setShowName(true)}

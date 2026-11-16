@@ -18,6 +18,7 @@ import Signin2 from "./pages/signin2";
 import Signin3 from "./pages/siginin3";
 import Login from "./pages/login";
 import AdminDashboard from "./admin/adminDashboard";
+import { AuthProvider } from "./features/auth/AuthProvider";
 
 // Main layout component to conditionally hide Topbar & Footer
 function Layout() {
@@ -63,8 +64,10 @@ function Layout() {
 
 export default function App() {
   return (
-    <Router>
-      <Layout />
-    </Router>
+    <AuthProvider>
+      <Router>
+        <Layout />
+      </Router>
+    </AuthProvider>
   );
 }

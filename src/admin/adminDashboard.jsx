@@ -1,5 +1,4 @@
-import React, { useState } from "react";
-import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 
 // Pages Import (သသင့်ရဲ့ folder structure အတိုင်း path များကို စစ်ပါ)
 import ForgotPassword from "./ForgotPassword";
@@ -16,11 +15,16 @@ import SettingsPage from "./SettingsPage";
 
 // Sidebar Component
 import Sidebar from "./AdminSidebar";
+import { useAuth } from "../features/auth/useAuth";
 
 // Protected Route Validation Component
-function ProtectedRoute({ isAuthenticated, children }) {
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+function ProtectedRoute({ session, children }) {
+  const location = useLocation();
+  if (!session) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+  if (session.user.role.toLowerCase() !== "admin") {
+    return <Navigate to="/" replace />;
   }
   return children;
 }
@@ -155,22 +159,31 @@ function DashboardLayout({
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
+  const { session, signOut } = useAuth();
 
-  // Authentication state management using localStorage
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return localStorage.getItem("nyx_auth") === "true";
-  });
-
-  const handleLogout = () => {
-    setIsAuthenticated(false);
-    localStorage.removeItem("nyx_auth");
-    navigate("/login");
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      navigate("/login", { replace: true });
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "The server logout request failed.";
+      navigate("/login", {
+        replace: true,
+        state: {
+          logoutError: `You were signed out on this device, but server logout failed: ${message}`,
+        },
+      });
+    }
   };
 
   return (
     <Routes>
       {/* Forgot Password Route */}
-      <Route path="forgot-password" element={<ForgotPassword />} />
+      <Route
+        path="forgot-password"
+        element={<ForgotPassword onBackToLogin={() => navigate("/login")} />}
+      />
 
       {/* ================= PROTECTED DASHBOARD ROUTES ================= */}
 
@@ -178,7 +191,7 @@ export default function AdminDashboard() {
       <Route
         path="overview"
         element={
-          <ProtectedRoute isAuthenticated={isAuthenticated}>
+          <ProtectedRoute session={session}>
             <DashboardLayout
               activeTitle="Dashboard Overview"
               activeSubtitle="Official Master Console • Live Match Window"
@@ -194,7 +207,7 @@ export default function AdminDashboard() {
       <Route
         path="tournament"
         element={
-          <ProtectedRoute isAuthenticated={isAuthenticated}>
+          <ProtectedRoute session={session}>
             <DashboardLayout
               activeTitle="Tournament Management"
               activeSubtitle="Manage, create, and oversee all badminton tournaments across the platform."
@@ -210,7 +223,7 @@ export default function AdminDashboard() {
       <Route
         path="tournament/create"
         element={
-          <ProtectedRoute isAuthenticated={isAuthenticated}>
+          <ProtectedRoute session={session}>
             <DashboardLayout onLogout={handleLogout} showHeader={false}>
               <CreateTournamentPage />
             </DashboardLayout>
@@ -222,7 +235,7 @@ export default function AdminDashboard() {
       <Route
         path="tournament/:id"
         element={
-          <ProtectedRoute isAuthenticated={isAuthenticated}>
+          <ProtectedRoute session={session}>
             <DashboardLayout onLogout={handleLogout} showHeader={false}>
               <TournamentDetailsPage />
             </DashboardLayout>
@@ -234,7 +247,7 @@ export default function AdminDashboard() {
       <Route
         path="enrollments"
         element={
-          <ProtectedRoute isAuthenticated={isAuthenticated}>
+          <ProtectedRoute session={session}>
             <DashboardLayout
               activeTitle="Player Tournament Enrollments"
               activeSubtitle="Review athlete registration requests, inspect payment slips, and manage approval statuses."
@@ -250,7 +263,7 @@ export default function AdminDashboard() {
       <Route
         path="matches"
         element={
-          <ProtectedRoute isAuthenticated={isAuthenticated}>
+          <ProtectedRoute session={session}>
             <DashboardLayout
               activeTitle="Tournament Matches & Bracket Management"
               activeSubtitle="Configure knockout brackets, assign player pairings, schedule match courts, and input official set scores."
@@ -266,7 +279,7 @@ export default function AdminDashboard() {
       <Route
         path="players"
         element={
-          <ProtectedRoute isAuthenticated={isAuthenticated}>
+          <ProtectedRoute session={session}>
             <DashboardLayout
               activeTitle="Registered Players Directory"
               activeSubtitle="Manage registered athlete profiles, account statuses, and view complete personal and tournament records."
@@ -282,7 +295,7 @@ export default function AdminDashboard() {
       <Route
         path="players/:id"
         element={
-          <ProtectedRoute isAuthenticated={isAuthenticated}>
+          <ProtectedRoute session={session}>
             <DashboardLayout onLogout={handleLogout} showHeader={false}>
               <PlayerDetailsPage />
             </DashboardLayout>
@@ -294,7 +307,7 @@ export default function AdminDashboard() {
       <Route
         path="ranking"
         element={
-          <ProtectedRoute isAuthenticated={isAuthenticated}>
+          <ProtectedRoute session={session}>
             <DashboardLayout
               activeTitle="Points Allocation & Leaderboard Management"
               activeSubtitle="Distribute manual tournament points to approved players and oversee live top 10 rankings."
@@ -310,7 +323,7 @@ export default function AdminDashboard() {
       <Route
         path="settings"
         element={
-          <ProtectedRoute isAuthenticated={isAuthenticated}>
+          <ProtectedRoute session={session}>
             <DashboardLayout
               activeTitle="System & Website Settings"
               activeSubtitle="Configure global website information, payment gateway accounts, and administrator security credentials."

@@ -1,29 +1,46 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
 import VpnKeyOutlinedIcon from "@mui/icons-material/VpnKeyOutlined";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import SecurityIcon from "@mui/icons-material/Security";
 import BackgroundImg from "../assets/Background.png";
+import { useAuth } from "../features/auth/useAuth";
 
 export default function Login({ onForgotPassword }) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { signIn } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState(
+    location.state?.logoutError || "",
+  );
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (email && password) {
-      if (email.toLowerCase() === "admin@nyxbadminton.com") {
-        // Admin authentication
-        localStorage.setItem("nyx_auth", "true");
-        navigate("/admin/overview");
+    setIsSubmitting(true);
+    setErrorMessage("");
+
+    try {
+      const session = await signIn({ email: email.trim(), password });
+      if (session.user.role.toLowerCase() === "admin") {
+        navigate(location.state?.from?.pathname || "/admin/overview", {
+          replace: true,
+        });
       } else {
-        navigate("/");
+        navigate("/", { replace: true });
       }
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "Unable to sign in.",
+      );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -163,7 +180,7 @@ export default function Login({ onForgotPassword }) {
                     <EmailOutlinedIcon style={{ fontSize: "18px" }} />
                   </span>
                   <input
-                    type="text"
+                    type="email"
                     required
                     placeholder="admin@nyxbadminton.com or user email"
                     value={email}
@@ -280,7 +297,10 @@ export default function Login({ onForgotPassword }) {
                 </label>
                 <button
                   type="button"
-                  onClick={onForgotPassword}
+                  onClick={
+                    onForgotPassword ||
+                    (() => navigate("/admin/forgot-password"))
+                  }
                   style={{
                     color: "#be123c",
                     background: "none",
@@ -315,8 +335,22 @@ export default function Login({ onForgotPassword }) {
                   boxShadow: "0 4px 6px -1px rgba(190, 18, 60, 0.2)",
                 }}
               >
-                <span>➜</span> LOGIN TO PORTAL
+                <span>➜</span>{" "}
+                {isSubmitting ? "SIGNING IN..." : "LOGIN TO PORTAL"}
               </button>
+              {errorMessage && (
+                <p
+                  role="alert"
+                  style={{
+                    color: "#b91c1c",
+                    fontSize: "12px",
+                    lineHeight: "1.5",
+                    margin: "0",
+                  }}
+                >
+                  {errorMessage}
+                </p>
+              )}
             </form>
 
             {/* Sign Up / Register Link Section */}
