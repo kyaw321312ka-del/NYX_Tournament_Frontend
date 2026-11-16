@@ -1,10 +1,9 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import EmojiEventsRoundedIcon from "@mui/icons-material/EmojiEventsRounded";
 import VerifiedRoundedIcon from "@mui/icons-material/VerifiedRounded";
 import ShieldRoundedIcon from "@mui/icons-material/ShieldRounded";
-import DescriptionRoundedIcon from "@mui/icons-material/DescriptionRounded";
 import ReceiptLongRoundedIcon from "@mui/icons-material/ReceiptLongRounded";
 import LockResetRoundedIcon from "@mui/icons-material/LockResetRounded";
 import LogoutRoundedIcon from "@mui/icons-material/LogoutRounded";
@@ -14,19 +13,12 @@ import OpenInNewRoundedIcon from "@mui/icons-material/OpenInNewRounded";
 import CalendarMonthRoundedIcon from "@mui/icons-material/CalendarMonthRounded";
 import SportsTennisRoundedIcon from "@mui/icons-material/SportsTennisRounded";
 import CheckCircleRoundedIcon from "@mui/icons-material/CheckCircleRounded";
-import PhotoCameraRoundedIcon from "@mui/icons-material/PhotoCameraRounded";
 import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
 import ImageRoundedIcon from "@mui/icons-material/ImageRounded";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined";
-
-const initialPlayer = {
-  fullName: "Min Thant",
-  phone: "+95 9 450 123 789",
-  email: "minthant@nyxbadminton.com",
-  club: "Yangon Badminton Club",
-  address: "No. 45, Pyay Road, Mayangone Township, Yangon",
-};
+import { useAuth } from "../features/auth/useAuth";
+import { resolveApiAssetUrl } from "../core/api/apiClient";
 
 const initialCategories = ["U-13 Singles", "U-13 Doubles", "U-15 Singles"];
 
@@ -93,21 +85,25 @@ const paymentSlipsHistory = [
 
 export default function Profile() {
   const navigate = useNavigate();
+  const { session, refreshUser } = useAuth();
+  const user = session?.user;
+  const isAuthenticated = Boolean(session?.token);
   const [loading, setLoading] = useState(true);
 
+  const initialPlayer = {
+    fullName: user?.name || "",
+    phone: user?.phno || "",
+    email: user?.email || "",
+    gender: user?.gender || "",
+    club: "",
+    address: "",
+  };
   const [player, setPlayer] = useState(initialPlayer);
   const [categories, setCategories] = useState(initialCategories);
 
-  const [profileImage, setProfileImage] = useState(() => {
-    try {
-      return (
-        localStorage.getItem("mt-profile-image") ||
-        "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80"
-      );
-    } catch {
-      return "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80";
-    }
-  });
+  const [profileImage, setProfileImage] = useState(() =>
+    resolveApiAssetUrl(user?.profileImageUrl),
+  );
 
   const [showImageMenu, setShowImageMenu] = useState(false);
   const [message, setMessage] = useState("");
@@ -130,9 +126,47 @@ export default function Profile() {
   const [selectedDocument, setSelectedDocument] = useState(null);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => setLoading(false), 800);
-    return () => window.clearTimeout(timer);
-  }, []);
+    let cancelled = false;
+
+    const loadProfile = async () => {
+      if (!isAuthenticated) {
+        navigate("/login", { replace: true });
+        return;
+      }
+
+      setLoading(true);
+      try {
+        const currentUser = await refreshUser();
+        if (cancelled) return;
+
+        setPlayer((previous) => ({
+          ...previous,
+          fullName: currentUser.name || "",
+          phone: currentUser.phno || "",
+          email: currentUser.email || "",
+          gender: currentUser.gender || "",
+        }));
+        setProfileImage(resolveApiAssetUrl(currentUser.profileImageUrl));
+      } catch (error) {
+        if (!cancelled) {
+          setMessage(
+            error instanceof Error
+              ? `Unable to load profile: ${error.message}`
+              : "Unable to load profile.",
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadProfile();
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, navigate, refreshUser]);
 
   const updateField = (field, value) => {
     setPlayer((prev) => ({ ...prev, [field]: value }));
@@ -280,7 +314,13 @@ export default function Profile() {
                 <span
                   style={{ color: "#fff", fontSize: "32px", fontWeight: "900" }}
                 >
-                  MT
+                  {(player.fullName || "Player")
+                    .split(/\s+/)
+                    .filter(Boolean)
+                    .map((part) => part[0])
+                    .join("")
+                    .slice(0, 2)
+                    .toUpperCase()}
                 </span>
               )}
             </div>
@@ -388,7 +428,7 @@ export default function Profile() {
             }}
           >
             <ShieldRoundedIcon style={{ fontSize: "16px", color: "#ae1236" }} />{" "}
-            {player.club}
+            {player.club || `${user?.role || "Player"} account`}
           </div>
 
           <div
@@ -608,6 +648,34 @@ export default function Profile() {
                 type="text"
                 value={player.fullName}
                 onChange={(e) => updateField("fullName", e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "12px 14px",
+                  borderRadius: "10px",
+                  border: "1px solid #cbd5e1",
+                  fontSize: "14px",
+                  fontWeight: "700",
+                  outline: "none",
+                  boxSizing: "border-box",
+                }}
+              />
+            </div>
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "12px",
+                  fontWeight: "800",
+                  color: "#334155",
+                  marginBottom: "6px",
+                }}
+              >
+                Gender
+              </label>
+              <input
+                type="text"
+                value={player.gender}
+                onChange={(e) => updateField("gender", e.target.value)}
                 style={{
                   width: "100%",
                   padding: "12px 14px",

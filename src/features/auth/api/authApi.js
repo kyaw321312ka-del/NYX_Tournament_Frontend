@@ -30,3 +30,19 @@ export async function logout() {
     method: "POST",
   });
 }
+
+export async function getCurrentUser() {
+  const response = await apiRequest("/auth/me");
+  if (
+    response?.success !== true ||
+    !response.data?.user ||
+    typeof response.data.user.role !== "string"
+  ) {
+    const message =
+      (typeof response?.message === "string" && response.message) ||
+      "The profile response did not contain valid user data.";
+    throw new Error(message);
+  }
+
+  return response.data.user;
+}

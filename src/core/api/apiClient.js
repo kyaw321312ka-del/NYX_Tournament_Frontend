@@ -6,6 +6,16 @@ import {
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace(/\/+$/, "");
 
+export function resolveApiAssetUrl(assetPath) {
+  if (!assetPath) {
+    return "";
+  }
+  if (/^https?:\/\//i.test(assetPath) || !API_BASE_URL) {
+    return assetPath;
+  }
+  return new URL(assetPath, `${API_BASE_URL}/`).toString();
+}
+
 export async function apiRequest(
   path,
   { authenticated = true, headers: requestHeaders, ...options } = {},

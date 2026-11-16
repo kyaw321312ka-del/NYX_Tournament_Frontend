@@ -7,12 +7,22 @@ import LeaderboardIcon from "@mui/icons-material/Leaderboard";
 import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
 import LogoImg from "../assets/hero.png";
 import { useAuth } from "../features/auth/useAuth";
+import { resolveApiAssetUrl } from "../core/api/apiClient";
 
 export default function Topbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { session } = useAuth();
   const [showName, setShowName] = useState(false);
+  const displayName = session?.user?.name || "Player";
+  const profileImageUrl = resolveApiAssetUrl(session?.user?.profileImageUrl);
+  const initials = displayName
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
 
   const isTournamentDetails = location.pathname.startsWith(
     "/tournament-details",
@@ -275,11 +285,19 @@ export default function Topbar() {
                   overflow: "hidden",
                 }}
               >
-                <img
-                  src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80"
-                  alt="Min Thant"
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                />
+                {profileImageUrl ? (
+                  <img
+                    src={profileImageUrl}
+                    alt={displayName}
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                    }}
+                  />
+                ) : (
+                  initials
+                )}
               </div>
 
               {showName && (
@@ -292,7 +310,7 @@ export default function Topbar() {
                     whiteSpace: "nowrap",
                   }}
                 >
-                  Min Thant
+                  {displayName}
                 </span>
               )}
             </div>

@@ -1,6 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import AuthContext from "./AuthContext";
-import { login as loginRequest, logout as logoutRequest } from "./api/authApi";
+import {
+  getCurrentUser as getCurrentUserRequest,
+  login as loginRequest,
+  logout as logoutRequest,
+} from "./api/authApi";
 import {
   clearSession,
   readSession,
@@ -34,9 +38,22 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  const accessToken = session?.token;
+  const refreshUser = useCallback(async () => {
+    if (!accessToken) {
+      throw new Error("Sign in to load your profile.");
+    }
+
+    const user = await getCurrentUserRequest();
+    const nextSession = { token: accessToken, user };
+    saveSession(nextSession);
+    setSession(nextSession);
+    return user;
+  }, [accessToken]);
+
   const value = useMemo(
-    () => ({ session, signIn, signOut }),
-    [session, signIn, signOut],
+    () => ({ session, signIn, signOut, refreshUser }),
+    [session, signIn, signOut, refreshUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
