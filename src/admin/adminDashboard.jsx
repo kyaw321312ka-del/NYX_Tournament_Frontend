@@ -164,16 +164,10 @@ export default function AdminDashboard() {
   const handleLogout = async () => {
     try {
       await signOut();
-      navigate("/login", { replace: true });
     } catch (error) {
-      const message =
-        error instanceof Error ? error.message : "The server logout request failed.";
-      navigate("/login", {
-        replace: true,
-        state: {
-          logoutError: `You were signed out on this device, but server logout failed: ${message}`,
-        },
-      });
+      console.error("Server logout failed after clearing the local session.", error);
+    } finally {
+      navigate("/", { replace: true });
     }
   };
 

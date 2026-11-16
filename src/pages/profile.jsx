@@ -2054,7 +2054,7 @@ export default function Profile() {
               </button>
               <button
                 type="button"
-                onClick={() => navigate("/login")}
+                onClick={() => navigate("/")}
                 style={{
                   flex: 1,
                   background: "#dc2626",

@@ -62,8 +62,9 @@ export default function AdminSidebar({ onLogout }) {
   const handleLogoutClick = () => {
     if (onLogout) {
       onLogout();
+      return;
     }
-    navigate("/login");
+    navigate("/");
   };
 
   return (
