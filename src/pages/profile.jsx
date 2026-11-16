@@ -85,7 +85,7 @@ const paymentSlipsHistory = [
 
 export default function Profile() {
   const navigate = useNavigate();
-  const { session, refreshUser } = useAuth();
+  const { session, refreshUser, signOut } = useAuth();
   const user = session?.user;
   const isAuthenticated = Boolean(session?.token);
   const [loading, setLoading] = useState(true);
@@ -123,6 +123,7 @@ export default function Profile() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState(null);
 
   useEffect(() => {
@@ -130,7 +131,7 @@ export default function Profile() {
 
     const loadProfile = async () => {
       if (!isAuthenticated) {
-        navigate("/login", { replace: true });
+        navigate("/", { replace: true });
         return;
       }
 
@@ -167,6 +168,17 @@ export default function Profile() {
       cancelled = true;
     };
   }, [isAuthenticated, navigate, refreshUser]);
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true);
+    try {
+      await signOut();
+    } catch (error) {
+      console.error("Server logout failed after clearing the local session.", error);
+    } finally {
+      navigate("/", { replace: true });
+    }
+  };
 
   const updateField = (field, value) => {
     setPlayer((prev) => ({ ...prev, [field]: value }));
@@ -2122,7 +2134,8 @@ export default function Profile() {
               </button>
               <button
                 type="button"
-                onClick={() => navigate("/")}
+                onClick={handleLogout}
+                disabled={isLoggingOut}
                 style={{
                   flex: 1,
                   background: "#dc2626",
@@ -2131,10 +2144,10 @@ export default function Profile() {
                   padding: "12px",
                   borderRadius: "10px",
                   fontWeight: "900",
-                  cursor: "pointer",
+                  cursor: isLoggingOut ? "wait" : "pointer",
                 }}
               >
-                Log Out
+                {isLoggingOut ? "Logging Out..." : "Log Out"}
               </button>
             </div>
           </div>

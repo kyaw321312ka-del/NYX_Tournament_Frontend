@@ -26,9 +26,18 @@ export async function login(credentials) {
 }
 
 export async function logout() {
-  return apiRequest("/auth/logout", {
+  const response = await apiRequest("/auth/logout", {
     method: "POST",
   });
+
+  if (response?.success !== true) {
+    throw new Error(
+      (typeof response?.message === "string" && response.message) ||
+        "The server did not confirm logout.",
+    );
+  }
+
+  return response;
 }
 
 export async function getCurrentUser() {
