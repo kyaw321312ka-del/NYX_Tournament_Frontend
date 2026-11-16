@@ -11,7 +11,7 @@ export async function apiRequest(
   { authenticated = true, headers: requestHeaders, ...options } = {},
 ) {
   if (!API_BASE_URL) {
-    throw new Error("Set VITE_API_BASE_URL in your local environment.");
+    throw new Error("Set VITE_API_BASE_URL in the build environment.");
   }
 
   const headers = new Headers(requestHeaders);
