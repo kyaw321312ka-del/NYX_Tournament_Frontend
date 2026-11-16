@@ -1,16 +1,35 @@
-import React, { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import CloudUploadOutlinedIcon from "@mui/icons-material/CloudUploadOutlined";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutlined";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
+import { createTournament } from "../features/tournaments/api/tournamentApi";
+
+function parseNumericField(value) {
+  const normalized = String(value)
+    .trim()
+    .replace(/,/g, "")
+    .replace(/\s*(PTS|MMK)$/i, "");
+  const number = Number(normalized);
+  return normalized && Number.isFinite(number) ? number : null;
+}
+
+function getPairingType(category) {
+  const code = category.code.trim().toUpperCase();
+  const name = category.name.toLowerCase();
+  if (code === "XD" || name.includes("mixed")) return "mixed_doubles";
+  if (["MD", "WD"].includes(code) || name.includes("doubles")) return "doubles";
+  return "singles";
+}
 
 export default function CreateTournamentPage() {
   const navigate = useNavigate();
 
   // Banner Image Preview State & Validation Error
   const [bannerImage, setBannerImage] = useState(null);
+  const [bannerFile, setBannerFile] = useState(null);
 
   // Form Field States for Basic Details & Venue
   const [title, setTitle] = useState("");
@@ -39,26 +58,36 @@ export default function CreateTournamentPage() {
       criteria: "",
       pointsPool: "",
       shuttle: "",
+      shuttleSpeed: "",
+      pointTiers: [
+        { place: "Champion", points: "" },
+        { place: "Runner-up", points: "" },
+      ],
     },
-  ]);
-
-  // Leaderboard Points Tiers State
-  const [pointTiers, setPointTiers] = useState([
-    { place: "", points: "" },
-    { place: "", points: "" },
-    { place: "", points: "" },
   ]);
 
   // Validation Error Trigger State
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submissionError, setSubmissionError] = useState("");
 
   // Success Modal State
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  useEffect(
+    () => () => {
+      if (bannerImage?.startsWith("blob:")) {
+        URL.revokeObjectURL(bannerImage);
+      }
+    },
+    [bannerImage],
+  );
 
   // Handle banner image selection and live preview
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
+      setBannerFile(file);
       setBannerImage(URL.createObjectURL(file));
     }
   };
@@ -83,6 +112,11 @@ export default function CreateTournamentPage() {
         criteria: "",
         pointsPool: "",
         shuttle: "",
+        shuttleSpeed: "",
+        pointTiers: [
+          { place: "Champion", points: "" },
+          { place: "Runner-up", points: "" },
+        ],
       },
     ]);
   };
@@ -91,27 +125,49 @@ export default function CreateTournamentPage() {
     setCategories(categories.filter((_, i) => i !== index));
   };
 
-  const handleAddPointTier = () => {
-    const nextRank = pointTiers.length + 1;
-    let placeLabel = `${nextRank}th Place (Top ${nextRank})`;
-    if (nextRank === 4) placeLabel = "4th Place (Top 4)";
-    else if (nextRank === 5) placeLabel = "5th Place (Top 5)";
-    else if (nextRank === 6) placeLabel = "6th Place (Top 6)";
-
-    setPointTiers([...pointTiers, { place: placeLabel, points: "" }]);
+  const handleAddPointTier = (categoryIndex) => {
+    setCategories((current) =>
+      current.map((category, index) =>
+        index === categoryIndex
+          ? {
+              ...category,
+              pointTiers: [
+                ...category.pointTiers,
+                {
+                  place: `Place ${category.pointTiers.length + 1}`,
+                  points: "",
+                },
+              ],
+            }
+          : category,
+      ),
+    );
   };
 
-  const handleRemovePointTier = (index) => {
-    setPointTiers(pointTiers.filter((_, i) => i !== index));
+  const handleRemovePointTier = (categoryIndex, tierIndex) => {
+    setCategories((current) =>
+      current.map((category, index) =>
+        index === categoryIndex
+          ? {
+              ...category,
+              pointTiers: category.pointTiers.filter(
+                (_, currentTierIndex) => currentTierIndex !== tierIndex,
+              ),
+            }
+          : category,
+      ),
+    );
   };
 
   // Comprehensive validation across all required fields including image, overview, points pool, and category extra fields
-  const handlePublish = (e) => {
+  const handlePublish = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
     setAttemptedSubmit(true);
+    setSubmissionError("");
 
     // 1. Validate Banner Image
-    if (!bannerImage) return;
+    if (!bannerFile) return;
 
     // 2. Validate Basic Details
     if (!title || !fee || !startDate || !endDate || !pointsPool || !description)
@@ -127,17 +183,93 @@ export default function CreateTournamentPage() {
 
     // 5. Validate Event Categories (including criteria, points pool, and shuttle)
     for (let c of categories) {
-      if (!c.code || !c.name || !c.criteria || !c.pointsPool || !c.shuttle)
+      if (
+        !c.code ||
+        !c.name ||
+        !c.criteria ||
+        !c.pointsPool ||
+        !c.shuttle ||
+        !c.shuttleSpeed ||
+        c.pointTiers.length === 0 ||
+        c.pointTiers.some((tier) => !tier.place || !tier.points)
+      )
         return;
     }
 
-    // 6. Validate Leaderboard Points Tiers
-    for (let p of pointTiers) {
-      if (!p.place || !p.points) return;
+    const numericValues = [
+      fee,
+      pointsPool,
+      ...categories.flatMap((category) => [
+        category.pointsPool,
+        ...category.pointTiers.map((tier) => tier.points),
+      ]),
+    ].map(parseNumericField);
+    if (numericValues.some((value) => value === null)) {
+      setSubmissionError(
+        "Entry fees and ranking points must be valid numbers.",
+      );
+      return;
     }
 
-    // If all validations pass
-    setShowSuccessModal(true);
+    const [entryFee, rankingPointsPool] = numericValues;
+    let categoryNumberIndex = 2;
+    const tournament = {
+      title: title.trim(),
+      description: description.trim(),
+      startDate,
+      endDate,
+      bannerUrl: null,
+      rankingPointsPool,
+      venues: [{ venueName: courtName.trim(), address: address.trim() }],
+      rules: rules.map((rule, sortOrder) => ({
+        title: rule.title.trim(),
+        description: rule.description.trim(),
+        sortOrder,
+      })),
+      categories: categories.map((category) => {
+        const categoryPointsPool = numericValues[categoryNumberIndex++];
+        const categoryStatus =
+          regStatus === "Registration Closed"
+            ? "closed"
+            : category.status === "Enrollment Closed"
+              ? "closed"
+              : category.status === "Enrollment Open"
+                ? "open"
+                : "closing_soon";
+        const seedCount = Number.parseInt(category.seeds, 10) || 0;
+
+        return {
+          categoryCode: category.code.trim().toUpperCase(),
+          categoryName: category.name.trim(),
+          pairingType: getPairingType(category),
+          seedCount,
+          matchFormat: category.format,
+          entryFee,
+          entryStatus: categoryStatus,
+          eligibilityCriteria: category.criteria.trim(),
+          pointsPool: categoryPointsPool,
+          shuttleName: category.shuttle.trim(),
+          shuttleSpeed: category.shuttleSpeed.trim(),
+          pointTiers: category.pointTiers.map((tier, tierIndex) => ({
+            position: tierIndex + 1,
+            label: tier.place.trim(),
+            points: numericValues[categoryNumberIndex++],
+          })),
+        };
+      }),
+    };
+
+    setIsSubmitting(true);
+    try {
+      await createTournament(tournament, bannerFile);
+      setShowSuccessModal(true);
+    } catch (error) {
+      setSubmissionError(
+        error instanceof Error ? error.message : "Unable to publish tournament.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -314,7 +446,11 @@ export default function CreateTournamentPage() {
                   }}
                 />
                 <button
-                  onClick={() => setBannerImage(null)}
+                  type="button"
+                  onClick={() => {
+                    setBannerImage(null);
+                    setBannerFile(null);
+                  }}
                   style={{
                     position: "absolute",
                     top: "10px",
@@ -1602,186 +1738,212 @@ export default function CreateTournamentPage() {
                   )}
                 </div>
               </div>
-            </div>
-          ))}
-        </div>
 
-        {/* SECTION 5: Leaderboard Points Allocation */}
-        <div
-          style={{
-            backgroundColor: "#ffffff",
-            borderRadius: "14px",
-            border: "1px solid #e2e8f0",
-            padding: "36px",
-          }}
-        >
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "18px",
-              borderBottom: "1px solid #f1f5f9",
-              paddingBottom: "14px",
-            }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-              <span
-                style={{
-                  width: "28px",
-                  height: "28px",
-                  backgroundColor: "#0f172a",
-                  color: "#fff",
-                  borderRadius: "50%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "13px",
-                  fontWeight: "bold",
-                }}
-              >
-                5
-              </span>
-              <h2
-                style={{
-                  fontSize: "16px",
-                  fontWeight: "bold",
-                  color: "#0f172a",
-                  margin: "0",
-                }}
-              >
-                Leaderboard Points Allocation
-              </h2>
-            </div>
-            <button
-              onClick={handleAddPointTier}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                padding: "10px 16px",
-                backgroundColor: "#0f172a",
-                color: "#fff",
-                border: "none",
-                borderRadius: "8px",
-                fontSize: "12px",
-                fontWeight: "bold",
-                cursor: "pointer",
-              }}
-            >
-              <AddIcon style={{ fontSize: "16px" }} /> Add Point Tier
-            </button>
-          </div>
-          <p
-            style={{ fontSize: "12px", color: "#64748b", margin: "0 0 20px 0" }}
-          >
-            Define point distributions awarded toward the official NYX National
-            Master Ranking.
-          </p>
-
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "1fr 1fr",
-              gap: "20px",
-            }}
-          >
-            {pointTiers.map((tier, idx) => (
               <div
-                key={idx}
                 style={{
-                  backgroundColor: "#f8fafc",
-                  border: "1px solid #e2e8f0",
-                  borderRadius: "12px",
-                  padding: "20px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  gap: "14px",
+                  marginTop: "20px",
+                  paddingTop: "20px",
+                  borderTop: "1px solid #e2e8f0",
                 }}
               >
                 <div
                   style={{
                     display: "flex",
+                    justifyContent: "space-between",
                     alignItems: "center",
-                    gap: "10px",
-                    flex: "1",
+                    gap: "12px",
+                    marginBottom: "14px",
                   }}
                 >
-                  <span style={{ fontSize: "16px" }}>🏆</span>
+                  <strong style={{ color: "#0f172a", fontSize: "13px" }}>
+                    Shuttle Speed *
+                  </strong>
                   <input
                     type="text"
-                    value={tier.place}
+                    value={cat.shuttleSpeed}
                     onChange={(e) => {
-                      const p = [...pointTiers];
-                      p[idx].place = e.target.value;
-                      setPointTiers(p);
+                      const nextCategories = [...categories];
+                      nextCategories[idx] = {
+                        ...nextCategories[idx],
+                        shuttleSpeed: e.target.value,
+                      };
+                      setCategories(nextCategories);
                     }}
-                    placeholder="e.g., 1st Place / Champion"
+                    placeholder="e.g., 77"
+                    aria-label={`Category ${idx + 1} shuttle speed`}
                     style={{
-                      width: "100%",
-                      padding: "10px 14px",
+                      width: "180px",
+                      padding: "10px 12px",
                       borderRadius: "8px",
                       border:
-                        attemptedSubmit && !tier.place
+                        attemptedSubmit && !cat.shuttleSpeed
                           ? "1px solid #dc2626"
                           : "1px solid #cbd5e1",
                       fontSize: "12px",
-                      outline: "none",
-                      fontWeight: "bold",
-                      color: "#0f172a",
                       boxSizing: "border-box",
                     }}
                   />
                 </div>
+                {attemptedSubmit && !cat.shuttleSpeed && (
+                  <span
+                    style={{
+                      fontSize: "11px",
+                      color: "#dc2626",
+                      display: "block",
+                      marginTop: "-8px",
+                      marginBottom: "12px",
+                    }}
+                  >
+                    Shuttle speed is required
+                  </span>
+                )}
                 <div
                   style={{
                     display: "flex",
+                    justifyContent: "space-between",
                     alignItems: "center",
-                    gap: "8px",
-                    width: "160px",
+                    gap: "12px",
+                    marginBottom: "12px",
                   }}
                 >
-                  <input
-                    type="text"
-                    value={tier.points}
-                    onChange={(e) => {
-                      const p = [...pointTiers];
-                      p[idx].points = e.target.value;
-                      setPointTiers(p);
-                    }}
-                    placeholder="e.g., 1,000 PTS"
-                    style={{
-                      width: "100%",
-                      padding: "10px 14px",
-                      borderRadius: "8px",
-                      border:
-                        attemptedSubmit && !tier.points
-                          ? "1px solid #dc2626"
-                          : "1px solid #cbd5e1",
-                      fontSize: "12px",
-                      outline: "none",
-                      fontWeight: "bold",
-                      boxSizing: "border-box",
-                    }}
-                  />
-                </div>
-                {idx >= 3 && (
+                  <strong style={{ color: "#0f172a", fontSize: "13px" }}>
+                    Category Point Tiers *
+                  </strong>
                   <button
-                    onClick={() => handleRemovePointTier(idx)}
+                    type="button"
+                    onClick={() => handleAddPointTier(idx)}
                     style={{
-                      background: "none",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "5px",
+                      padding: "8px 12px",
+                      backgroundColor: "#0f172a",
+                      color: "#fff",
                       border: "none",
-                      color: "#dc2626",
+                      borderRadius: "8px",
+                      fontSize: "11px",
+                      fontWeight: "bold",
                       cursor: "pointer",
                     }}
                   >
-                    <DeleteOutlineIcon style={{ fontSize: "18px" }} />
+                    <AddIcon style={{ fontSize: "15px" }} /> Add Tier
                   </button>
-                )}
+                </div>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+                    gap: "12px",
+                  }}
+                >
+                  {cat.pointTiers.map((tier, tierIndex) => (
+                    <div
+                      key={tierIndex}
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        padding: "12px",
+                        backgroundColor: "#fff",
+                        border: "1px solid #e2e8f0",
+                        borderRadius: "8px",
+                      }}
+                    >
+                      <input
+                        type="text"
+                        value={tier.place}
+                        onChange={(e) => {
+                          const nextCategories = [...categories];
+                          const nextTiers = [...cat.pointTiers];
+                          nextTiers[tierIndex] = {
+                            ...nextTiers[tierIndex],
+                            place: e.target.value,
+                          };
+                          nextCategories[idx] = {
+                            ...cat,
+                            pointTiers: nextTiers,
+                          };
+                          setCategories(nextCategories);
+                        }}
+                        placeholder="e.g., Champion"
+                        aria-label={`Category ${idx + 1} tier ${tierIndex + 1} label`}
+                        style={{
+                          minWidth: "0",
+                          flex: "1",
+                          padding: "10px",
+                          borderRadius: "7px",
+                          border:
+                            attemptedSubmit && !tier.place
+                              ? "1px solid #dc2626"
+                              : "1px solid #cbd5e1",
+                          fontSize: "12px",
+                        }}
+                      />
+                      <input
+                        type="text"
+                        value={tier.points}
+                        onChange={(e) => {
+                          const nextCategories = [...categories];
+                          const nextTiers = [...cat.pointTiers];
+                          nextTiers[tierIndex] = {
+                            ...nextTiers[tierIndex],
+                            points: e.target.value,
+                          };
+                          nextCategories[idx] = {
+                            ...cat,
+                            pointTiers: nextTiers,
+                          };
+                          setCategories(nextCategories);
+                        }}
+                        placeholder="Points"
+                        aria-label={`Category ${idx + 1} tier ${tierIndex + 1} points`}
+                        style={{
+                          width: "95px",
+                          padding: "10px",
+                          borderRadius: "7px",
+                          border:
+                            attemptedSubmit && !tier.points
+                              ? "1px solid #dc2626"
+                              : "1px solid #cbd5e1",
+                          fontSize: "12px",
+                        }}
+                      />
+                      {cat.pointTiers.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleRemovePointTier(idx, tierIndex)}
+                          aria-label={`Remove category ${idx + 1} tier ${tierIndex + 1}`}
+                          style={{
+                            display: "flex",
+                            padding: "5px",
+                            background: "none",
+                            border: "none",
+                            color: "#dc2626",
+                            cursor: "pointer",
+                          }}
+                        >
+                          <DeleteOutlineIcon style={{ fontSize: "18px" }} />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                {attemptedSubmit &&
+                  cat.pointTiers.some((tier) => !tier.place || !tier.points) && (
+                    <span
+                      style={{
+                        fontSize: "11px",
+                        color: "#dc2626",
+                        display: "block",
+                        marginTop: "8px",
+                      }}
+                    >
+                      Every point tier needs a label and points value.
+                    </span>
+                  )}
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
 
         {/* Bottom Actions */}
@@ -1808,21 +1970,36 @@ export default function CreateTournamentPage() {
           >
             Cancel & Save Draft
           </button>
+          {submissionError && (
+            <p
+              role="alert"
+              style={{
+                alignSelf: "center",
+                margin: "0 auto 0 0",
+                color: "#b91c1c",
+                fontSize: "13px",
+                fontWeight: "600",
+              }}
+            >
+              {submissionError}
+            </p>
+          )}
           <button
             onClick={handlePublish}
+            disabled={isSubmitting}
             style={{
               padding: "14px 36px",
-              backgroundColor: "#dc2626",
+              backgroundColor: isSubmitting ? "#991b1b" : "#dc2626",
               color: "#fff",
               border: "none",
               borderRadius: "10px",
               fontSize: "13px",
               fontWeight: "bold",
-              cursor: "pointer",
+              cursor: isSubmitting ? "wait" : "pointer",
               boxShadow: "0 4px 12px rgba(220,38,38,0.3)",
             }}
           >
-            🚀 PUBLISH TOURNAMENT
+            {isSubmitting ? "PUBLISHING..." : "🚀 PUBLISH TOURNAMENT"}
           </button>
         </div>
       </div>
