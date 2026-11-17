@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import LanguageIcon from "@mui/icons-material/Language";
 import PaymentsIcon from "@mui/icons-material/Payments";
@@ -9,10 +9,14 @@ import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import CloseIcon from "@mui/icons-material/Close";
-import CloudUploadOutlinedIcon from "@mui/icons-material/CloudUploadOutlined";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import CheckCircleOutlineOutlinedIcon from "@mui/icons-material/CheckCircleOutlineOutlined";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
+import {
+  createPaymentMethod,
+  getPaymentMethods,
+  updatePaymentMethodStatus,
+} from "../features/payments/api/paymentApi";
 
 export default function SettingsPage() {
   const outletContext = useOutletContext() || {};
@@ -28,32 +32,11 @@ export default function SettingsPage() {
       "Official tournament registration, BWF sanctioned live brackets, and national ranking portal for badminton athletes.",
   });
 
-  const [payments, setPayments] = useState([
-    {
-      id: 1,
-      name: "KBZ Pay",
-      owner: "NYX Badminton Official",
-      accNo: "09450123789",
-      active: true,
-      qr: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200&auto=format&fit=crop&q=80",
-    },
-    {
-      id: 2,
-      name: "Wave Money / WavePay",
-      owner: "NYX Badminton Official",
-      accNo: "09450123789",
-      active: true,
-      qr: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200&auto=format&fit=crop&q=80",
-    },
-    {
-      id: 3,
-      name: "CB Pay",
-      owner: "NYX Badminton Official",
-      accNo: "09420011223",
-      active: false,
-      qr: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200&auto=format&fit=crop&q=80",
-    },
-  ]);
+  const [payments, setPayments] = useState([]);
+  const [isLoadingPayments, setIsLoadingPayments] = useState(true);
+  const [paymentLoadError, setPaymentLoadError] = useState("");
+  const [paymentStatusError, setPaymentStatusError] = useState("");
+  const [updatingPaymentId, setUpdatingPaymentId] = useState(null);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -63,8 +46,9 @@ export default function SettingsPage() {
     name: "",
     owner: "",
     accNo: "",
-    qr: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200&auto=format&fit=crop&q=80",
   });
+  const [isCreatingPayment, setIsCreatingPayment] = useState(false);
+  const [paymentCreateError, setPaymentCreateError] = useState("");
 
   const [adminData, setAdminData] = useState({
     username: "Hein Min Aung",
@@ -80,23 +64,89 @@ export default function SettingsPage() {
 
   const [toastMessage, setToastMessage] = useState("");
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadPaymentMethods() {
+      setIsLoadingPayments(true);
+      setPaymentLoadError("");
+      try {
+        const paymentMethods = await getPaymentMethods();
+        if (cancelled) return;
+        const loadedPayments = paymentMethods.map((paymentMethod) => ({
+          id: paymentMethod.id,
+          name: paymentMethod.paymentMethodName,
+          owner: paymentMethod.accountName,
+          accNo: paymentMethod.accountNumber,
+          active: paymentMethod.isActive,
+          qr: "",
+        }));
+        setPayments((currentPayments) => [
+          ...loadedPayments,
+          ...currentPayments.filter(
+            (currentPayment) =>
+              !loadedPayments.some(
+                (loadedPayment) => loadedPayment.id === currentPayment.id,
+              ),
+          ),
+        ]);
+      } catch (error) {
+        if (!cancelled) {
+          setPaymentLoadError(
+            error instanceof Error
+              ? error.message
+              : "Unable to load payment methods.",
+          );
+        }
+      } finally {
+        if (!cancelled) setIsLoadingPayments(false);
+      }
+    }
+
+    loadPaymentMethods();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const triggerToast = (msg) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(""), 4000);
   };
 
-  const handleAddPaymentSubmit = (e) => {
+  const handleAddPaymentSubmit = async (e) => {
     e.preventDefault();
-    if (!newPayment.name || !newPayment.accNo) return;
-    setPayments([...payments, { id: Date.now(), ...newPayment }]);
-    setNewPayment({
-      name: "",
-      owner: "",
-      accNo: "",
-      qr: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=200&auto=format&fit=crop&q=80",
-    });
-    setShowAddModal(false);
-    triggerToast("New payment gateway account added successfully.");
+    setIsCreatingPayment(true);
+    setPaymentCreateError("");
+    try {
+      const paymentMethod = await createPaymentMethod({
+        paymentMethodName: newPayment.name.trim(),
+        accountName: newPayment.owner.trim(),
+        accountNumber: newPayment.accNo.trim(),
+      });
+      setPayments((currentPayments) => [
+        ...currentPayments,
+        {
+          id: paymentMethod.id,
+          name: paymentMethod.paymentMethodName,
+          owner: paymentMethod.accountName,
+          accNo: paymentMethod.accountNumber,
+          active: paymentMethod.isActive,
+          qr: "",
+        },
+      ]);
+      setNewPayment({ name: "", owner: "", accNo: "" });
+      setShowAddModal(false);
+      triggerToast("New payment gateway account added successfully.");
+    } catch (error) {
+      setPaymentCreateError(
+        error instanceof Error
+          ? error.message
+          : "Unable to create payment method.",
+      );
+    } finally {
+      setIsCreatingPayment(false);
+    }
   };
 
   const handleEditPaymentSubmit = (e) => {
@@ -116,10 +166,25 @@ export default function SettingsPage() {
     triggerToast("Payment gateway deleted.");
   };
 
-  const handleToggleActive = (id) => {
-    setPayments((prevPayments) =>
-      prevPayments.map((p) => (p.id === id ? { ...p, active: !p.active } : p)),
-    );
+  const handleToggleActive = async (id, isActive) => {
+    setUpdatingPaymentId(id);
+    setPaymentStatusError("");
+    try {
+      await updatePaymentMethodStatus(id, isActive);
+      setPayments((currentPayments) =>
+        currentPayments.map((payment) =>
+          payment.id === id ? { ...payment, active: isActive } : payment,
+        ),
+      );
+    } catch (error) {
+      setPaymentStatusError(
+        error instanceof Error
+          ? error.message
+          : "Unable to update payment method status.",
+      );
+    } finally {
+      setUpdatingPaymentId(null);
+    }
   };
 
   const handleAdminUpdateAttempt = (e) => {
@@ -465,6 +530,31 @@ export default function SettingsPage() {
           </span>
         </div>
 
+        {paymentLoadError && (
+          <p role="alert" style={{ color: "#b91c1c", fontSize: "13px" }}>
+            Unable to load payment methods: {paymentLoadError}
+          </p>
+        )}
+        {paymentStatusError && (
+          <p role="alert" style={{ color: "#b91c1c", fontSize: "13px" }}>
+            Unable to update payment method: {paymentStatusError}
+          </p>
+        )}
+
+        {isLoadingPayments && (
+          <p role="status" style={{ color: "#64748b", fontSize: "13px" }}>
+            Loading payment methods...
+          </p>
+        )}
+
+        {!isLoadingPayments &&
+          !paymentLoadError &&
+          payments.length === 0 && (
+          <p style={{ color: "#64748b", fontSize: "13px" }}>
+            No payment methods have been added yet.
+          </p>
+          )}
+
         {payments.map((p) => (
           <div key={p.id} style={styles.paymentRow(p.active)}>
             <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
@@ -481,11 +571,19 @@ export default function SettingsPage() {
                   border: `1px solid ${isDark ? "#2d3139" : "#cbd5e1"}`,
                 }}
               >
-                <img
-                  src={p.qr}
-                  alt="QR"
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                />
+                {p.qr ? (
+                  <img
+                    src={p.qr}
+                    alt="QR"
+                    style={{
+                      width: "100%",
+                      height: "100%",
+                      objectFit: "cover",
+                    }}
+                  />
+                ) : (
+                  <PaymentsIcon style={{ color: "#64748b" }} />
+                )}
               </div>
               <div>
                 <div
@@ -555,14 +653,15 @@ export default function SettingsPage() {
                     display: "inline-block",
                     width: "44px",
                     height: "22px",
-                    cursor: "pointer",
                   }}
-                  onClick={() => handleToggleActive(p.id)}
                 >
                   <input
                     type="checkbox"
                     checked={p.active}
-                    onChange={() => handleToggleActive(p.id)}
+                    disabled={updatingPaymentId === p.id}
+                    onChange={(event) =>
+                      handleToggleActive(p.id, event.target.checked)
+                    }
                     style={{
                       opacity: 0,
                       width: 0,
@@ -605,11 +704,13 @@ export default function SettingsPage() {
                     fontWeight: "bold",
                     color: p.active ? "#16a34a" : "#94a3b8",
                     width: "55px",
-                    cursor: "pointer",
                   }}
-                  onClick={() => handleToggleActive(p.id)}
                 >
-                  {p.active ? "ACTIVE" : "INACTIVE"}
+                  {updatingPaymentId === p.id
+                    ? "SAVING"
+                    : p.active
+                      ? "ACTIVE"
+                      : "INACTIVE"}
                 </span>
               </div>
             </div>
@@ -933,47 +1034,18 @@ export default function SettingsPage() {
                   required
                 />
               </div>
-              <div style={{ marginBottom: "24px" }}>
-                <label style={styles.label}>
-                  UPLOAD PAYMENT QR CODE PHOTO *
-                </label>
-                <label
+              {paymentCreateError && (
+                <p
+                  role="alert"
                   style={{
-                    display: "block",
-                    border: `2px dashed ${isDark ? "#2d3139" : "#cbd5e1"}`,
-                    borderRadius: "8px",
-                    padding: "20px",
-                    textAlign: "center",
-                    backgroundColor: isDark ? "#24272b" : "#f8fafc",
-                    cursor: "pointer",
+                    margin: "0 0 16px",
+                    color: "#b91c1c",
+                    fontSize: "12px",
                   }}
                 >
-                  <CloudUploadOutlinedIcon
-                    style={{
-                      fontSize: "32px",
-                      color: "#64748b",
-                      marginBottom: "8px",
-                    }}
-                  />
-                  <div style={{ fontSize: "12px", fontWeight: "bold" }}>
-                    Click or Drag QR Code Image (PNG, JPG, Max 5MB)
-                  </div>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    style={{ display: "none" }}
-                    onChange={(e) => {
-                      if (e.target.files[0]) {
-                        setNewPayment({
-                          ...newPayment,
-                          qr: URL.createObjectURL(e.target.files[0]),
-                        });
-                        triggerToast("QR code selected.");
-                      }
-                    }}
-                  />
-                </label>
-              </div>
+                  Unable to create payment method: {paymentCreateError}
+                </p>
+              )}
 
               <div
                 style={{
@@ -984,13 +1056,23 @@ export default function SettingsPage() {
               >
                 <button
                   type="button"
-                  onClick={() => setShowAddModal(false)}
+                  onClick={() => {
+                    setShowAddModal(false);
+                    setPaymentCreateError("");
+                  }}
+                  disabled={isCreatingPayment}
                   style={styles.btnSecondary}
                 >
                   Cancel
                 </button>
-                <button type="submit" style={styles.btnPrimary}>
-                  Save & Create Payment
+                <button
+                  type="submit"
+                  disabled={isCreatingPayment}
+                  style={styles.btnPrimary}
+                >
+                  {isCreatingPayment
+                    ? "Creating..."
+                    : "Save & Create Payment"}
                 </button>
               </div>
             </form>
