@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import SearchIcon from "@mui/icons-material/Search";
 import AddIcon from "@mui/icons-material/Add";
@@ -7,65 +7,100 @@ import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined";
 import EmojiEventsOutlinedIcon from "@mui/icons-material/EmojiEventsOutlined";
 import PaymentsOutlinedIcon from "@mui/icons-material/PaymentsOutlined";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
+import { getTournaments } from "../features/tournaments/api/tournamentApi";
+import { resolveApiAssetUrl } from "../core/api/apiClient";
+
+const PAGE_SIZE = 20;
+
+function formatTournamentDate(date) {
+  if (!date) return "Date not set";
+  const parsedDate = new Date(date);
+  if (Number.isNaN(parsedDate.getTime())) return "Date not set";
+  return new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(parsedDate);
+}
+
+function getTournamentStatus(publicationStatus) {
+  const status = (publicationStatus || "unknown").toLowerCase();
+  const statusStyles = {
+    published: { label: "Published", color: "#16a34a", background: "#f0fdf4" },
+    draft: { label: "Draft", color: "#d97706", background: "#fef3c7" },
+    archived: { label: "Archived", color: "#64748b", background: "#f1f5f9" },
+  };
+  return (
+    statusStyles[status] || {
+      label: publicationStatus || "Unknown",
+      color: "#64748b",
+      background: "#f1f5f9",
+    }
+  );
+}
 
 export default function TournamentPage() {
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
+  const [tournaments, setTournaments] = useState([]);
+  const [page, setPage] = useState(1);
+  const [pageCount, setPageCount] = useState(1);
+  const [isLoading, setIsLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState("");
 
-  // Tournaments Mock Data (တူညီသော status များဖြင့်)
-  const tournaments = [
-    {
-      id: "trn-1",
-      name: "Yangon Masters Badminton Championship 2026",
-      status: "Registration Open",
-      statusColor: "#16a34a",
-      bgBadge: "#f0fdf4",
-      date: "Nov 14 - 18, 2026",
-      court: "Court A",
-      points: "5,000 PTS",
-      fee: "25,000 MMK",
-      image:
-        "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=600",
-    },
-    {
-      id: "trn-2",
-      name: "Mandalay Open Cup 2026",
-      status: "Upcoming",
-      statusColor: "#d97706",
-      bgBadge: "#fef3c7",
-      date: "Dec 14 - 18, 2026",
-      court: "Court B",
-      points: "3,500 PTS",
-      fee: "20,000 MMK",
-      image:
-        "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=600",
-    },
-    {
-      id: "trn-3",
-      name: "Inya Lake Junior Smash 2026",
-      status: "Completed",
-      statusColor: "#64748b",
-      bgBadge: "#f1f5f9",
-      date: "Oct 14 - 18, 2026",
-      court: "Court D",
-      points: "2,000 PTS",
-      fee: "15,000 MMK",
-      image:
-        "https://images.unsplash.com/photo-1517649763962-0c623066013b?w=600",
-    },
-  ];
+  useEffect(() => {
+    let cancelled = false;
 
-  // Filtering Logic
-  const filteredTournaments = tournaments.filter((trn) => {
-    const matchesSearch = trn.name
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase());
-    const matchesStatus =
-      statusFilter === "All" ||
-      trn.status.toLowerCase() === statusFilter.toLowerCase();
-    return matchesSearch && matchesStatus;
-  });
+    async function loadTournaments() {
+      setIsLoading(true);
+      setErrorMessage("");
+      try {
+        const result = await getTournaments({ page, pageSize: PAGE_SIZE });
+        if (cancelled) return;
+        setTournaments(result.tournaments);
+        setPageCount(
+          Number.isInteger(result.pagination?.pageCount)
+            ? Math.max(result.pagination.pageCount, 1)
+            : 1,
+        );
+      } catch (error) {
+        if (!cancelled) {
+          setErrorMessage(
+            error instanceof Error
+              ? error.message
+              : "Unable to load tournaments.",
+          );
+        }
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    }
+
+    loadTournaments();
+    return () => {
+      cancelled = true;
+    };
+  }, [page]);
+
+  const filteredTournaments = useMemo(
+    () =>
+      tournaments.filter((tournament) => {
+        const query = searchQuery.trim().toLowerCase();
+        const matchesSearch =
+          !query ||
+          [tournament.title, tournament.description]
+            .filter(Boolean)
+            .some((value) => value.toLowerCase().includes(query));
+        const matchesStatus =
+          statusFilter === "All" ||
+          (tournament.publicationStatus || "").toLowerCase() ===
+            statusFilter.toLowerCase();
+        return matchesSearch && matchesStatus;
+      }),
+    [searchQuery, statusFilter, tournaments],
+  );
 
   return (
     <div
@@ -140,11 +175,11 @@ export default function TournamentPage() {
             }}
           >
             <option value="All">
-              Status: All (Active, Upcoming, Completed)
+              Status: All
             </option>
-            <option value="Registration Open">Status: Registration Open</option>
-            <option value="Upcoming">Status: Upcoming</option>
-            <option value="Completed">Status: Completed</option>
+            <option value="draft">Status: Draft</option>
+            <option value="published">Status: Published</option>
+            <option value="archived">Status: Archived</option>
           </select>
 
           {/* Create New Tournament Button */}
@@ -170,6 +205,22 @@ export default function TournamentPage() {
         </div>
       </div>
 
+      {errorMessage && (
+        <p
+          role="alert"
+          style={{
+            margin: "0 0 20px",
+            padding: "12px 16px",
+            color: "#b91c1c",
+            background: "#fef2f2",
+            border: "1px solid #fecaca",
+            borderRadius: "8px",
+          }}
+        >
+          Unable to load tournaments: {errorMessage}
+        </p>
+      )}
+
       {/* Tournaments Cards Grid */}
       <div
         style={{
@@ -178,10 +229,33 @@ export default function TournamentPage() {
           gap: "20px",
         }}
       >
-        {filteredTournaments.length > 0 ? (
-          filteredTournaments.map((trn) => (
+        {isLoading ? (
+          <div
+            role="status"
+            style={{
+              gridColumn: "span 3",
+              padding: "40px",
+              textAlign: "center",
+              color: "#64748b",
+              backgroundColor: "#ffffff",
+              borderRadius: "12px",
+            }}
+          >
+            Loading tournaments...
+          </div>
+        ) : filteredTournaments.length > 0 ? (
+          filteredTournaments.map((tournament) => {
+            const status = getTournamentStatus(tournament.publicationStatus);
+            const firstCategory = tournament.categories?.[0];
+            const venue = tournament.venues?.[0];
+            const startDate = formatTournamentDate(tournament.startDate);
+            const endDate = formatTournamentDate(tournament.endDate);
+            const dateLabel =
+              startDate === endDate ? startDate : `${startDate} – ${endDate}`;
+
+            return (
             <div
-              key={trn.id}
+              key={tournament.id}
               style={{
                 backgroundColor: "#ffffff",
                 borderRadius: "12px",
@@ -202,8 +276,11 @@ export default function TournamentPage() {
                 }}
               >
                 <img
-                  src={trn.image}
-                  alt={trn.name}
+                  src={
+                    resolveApiAssetUrl(tournament.bannerUrl) ||
+                    "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=600"
+                  }
+                  alt={tournament.title}
                   style={{ width: "100%", height: "100%", objectFit: "cover" }}
                 />
                 <div
@@ -211,8 +288,8 @@ export default function TournamentPage() {
                     position: "absolute",
                     top: "12px",
                     right: "12px",
-                    backgroundColor: trn.bgBadge,
-                    color: trn.statusColor,
+                    backgroundColor: status.background,
+                    color: status.color,
                     padding: "4px 10px",
                     borderRadius: "9999px",
                     fontSize: "10px",
@@ -220,7 +297,7 @@ export default function TournamentPage() {
                     border: "1px solid rgba(0,0,0,0.05)",
                   }}
                 >
-                  ● {trn.status.toUpperCase()}
+                  ● {status.label.toUpperCase()}
                 </div>
               </div>
 
@@ -244,7 +321,7 @@ export default function TournamentPage() {
                       lineHeight: "1.4",
                     }}
                   >
-                    {trn.name}
+                    {tournament.title}
                   </h3>
 
                   <div
@@ -267,7 +344,7 @@ export default function TournamentPage() {
                       <CalendarTodayOutlinedIcon
                         style={{ fontSize: "14px", color: "#dc2626" }}
                       />
-                      <span>{trn.date}</span>
+                      <span>{dateLabel}</span>
                     </div>
                     <div
                       style={{
@@ -279,7 +356,7 @@ export default function TournamentPage() {
                       <LocationOnOutlinedIcon
                         style={{ fontSize: "14px", color: "#2563eb" }}
                       />
-                      <span>{trn.court}</span>
+                      <span>{venue?.venueName || "Venue not set"}</span>
                     </div>
                   </div>
 
@@ -320,7 +397,10 @@ export default function TournamentPage() {
                         <EmojiEventsOutlinedIcon
                           style={{ fontSize: "13px", color: "#d97706" }}
                         />{" "}
-                        {trn.points}
+                        {Number(
+                          tournament.rankingPointsPool || 0,
+                        ).toLocaleString()}{" "}
+                        PTS
                       </div>
                     </div>
                     <div>
@@ -347,7 +427,8 @@ export default function TournamentPage() {
                         <PaymentsOutlinedIcon
                           style={{ fontSize: "13px", color: "#16a34a" }}
                         />{" "}
-                        {trn.fee}
+                        {Number(firstCategory?.entryFee || 0).toLocaleString()}{" "}
+                        MMK
                       </div>
                     </div>
                   </div>
@@ -355,7 +436,9 @@ export default function TournamentPage() {
 
                 {/* View & Manage Button */}
                 <button
-                  onClick={() => navigate(`/admin/tournament/${trn.id}`)}
+                  onClick={() =>
+                    navigate(`/admin/tournament/${tournament.id}`)
+                  }
                   style={{
                     width: "100%",
                     padding: "10px",
@@ -378,7 +461,8 @@ export default function TournamentPage() {
                 </button>
               </div>
             </div>
-          ))
+            );
+          })
         ) : (
           <div
             style={{
@@ -391,10 +475,59 @@ export default function TournamentPage() {
               border: "1px solid #e2e8f0",
             }}
           >
-            No tournaments found matching your filter criteria.
+            {errorMessage
+              ? "Tournament data is unavailable."
+              : "No tournaments found matching your filter criteria."}
           </div>
         )}
       </div>
+      {!isLoading && pageCount > 1 && (
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            gap: "16px",
+            marginTop: "24px",
+          }}
+        >
+          <button
+            type="button"
+            onClick={() => setPage((current) => Math.max(current - 1, 1))}
+            disabled={page === 1}
+            style={{
+              padding: "8px 14px",
+              border: "1px solid #cbd5e1",
+              borderRadius: "8px",
+              background: page === 1 ? "#f1f5f9" : "#fff",
+              color: page === 1 ? "#94a3b8" : "#334155",
+              cursor: page === 1 ? "not-allowed" : "pointer",
+            }}
+          >
+            Previous
+          </button>
+          <span>
+            Page {page} of {pageCount}
+          </span>
+          <button
+            type="button"
+            onClick={() =>
+              setPage((current) => Math.min(current + 1, pageCount))
+            }
+            disabled={page === pageCount}
+            style={{
+              padding: "8px 14px",
+              border: "1px solid #cbd5e1",
+              borderRadius: "8px",
+              background: page === pageCount ? "#f1f5f9" : "#fff",
+              color: page === pageCount ? "#94a3b8" : "#334155",
+              cursor: page === pageCount ? "not-allowed" : "pointer",
+            }}
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   );
 }

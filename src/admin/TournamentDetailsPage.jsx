@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew";
 import CloudUploadOutlinedIcon from "@mui/icons-material/CloudUploadOutlined";
@@ -6,70 +6,26 @@ import AddIcon from "@mui/icons-material/Add";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutlined";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import EditModeIcon from "@mui/icons-material/Edit";
+import { getTournament } from "../features/tournaments/api/tournamentApi";
+import { resolveApiAssetUrl } from "../core/api/apiClient";
 
 export default function TournamentDetailsPage() {
   const navigate = useNavigate();
   const { id } = useParams();
-
-  // Mock Tournaments Data
-  const tournamentsData = {
-    "trn-1": {
-      id: "trn-1",
-      name: "Yangon Masters Badminton Championship 2026",
-      status: "Registration Open",
-      date: "03/14/2026 - 03/18/2026",
-      court: "Court 1",
-      address: "73 rd St, Between 102nd & 103rd, Chanmyathazi, Mandalay",
-      points: "5,000 PTS",
-      fee: "25,000 MMK",
-      description:
-        "The Yangon Masters 2026 is an official BWF-standard Tier 1 major operating under direct knockout single elimination across elite singles and doubles brackets. Sanctioned by the Myanmar Badminton Federation with official world ranking points distribution.",
-      image:
-        "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?w=600",
-    },
-    "trn-2": {
-      id: "trn-2",
-      name: "Mandalay Open Cup 2026",
-      status: "Upcoming",
-      date: "12/14/2026 - 12/18/2026",
-      court: "Court 2",
-      address: "Inya Road, Kamayut Township, Yangon",
-      points: "3,500 PTS",
-      fee: "20,000 MMK",
-      description:
-        "Mandalay Open Cup 2026 brings together top regional talents in an exciting multi-bracket championship format.",
-      image:
-        "https://images.unsplash.com/photo-1574629810360-7efbbe195018?w=600",
-    },
-    "trn-3": {
-      id: "trn-3",
-      name: "Inya Lake Junior Smash 2026",
-      status: "Completed",
-      date: "10/14/2026 - 10/18/2026",
-      court: "Court 4",
-      address: "National Stadium, Thuwunna, Yangon",
-      points: "2,000 PTS",
-      fee: "15,000 MMK",
-      description:
-        "Junior development tournament designed for youth players to gain competitive ranking exposure.",
-      image:
-        "https://images.unsplash.com/photo-1517649763962-0c623066013b?w=600",
-    },
-  };
-
-  const currentTournament = tournamentsData[id] || tournamentsData["trn-1"];
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   // Form States
-  const [title, setTitle] = useState(currentTournament.name);
-  const [fee, setFee] = useState(currentTournament.fee.replace(" MMK", ""));
-  const [startDate, setStartDate] = useState("2026-03-14");
-  const [endDate, setEndDate] = useState("2026-03-18");
-  const [regStatus, setRegStatus] = useState(currentTournament.status);
-  const [pointsPool, setPointsPool] = useState(currentTournament.points);
-  const [description, setDescription] = useState(currentTournament.description);
-  const [courtName, setCourtName] = useState(currentTournament.court);
-  const [address, setAddress] = useState(currentTournament.address);
-  const [bannerImage, setBannerImage] = useState(currentTournament.image);
+  const [title, setTitle] = useState("");
+  const [fee, setFee] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+  const [regStatus, setRegStatus] = useState("draft");
+  const [pointsPool, setPointsPool] = useState("");
+  const [description, setDescription] = useState("");
+  const [courtName, setCourtName] = useState("");
+  const [address, setAddress] = useState("");
+  const [bannerImage, setBannerImage] = useState("");
 
   // Edit Mode State (Default: Read-Only)
   const [isEditing, setIsEditing] = useState(false);
@@ -78,42 +34,105 @@ export default function TournamentDetailsPage() {
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
 
   // Official Rules State
-  const [rules, setRules] = useState([
-    {
-      title: "Tournament Format & Knockout System",
-      description:
-        "Single elimination knockout system across all designated categories (MS, WS, MD, XD). Official seeding based on latest NYX platform rankings and MBF federation sanction logs.",
-    },
-    {
-      title: "Match Scoring Rules",
-      description:
-        "Best of 3 sets to 21 rally points. Golden point tie-breaker rule applies at 29-all capped at 30 points strictly following BWF General Competition Regulations.",
-    },
-  ]);
+  const [rules, setRules] = useState([]);
 
   // Categories State
-  const [categories, setCategories] = useState([
-    {
-      code: "MS",
-      name: "Men's Singles",
-      seeds: "8 Seeded Positions",
-      format: "Best of 3 Sets to 21",
-      status: "Open (Fast Closing)",
-      criteria: "National Top 150 / Open Club Ranking",
-      pointsPool: "1,500 PTS",
-      shuttle: "Yonex Aerosensa 50 (Speed 2)",
-    },
-  ]);
+  const [categories, setCategories] = useState([]);
 
   // Leaderboard Points Tiers State
-  const [pointTiers, setPointTiers] = useState([
-    { place: "1st Place / Champion", points: "1,000 PTS" },
-    { place: "2nd Place / Runner-Up", points: "700 PTS" },
-    { place: "3rd Place (Top 3)", points: "400 PTS" },
-    { place: "4th Place (Top 4)", points: "150 PTS" },
-  ]);
+  const [pointTiers, setPointTiers] = useState([]);
 
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadTournament() {
+      setIsLoading(true);
+      setLoadError("");
+      try {
+        const tournament = await getTournament(id);
+        if (cancelled) return;
+
+        const firstCategory = tournament.categories?.[0];
+        setTitle(tournament.title || "");
+        setFee(firstCategory?.entryFee?.toString() || "");
+        setStartDate(tournament.startDate?.slice(0, 10) || "");
+        setEndDate(tournament.endDate?.slice(0, 10) || "");
+        setRegStatus(tournament.publicationStatus || "draft");
+        setPointsPool(String(tournament.rankingPointsPool ?? ""));
+        setDescription(tournament.description || "");
+        setCourtName(
+          (tournament.venues || [])
+            .map((venue) => venue.venueName)
+            .filter(Boolean)
+            .join(", "),
+        );
+        setAddress(
+          (tournament.venues || [])
+            .map((venue) => venue.address)
+            .filter(Boolean)
+            .join(", "),
+        );
+        setBannerImage(resolveApiAssetUrl(tournament.bannerUrl));
+        setRules(
+          [...(tournament.rules || [])]
+            .sort((a, b) => a.sortOrder - b.sortOrder)
+            .map(
+              ({
+                title: ruleTitle,
+                description: ruleDescription,
+              }) => ({
+                title: ruleTitle || "",
+                description: ruleDescription || "",
+              }),
+            ),
+        );
+        setCategories(
+          (tournament.categories || []).map((category) => ({
+            code: category.categoryCode || "",
+            name: category.categoryName || "",
+            seeds: `${category.pairingType || "singles"} - ${category.seedCount || 0} Seeded Positions`,
+            format: category.matchFormat || "",
+            status:
+              category.entryStatus === "closed"
+                ? "Enrollment Closed"
+                : category.entryStatus === "closing_soon"
+                  ? "Open (Fast Closing)"
+                  : "Enrollment Open",
+            criteria: category.eligibilityCriteria || "",
+            pointsPool: String(category.pointsPool ?? ""),
+            shuttle: category.shuttleSpeed
+              ? `${category.shuttleName || ""} (Speed ${category.shuttleSpeed})`
+              : category.shuttleName || "",
+          })),
+        );
+        setPointTiers(
+          (tournament.categories || []).flatMap((category) =>
+            (category.pointTiers || []).map((tier) => ({
+              place: `${category.categoryCode}: ${tier.label}`,
+              points: `${tier.points} PTS`,
+            })),
+          ),
+        );
+      } catch (error) {
+        if (!cancelled) {
+          setLoadError(
+            error instanceof Error
+              ? error.message
+              : "Unable to load tournament details.",
+          );
+        }
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    }
+
+    loadTournament();
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
 
   const handleImageChange = (e) => {
     if (!isEditing) return;
@@ -164,11 +183,6 @@ export default function TournamentDetailsPage() {
     ]);
   };
 
-  const handleRemovePointTier = (index) => {
-    if (!isEditing) return;
-    setPointTiers(pointTiers.filter((_, i) => i !== index));
-  };
-
   // Comprehensive Validation on Update
   const handleUpdate = (e) => {
     e.preventDefault();
@@ -205,6 +219,53 @@ export default function TournamentDetailsPage() {
     // All valid
     setShowSuccessModal(true);
   };
+
+  if (isLoading) {
+    return (
+      <div
+        role="status"
+        style={{
+          minHeight: "50vh",
+          display: "grid",
+          placeItems: "center",
+          color: "#64748b",
+          fontWeight: "700",
+        }}
+      >
+        Loading tournament details...
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div
+        style={{
+          minHeight: "50vh",
+          display: "grid",
+          placeContent: "center",
+          gap: "16px",
+          justifyItems: "center",
+          color: "#b91c1c",
+        }}
+      >
+        <p role="alert">Unable to load tournament: {loadError}</p>
+        <button
+          type="button"
+          onClick={() => navigate("/admin/tournament")}
+          style={{
+            padding: "10px 16px",
+            border: "1px solid #cbd5e1",
+            borderRadius: "8px",
+            background: "#fff",
+            cursor: "pointer",
+          }}
+        >
+          Back to Tournaments
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div
@@ -635,7 +696,7 @@ export default function TournamentDetailsPage() {
                   marginBottom: "6px",
                 }}
               >
-                Registration Status
+                Publication Status
               </label>
               <select
                 value={regStatus}
@@ -652,12 +713,9 @@ export default function TournamentDetailsPage() {
                   cursor: isEditing ? "pointer" : "not-allowed",
                 }}
               >
-                <option value="Registration Open">
-                  Registration Open (Accepting Players)
-                </option>
-                <option value="Upcoming">Upcoming</option>
-                <option value="Completed">Completed</option>
-                <option value="Registration Closed">Registration Closed</option>
+                <option value="draft">Draft</option>
+                <option value="published">Published</option>
+                <option value="archived">Archived</option>
               </select>
             </div>
             <div>
@@ -1430,6 +1488,16 @@ export default function TournamentDetailsPage() {
                       cursor: isEditing ? "pointer" : "not-allowed",
                     }}
                   >
+                    {cat.seeds &&
+                      ![
+                        "Single Elimination",
+                        "Double Elimination",
+                        "Round Robin",
+                        "8 Seeded Positions",
+                        "16 Seeded Positions",
+                      ].includes(cat.seeds) && (
+                        <option value={cat.seeds}>{cat.seeds}</option>
+                      )}
                     <option>Single Elimination</option>
                     <option>Double Elimination</option>
                     <option>Round Robin</option>
@@ -1468,6 +1536,16 @@ export default function TournamentDetailsPage() {
                       cursor: isEditing ? "pointer" : "not-allowed",
                     }}
                   >
+                    {cat.format &&
+                      ![
+                        "Best of 3 Sets to 21",
+                        "Best of 5 Sets to 11",
+                        "Single Set to 30 Points",
+                      ].includes(cat.format) && (
+                        <option value={cat.format}>
+                          {cat.format}
+                        </option>
+                      )}
                     <option>Best of 3 Sets to 21</option>
                     <option>Best of 5 Sets to 11</option>
                     <option>Single Set to 30 Points</option>
