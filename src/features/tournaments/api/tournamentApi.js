@@ -37,6 +37,22 @@ export async function getTournament(id) {
   return response.data;
 }
 
+export async function publishTournament(id) {
+  const response = await apiRequest(
+    `/tournaments/${encodeURIComponent(id)}/publish`,
+    { method: "POST" },
+  );
+
+  if (response?.success !== true) {
+    throw new Error(
+      (typeof response?.message === "string" && response.message) ||
+        "The server did not confirm tournament publication.",
+    );
+  }
+
+  return response;
+}
+
 export async function createTournament(tournament, banner) {
   const formData = new FormData();
   formData.append("tournament", JSON.stringify(tournament));

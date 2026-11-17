@@ -7,7 +7,11 @@ import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined";
 import EmojiEventsOutlinedIcon from "@mui/icons-material/EmojiEventsOutlined";
 import PaymentsOutlinedIcon from "@mui/icons-material/PaymentsOutlined";
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward";
-import { getTournaments } from "../features/tournaments/api/tournamentApi";
+import PublishOutlinedIcon from "@mui/icons-material/PublishOutlined";
+import {
+  getTournaments,
+  publishTournament,
+} from "../features/tournaments/api/tournamentApi";
 import { resolveApiAssetUrl } from "../core/api/apiClient";
 
 const PAGE_SIZE = 20;
@@ -49,6 +53,31 @@ export default function TournamentPage() {
   const [pageCount, setPageCount] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
+  const [publishError, setPublishError] = useState("");
+  const [publishingId, setPublishingId] = useState(null);
+
+  const handlePublish = async (tournamentId) => {
+    setPublishingId(tournamentId);
+    setPublishError("");
+    try {
+      await publishTournament(tournamentId);
+      setTournaments((current) =>
+        current.map((tournament) =>
+          tournament.id === tournamentId
+            ? { ...tournament, publicationStatus: "published" }
+            : tournament,
+        ),
+      );
+    } catch (error) {
+      setPublishError(
+        error instanceof Error
+          ? error.message
+          : "Unable to publish tournament.",
+      );
+    } finally {
+      setPublishingId(null);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -218,6 +247,21 @@ export default function TournamentPage() {
           }}
         >
           Unable to load tournaments: {errorMessage}
+        </p>
+      )}
+      {publishError && (
+        <p
+          role="alert"
+          style={{
+            margin: "0 0 20px",
+            padding: "12px 16px",
+            color: "#b91c1c",
+            background: "#fef2f2",
+            border: "1px solid #fecaca",
+            borderRadius: "8px",
+          }}
+        >
+          Unable to publish tournament: {publishError}
         </p>
       )}
 
@@ -434,31 +478,64 @@ export default function TournamentPage() {
                   </div>
                 </div>
 
-                {/* View & Manage Button */}
-                <button
-                  onClick={() =>
-                    navigate(`/admin/tournament/${tournament.id}`)
-                  }
-                  style={{
-                    width: "100%",
-                    padding: "10px",
-                    backgroundColor: "#0f172a",
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: "8px",
-                    fontSize: "12px",
-                    fontWeight: "700",
-                    cursor: "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: "6px",
-                    transition: "background 0.2s",
-                  }}
-                >
-                  View & Manage{" "}
-                  <ArrowForwardIcon style={{ fontSize: "14px" }} />
-                </button>
+                <div style={{ display: "grid", gap: "8px" }}>
+                  {(tournament.publicationStatus || "").toLowerCase() ===
+                    "draft" && (
+                    <button
+                      type="button"
+                      onClick={() => handlePublish(tournament.id)}
+                      disabled={publishingId === tournament.id}
+                      style={{
+                        width: "100%",
+                        padding: "10px",
+                        backgroundColor:
+                          publishingId === tournament.id ? "#94a3b8" : "#16a34a",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: "8px",
+                        fontSize: "12px",
+                        fontWeight: "700",
+                        cursor:
+                          publishingId === tournament.id
+                            ? "wait"
+                            : "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "6px",
+                      }}
+                    >
+                      <PublishOutlinedIcon style={{ fontSize: "16px" }} />
+                      {publishingId === tournament.id
+                        ? "Publishing..."
+                        : "Publish Tournament"}
+                    </button>
+                  )}
+                  <button
+                    onClick={() =>
+                      navigate(`/admin/tournament/${tournament.id}`)
+                    }
+                    style={{
+                      width: "100%",
+                      padding: "10px",
+                      backgroundColor: "#0f172a",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: "8px",
+                      fontSize: "12px",
+                      fontWeight: "700",
+                      cursor: "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: "6px",
+                      transition: "background 0.2s",
+                    }}
+                  >
+                    View & Manage{" "}
+                    <ArrowForwardIcon style={{ fontSize: "14px" }} />
+                  </button>
+                </div>
               </div>
             </div>
             );

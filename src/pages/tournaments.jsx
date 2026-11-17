@@ -14,109 +14,132 @@ import {
   SportsTennis,
   PaymentsOutlined,
 } from "@mui/icons-material";
+import { getTournaments } from "../features/tournaments/api/tournamentApi";
+import { resolveApiAssetUrl } from "../core/api/apiClient";
 
-const tournaments = [
-  {
-    id: 1,
-    title: "Mandalay Open Cup 2026",
-    image:
-      "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=1000&q=80",
-    status: "Registration Open",
-    tier: "Tier 2 Open",
-    discipline: "Men's Singles (MS)",
-    date: "Dec 05 – 10, 2026",
-    court: "Court A",
-    points: "4,000 PTS",
-    entryFee: "25,000 MMK",
-    description:
-      "The Mandalay Open Cup 2026 is an official BWF-standard Tier 1 major operating under direct knockout single elimination. All matches are conducted in best-of-3 sets using the 21-point rally scoring system with sudden death cap at 30 points ",
-  },
-  {
-    id: 2,
-    title: "Yangon Badminton Trophy",
-    image:
-      "https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?auto=format&fit=crop&w=1000&q=80",
-    status: "Registration Open",
-    tier: "Tier 2 Open",
-    discipline: "Women's Singles (WS)",
-    date: "Dec 18 – 22, 2026",
-    court: "Court B",
-    points: "3,000 PTS",
-    entryFee: "20,000 MMK",
-    description:
-      "Join the Yangon Badminton Trophy and compete for ranking points.",
-  },
-  {
-    id: 3,
-    title: "Taunggyi Winter Masters 2026",
-    image:
-      "https://images.unsplash.com/photo-1613918108466-292b78a8ef95?auto=format&fit=crop&w=1000&q=80",
-    status: "Ongoing (Live)",
-    tier: "Major Tier 1",
-    discipline: "Men's Doubles (MD)",
-    date: "Nov 12 – 16, 2026",
-    court: "Court D",
-    points: "2,000 PTS",
-    entryFee: "30,000 MMK",
-    description: "A competitive winter badminton tournament in Taunggyi.",
-  },
-  {
-    id: 4,
-    title: "National Junior Talent Search 2026",
-    image:
-      "https://images.unsplash.com/photo-1519861531473-9200262188bf?auto=format&fit=crop&w=1000&q=80",
-    status: "Completed",
-    tier: "Major Tier 1",
-    discipline: "Mixed Doubles (XD)",
-    date: "Oct 12 – 16, 2026",
-    court: "Court D",
-    points: "4,500 PTS",
-    entryFee: "15,000 MMK",
-    description:
-      "Discover young badminton talent at the National Junior Talent Search.",
-  },
-];
+const PAGE_SIZE = 20;
 
-const categories = [
-  "All Categories",
-  "Men's Singles (MS)",
-  "Women's Singles (WS)",
-  "Men's Doubles (MD)",
-  "Mixed Doubles (XD)",
-];
+function formatTournamentDate(date) {
+  if (!date) return "Date not set";
+  const parsedDate = new Date(date);
+  if (Number.isNaN(parsedDate.getTime())) return "Date not set";
+  return new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(parsedDate);
+}
+
+function mapTournament(tournament) {
+  const categoryList = tournament.categories || [];
+  const venueList = tournament.venues || [];
+  const entryStatuses = categoryList.map((item) => item.entryStatus);
+  const status = entryStatuses.includes("open")
+    ? "Registration Open"
+    : entryStatuses.includes("closing_soon")
+      ? "Registration Closing Soon"
+      : "Registration Closed";
+  const startDate = formatTournamentDate(tournament.startDate);
+  const endDate = formatTournamentDate(tournament.endDate);
+  const disciplines = categoryList.map(
+    (item) => `${item.categoryName} (${item.categoryCode})`,
+  );
+
+  return {
+    id: tournament.id,
+    title: tournament.title || "Untitled Tournament",
+    image: resolveApiAssetUrl(tournament.bannerUrl),
+    status,
+    tier: "",
+    discipline: disciplines.join(", ") || "No categories",
+    disciplines,
+    date: startDate === endDate ? startDate : `${startDate} – ${endDate}`,
+    court: venueList.map((venue) => venue.venueName).filter(Boolean).join(", "),
+    searchText: venueList
+      .flatMap((venue) => [venue.venueName, venue.address])
+      .filter(Boolean)
+      .join(" "),
+    points: `${Number(tournament.rankingPointsPool || 0).toLocaleString()} PTS`,
+    entryFee: `${Number(categoryList[0]?.entryFee || 0).toLocaleString()} MMK`,
+    description: tournament.description || "",
+  };
+}
 
 function Tournaments() {
   const navigate = useNavigate();
+  const [tournaments, setTournaments] = useState([]);
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("All Statuses");
   const [category, setCategory] = useState("All Categories");
   const [view, setView] = useState("grid");
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 1200);
-    return () => clearTimeout(timer);
+    let cancelled = false;
+
+    async function loadTournaments() {
+      setLoading(true);
+      setLoadError("");
+      try {
+        const result = await getTournaments({ page: 1, pageSize: PAGE_SIZE });
+        if (cancelled) return;
+        setTournaments(
+          result.tournaments
+            .filter(
+              (tournament) =>
+                (tournament.publicationStatus || "").toLowerCase() ===
+                "published",
+            )
+            .map(mapTournament),
+        );
+      } catch (error) {
+        if (!cancelled) {
+          setLoadError(
+            error instanceof Error
+              ? error.message
+              : "Unable to load tournaments.",
+          );
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    loadTournaments();
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  const categories = useMemo(
+    () => [
+      "All Categories",
+      ...new Set(tournaments.flatMap((item) => item.disciplines)),
+    ],
+    [tournaments],
+  );
 
   const filteredTournaments = useMemo(() => {
     return tournaments.filter((item) => {
       const query = search.toLowerCase().trim();
-
       const matchesSearch = [
         item.title,
         item.court,
         item.discipline,
         item.tier,
+        item.searchText,
       ].some((value) => value.toLowerCase().includes(query));
 
       const matchesStatus = status === "All Statuses" || item.status === status;
 
       const matchesCategory =
-        category === "All Categories" || item.discipline === category;
+        category === "All Categories" || item.disciplines.includes(category);
 
       return matchesSearch && matchesStatus && matchesCategory;
     });
-  }, [search, status, category]);
+  }, [tournaments, search, status, category]);
 
   const handleViewDetails = (item) => {
     navigate(`/tournament-details/${item.id}`, { state: { tournament: item } });
@@ -1015,8 +1038,12 @@ function Tournaments() {
                   >
                     <option value="All Statuses">All Statuses</option>
                     <option value="Registration Open">Registration Open</option>
-                    <option value="Ongoing (Live)">Ongoing (Live)</option>
-                    <option value="Completed">Completed</option>
+                    <option value="Registration Closing Soon">
+                      Registration Closing Soon
+                    </option>
+                    <option value="Registration Closed">
+                      Registration Closed
+                    </option>
                   </select>
 
                   <KeyboardArrowDown className="tournament-select-icon" />
@@ -1075,6 +1102,22 @@ function Tournaments() {
             </span>
           </div>
 
+          {loadError && (
+            <p
+              role="alert"
+              style={{
+                margin: "0 0 20px",
+                padding: "12px 16px",
+                color: "#b91c1c",
+                background: "#fef2f2",
+                border: "1px solid #fecaca",
+                borderRadius: "8px",
+              }}
+            >
+              Unable to load tournaments: {loadError}
+            </p>
+          )}
+
           {loading ? (
             <section
               className={
@@ -1117,22 +1160,28 @@ function Tournaments() {
                 <Search />
               </div>
 
-              <h2 className="tournament-empty-title">No tournaments found</h2>
+              <h2 className="tournament-empty-title">
+                {loadError ? "Tournament list unavailable" : "No tournaments found"}
+              </h2>
 
               <p className="tournament-empty-description">
-                Try changing your search or filter options.
+                {loadError
+                  ? "Please check your connection and try again later."
+                  : "Try changing your search or filter options."}
               </p>
 
-              <button
-                className="tournament-reset-button"
-                onClick={() => {
-                  setSearch("");
-                  setStatus("All Statuses");
-                  setCategory("All Categories");
-                }}
-              >
-                Reset Filters
-              </button>
+              {!loadError && (
+                <button
+                  className="tournament-reset-button"
+                  onClick={() => {
+                    setSearch("");
+                    setStatus("All Statuses");
+                    setCategory("All Categories");
+                  }}
+                >
+                  Reset Filters
+                </button>
+              )}
             </section>
           ) : view === "grid" ? (
             <section className="tournament-grid">
@@ -1141,7 +1190,7 @@ function Tournaments() {
                   <div className="tournament-card-image-wrapper">
                     <img
                       className="tournament-card-image"
-                      src={item.image}
+                      src={item.image || undefined}
                       alt={item.title}
                       loading="lazy"
                     />
@@ -1150,10 +1199,10 @@ function Tournaments() {
 
                     <span
                       className={`tournament-status-badge ${
-                        item.status === "Ongoing (Live)"
-                          ? "live"
-                          : item.status === "Completed"
-                            ? "completed"
+                        item.status === "Registration Closed"
+                          ? "completed"
+                          : item.status === "Registration Closing Soon"
+                            ? "live"
                             : "open"
                       }`}
                     >
@@ -1245,7 +1294,7 @@ function Tournaments() {
                         <div className="tournament-table-name">
                           <img
                             className="tournament-table-image"
-                            src={item.image}
+                            src={item.image || undefined}
                             alt=""
                           />
 
@@ -1268,10 +1317,10 @@ function Tournaments() {
                       <td className="tournament-table-cell">
                         <span
                           className={`tournament-table-status ${
-                            item.status === "Ongoing (Live)"
-                              ? "live"
-                              : item.status === "Completed"
-                                ? "completed"
+                            item.status === "Registration Closed"
+                              ? "completed"
+                              : item.status === "Registration Closing Soon"
+                                ? "live"
                                 : "open"
                           }`}
                         >
