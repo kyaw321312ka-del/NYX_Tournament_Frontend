@@ -6,7 +6,6 @@ import {
   EmojiEventsOutlined,
   LocationOnOutlined,
   ArrowForward,
-  PersonAddAlt1Outlined,
   KeyboardArrowDown,
   VisibilityOutlined,
   GridViewOutlined,
@@ -143,10 +142,6 @@ function Tournaments() {
 
   const handleViewDetails = (item) => {
     navigate(`/tournament-details/${item.id}`, { state: { tournament: item } });
-  };
-
-  const handleEnroll = (item) => {
-    navigate(`/enroll`, { state: { tournament: item } });
   };
 
   return (
@@ -625,12 +620,10 @@ function Tournaments() {
 
         .tournament-card-actions {
           display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 10px;
+          grid-template-columns: 1fr;
         }
 
-        .tournament-details-button,
-        .tournament-enroll-button {
+        .tournament-details-button {
           display: flex;
           align-items: center;
           justify-content: center;
@@ -658,19 +651,6 @@ function Tournaments() {
 
         .tournament-details-button .MuiSvgIcon-root {
           font-size: 17px;
-        }
-
-        .tournament-enroll-button {
-          background: #ae1236;
-          color: #fff;
-        }
-
-        .tournament-enroll-button:hover {
-          background: #8d0d2a;
-        }
-
-        .tournament-enroll-button .MuiSvgIcon-root {
-          font-size: 18px;
         }
 
         .tournament-empty-state {
@@ -834,16 +814,6 @@ function Tournaments() {
           font-size: 18px;
         }
 
-        .tournament-table-action-button.enroll {
-          border-color: #ae1236;
-          background: #ae1236;
-          color: #fff;
-        }
-
-        .tournament-table-action-button.enroll:hover {
-          background: #8d0d2a;
-        }
-
         .tournament-skeleton-card {
           overflow: hidden;
           border: 1px solid #eceef2;
@@ -974,7 +944,7 @@ function Tournaments() {
         @media (prefers-reduced-motion: reduce) {
           .tournament-skeleton { animation: none; }
           .tournament-card, .tournament-card-image, .tournament-details-button,
-          .tournament-enroll-button {
+          .tournament-table-action-button {
             animation: none;
             transition: none;
           }
@@ -1258,14 +1228,6 @@ function Tournaments() {
                         View Details
                         <ArrowForward />
                       </button>
-
-                      <button
-                        className="tournament-enroll-button"
-                        onClick={() => handleEnroll(item)}
-                      >
-                        <PersonAddAlt1Outlined />
-                        Enroll Now
-                      </button>
                     </div>
                   </div>
                 </article>
@@ -1338,13 +1300,6 @@ function Tournaments() {
                             <VisibilityOutlined />
                           </button>
 
-                          <button
-                            className="tournament-table-action-button enroll"
-                            onClick={() => handleEnroll(item)}
-                            aria-label="Enroll now"
-                          >
-                            <PersonAddAlt1Outlined />
-                          </button>
                         </div>
                       </td>
                     </tr>

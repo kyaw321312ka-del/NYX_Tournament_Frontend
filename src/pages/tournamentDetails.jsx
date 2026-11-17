@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 import {
   CalendarMonthOutlined,
   LocationOnOutlined,
@@ -9,29 +9,89 @@ import Overview from "./overview";
 import Events from "./events";
 import BracketsSchedule from "./brackets";
 import RegisteredPlayers, { approvedPlayersDatabase } from "./players"; // approvedPlayersDatabase ကို import လုပ်ခြင်း
+import { getTournament } from "../features/tournaments/api/tournamentApi";
+import { resolveApiAssetUrl } from "../core/api/apiClient";
+
+function formatTournamentDate(date) {
+  if (!date) return "Date not set";
+  const parsedDate = new Date(date);
+  if (Number.isNaN(parsedDate.getTime())) return "Date not set";
+  return new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(parsedDate);
+}
+
+function mapTournamentDetails(data) {
+  const categories = data.categories || [];
+  const venues = data.venues || [];
+  const entryStatuses = categories.map((item) => item.entryStatus);
+  const startDate = formatTournamentDate(data.startDate);
+  const endDate = formatTournamentDate(data.endDate);
+  const registrationStatus = entryStatuses.includes("open")
+    ? "Registration Open"
+    : entryStatuses.includes("closing_soon")
+      ? "Registration Closing Soon"
+      : "Registration Closed";
+
+  return {
+    ...data,
+    categories,
+    venues,
+    rules: data.rules || [],
+    image: resolveApiAssetUrl(data.bannerUrl),
+    status: registrationStatus,
+    discipline:
+      categories
+        .map((item) => `${item.categoryName} (${item.categoryCode})`)
+        .join(", ") || "No categories",
+    date: startDate === endDate ? startDate : `${startDate} – ${endDate}`,
+    court: venues
+      .map((venue) => [venue.venueName, venue.address].filter(Boolean).join(", "))
+      .filter(Boolean)
+      .join(" · "),
+    points: `${Number(data.rankingPointsPool || 0).toLocaleString()} PTS`,
+    entryFee: `${Number(categories[0]?.entryFee || 0).toLocaleString()} MMK`,
+  };
+}
 
 export default function TournamentDetails() {
   const navigate = useNavigate();
-  const location = useLocation();
   const { id } = useParams();
-
-  const tournament = location.state?.tournament || {
-    id: id || 1,
-    title: "Mandalay Open Cup 2026",
-    image:
-      "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=1200&q=80",
-    status: "Registration Open",
-    tier: "Tier 1 Major",
-    discipline: "Men's Singles (MS)",
-    date: "Dec 05 – 10, 2026",
-    court: "Court A, Mandalay",
-    points: "4,000 PTS",
-    entryFee: "25,000 MMK",
-    description:
-      "The Mandalay Open Cup 2026 is an official BWF-standard Tier 1 major operating under direct knockout single elimination. All matches are conducted in best-of-3 sets using the 21-point rally scoring system with sudden death cap at 30 points.",
-  };
-
+  const [tournament, setTournament] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
   const [activeTab, setActiveTab] = useState("overview");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadTournament() {
+      setLoading(true);
+      setLoadError("");
+      try {
+        const data = await getTournament(id);
+        if (!cancelled) setTournament(mapTournamentDetails(data));
+      } catch (error) {
+        if (!cancelled) {
+          setLoadError(
+            error instanceof Error
+              ? error.message
+              : "Unable to load tournament details.",
+          );
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    loadTournament();
+    return () => {
+      cancelled = true;
+    };
+  }, [id]);
 
   // Approved players စုစုပေါင်းအရေအတွက်ကို dynamic ဖြင့် ရယူခြင်း (လိုအပ်ပါက တကယ့် API count ဖြင့် အစားထိုးနိုင်သည်)
   const totalApprovedPlayers = approvedPlayersDatabase
@@ -41,6 +101,46 @@ export default function TournamentDetails() {
   const handleEnroll = () => {
     navigate(`/register`, { state: { tournament } });
   };
+
+  if (loading || loadError || !tournament) {
+    return (
+      <main
+        style={{
+          minHeight: "60vh",
+          display: "grid",
+          placeContent: "center",
+          justifyItems: "center",
+          gap: "14px",
+          padding: "24px",
+          color: loadError ? "#b91c1c" : "#596170",
+          textAlign: "center",
+        }}
+      >
+        {loading ? (
+          <p role="status">Loading tournament details...</p>
+        ) : (
+          <>
+            <p role="alert">
+              Unable to load tournament details: {loadError}
+            </p>
+            <button
+              type="button"
+              onClick={() => navigate("/tournaments")}
+              style={{
+                padding: "10px 16px",
+                border: "1px solid #cbd5e1",
+                borderRadius: "8px",
+                background: "#fff",
+                cursor: "pointer",
+              }}
+            >
+              Back to Tournaments
+            </button>
+          </>
+        )}
+      </main>
+    );
+  }
 
   return (
     <main
@@ -67,11 +167,13 @@ export default function TournamentDetails() {
             boxShadow: "0 6px 24px rgba(0, 0, 0, 0.1)",
           }}
         >
-          <img
-            src={tournament.image}
-            alt={tournament.title}
-            style={{ width: "100%", height: "100%", objectFit: "cover" }}
-          />
+          {tournament.image && (
+            <img
+              src={tournament.image}
+              alt={tournament.title}
+              style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            />
+          )}
           <div
             style={{
               position: "absolute",

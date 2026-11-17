@@ -1,63 +1,34 @@
-import React from "react";
 import { useNavigate } from "react-router-dom";
-import {
-  FormatListNumberedOutlined,
-  AccessTimeOutlined,
-} from "@mui/icons-material";
+import { FormatListNumberedOutlined } from "@mui/icons-material";
 
 export default function Events({ tournament }) {
   const navigate = useNavigate();
 
-  const categoriesList = [
-    {
-      code: "MS",
-      name: "Men's Singles",
-      eligibility: "Top 100 National",
-      pointsPool: "1,500 PTS (500 W / 350 RU)",
-      matchFormat: "Best of 3 Sets to 21",
-      officialShuttle: "Yonex Aerosensa 50 (Spd 2)",
-      seedsProtected: "8 Seeded Positions",
-      entryStatus: "Open (Fast Closing)",
-      deadline: "Nov 10, 2026 (11:59 PM MMT)",
-      btnText: "Enroll for MS",
-    },
-    {
-      code: "MD",
-      name: "Men's Doubles",
-      eligibility: "Open Division (Pairs)",
-      pointsPool: "1,500 PTS (700 W / 500 RU)",
-      matchFormat: "Best of 3 Sets to 21",
-      officialShuttle: "Yonex Aerosensa 50 (Spd 2)",
-      pairingType: "Fixed Due (Rank Pooled)",
-      entryStatus: "Queue Open for Dropouts",
-      deadline: "Nov 10, 2026 (11:59 PM MMT)",
-      btnText: "Enroll for MD",
-    },
-    {
-      code: "WS",
-      name: "Women's Singles",
-      eligibility: "Open National",
-      pointsPool: "1,300 PTS (350 W / 250 RU)",
-      matchFormat: "Knockout • 3 Sets to 21",
-      officialShuttle: "Yonex Aerosensa 50 (Spd 2)",
-      earlyVerify: "Approved Auto-Pass",
-      entryStatus: "Open for Entries",
-      deadline: "Nov 10, 2026 (11:59 PM MMT)",
-      btnText: "Enroll for WS",
-    },
-    {
-      code: "XD",
-      name: "Mixed Doubles",
-      eligibility: "Combined Rank < 250",
-      pointsPool: "1,200 PTS (450 W / 300 RU)",
-      matchFormat: "Knockout • 3 Sets to 21",
-      officialShuttle: "Yonex Aerosensa 50 (Spd 2)",
-      pairRule: "1 Male + 1 Female",
-      entryStatus: "Open Registration",
-      deadline: "Nov 10, 2026 (11:59 PM MMT)",
-      btnText: "Enroll for XD",
-    },
-  ];
+  const categoriesList = (tournament.categories || []).map((category) => ({
+    code: category.categoryCode,
+    name: category.categoryName,
+    eligibility: category.eligibilityCriteria || "Not specified",
+    pointsPool: `${Number(category.pointsPool || 0).toLocaleString()} PTS`,
+    matchFormat: category.matchFormat || "Not specified",
+    officialShuttle: [
+      category.shuttleName,
+      category.shuttleSpeed ? `Speed ${category.shuttleSpeed}` : "",
+    ]
+      .filter(Boolean)
+      .join(" - ") || "Not specified",
+    seedsProtected: category.seedCount
+      ? `${category.seedCount} Seeded Positions`
+      : "",
+    pairingType: category.pairingType || "",
+    entryStatus:
+      category.entryStatus === "closed"
+        ? "Enrollment Closed"
+        : category.entryStatus === "closing_soon"
+          ? "Closing Soon"
+          : "Enrollment Open",
+    btnText: `Enroll for ${category.categoryCode}`,
+    isClosed: category.entryStatus === "closed",
+  }));
 
   const handleEnrollClick = (category) => {
     navigate("/enroll", { state: { tournament, category } });
@@ -126,13 +97,17 @@ export default function Events({ tournament }) {
             borderRadius: "8px",
           }}
         >
-          {categoriesList.length} Open
+          {categoriesList.length} Categories
         </span>
       </div>
 
       {/* Categories Cards List */}
       <div style={{ display: "flex", flexDirection: "column", gap: "18px" }}>
-        {categoriesList.map((cat, idx) => (
+        {categoriesList.length === 0 ? (
+          <p style={{ color: "#727987" }}>
+            No categories are configured for this tournament.
+          </p>
+        ) : categoriesList.map((cat, idx) => (
           <div
             key={idx}
             style={{
@@ -342,7 +317,7 @@ export default function Events({ tournament }) {
               </div>
             </div>
 
-            {/* Deadline & Enroll Button Row */}
+            {/* Enroll Button Row */}
             <div
               style={{
                 display: "flex",
@@ -354,41 +329,23 @@ export default function Events({ tournament }) {
                 paddingTop: "16px",
               }}
             >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: "8px",
-                  fontSize: "13px",
-                  color: "#596170",
-                  fontWeight: "700",
-                }}
-              >
-                <AccessTimeOutlined
-                  style={{ fontSize: 18, color: "#ae1236" }}
-                />
-                <span>
-                  Enrollment Deadline:{" "}
-                  <b style={{ color: "#172033" }}>{cat.deadline}</b>
-                </span>
-              </div>
-
               <button
                 onClick={() => handleEnrollClick(cat.name)}
+                disabled={cat.isClosed}
                 style={{
-                  background: "#ae1236",
+                  background: cat.isClosed ? "#9ca3af" : "#ae1236",
                   color: "#fff",
                   border: "none",
                   padding: "12px 24px",
                   borderRadius: "10px",
                   fontSize: "14px",
                   fontWeight: "800",
-                  cursor: "pointer",
+                  cursor: cat.isClosed ? "not-allowed" : "pointer",
                   boxShadow: "0 3px 12px rgba(174, 18, 54, 0.25)",
                   transition: "background 0.2s",
                 }}
               >
-                {cat.btnText}
+                {cat.isClosed ? "Enrollment Closed" : cat.btnText}
               </button>
             </div>
           </div>

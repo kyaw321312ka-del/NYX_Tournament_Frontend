@@ -1,14 +1,8 @@
-import React from "react";
 import {
   InfoOutlined,
   EmojiEventsOutlined,
   FormatListNumberedOutlined,
   LocationOnOutlined,
-  EmojiEvents,
-  MilitaryTech,
-  WorkspacePremium,
-  Star,
-  RadioButtonChecked,
 } from "@mui/icons-material";
 
 export default function Overview({ tournament }) {
@@ -63,30 +57,9 @@ export default function Overview({ tournament }) {
             gap: "16px",
           }}
         >
-          {[
-            {
-              num: "01",
-              title: "Tournament Format",
-              desc: "Single elimination knockout system across all designated categories (MS, WS, MD, XD).",
-            },
-            {
-              num: "02",
-              title: "Match Scoring Rules",
-              desc: "Best of 3 sets to 21 rally points. Golden point tie-breaker rule applies at 20-all capped at 30.",
-            },
-            {
-              num: "03",
-              title: "Official Equipment",
-              desc: "Tournament shuttle: Yonex AS-30 Feather; BWF Grade 1 Synthetic Rubber Mats (Court 1-6).",
-            },
-            {
-              num: "04",
-              title: "Dress Code Standard",
-              desc: "Standard BWF sports attire mandatory. Non-marking gum rubber court soles strictly enforced.",
-            },
-          ].map((rule, idx) => (
+          {(tournament.rules || []).map((rule, idx) => (
             <div
-              key={idx}
+              key={rule.id || `${rule.title}-${idx}`}
               style={{
                 display: "flex",
                 gap: "14px",
@@ -111,7 +84,7 @@ export default function Overview({ tournament }) {
                   flexShrink: 0,
                 }}
               >
-                {rule.num}
+                {String(idx + 1).padStart(2, "0")}
               </div>
               <div>
                 <h4
@@ -132,11 +105,16 @@ export default function Overview({ tournament }) {
                     lineHeight: "1.5",
                   }}
                 >
-                  {rule.desc}
+                  {rule.description}
                 </p>
               </div>
             </div>
           ))}
+          {(!tournament.rules || tournament.rules.length === 0) && (
+            <p style={{ color: "#727987" }}>
+              No official rules have been added to this tournament.
+            </p>
+          )}
         </div>
       </div>
 
@@ -189,95 +167,73 @@ export default function Overview({ tournament }) {
         </div>
         <div style={{ height: "14px" }} />
 
-        {[
-          {
-            rank: "Champion",
-            desc: "Tournament Trophy + Gold Medallion",
-            pts: "1,000 PTS",
-            icon: <EmojiEvents style={{ color: "#d97706", fontSize: 20 }} />,
-          },
-          {
-            rank: "Runner-up",
-            desc: "Finalist Silver Medallion",
-            pts: "700 PTS",
-            icon: <MilitaryTech style={{ color: "#64748b", fontSize: 20 }} />,
-          },
-          {
-            rank: "Semi-Finalists (3rd & 4th)",
-            desc: "Bronze Medallion Placements",
-            pts: "400 PTS",
-            icon: (
-              <WorkspacePremium style={{ color: "#b45309", fontSize: 20 }} />
-            ),
-          },
-          {
-            rank: "Quarter-Finalists",
-            desc: "Top 8 Bracket Finish",
-            pts: "200 PTS",
-            icon: <Star style={{ color: "#475569", fontSize: 18 }} />,
-          },
-          {
-            rank: "Round of 16",
-            desc: "Stage 1 Progression",
-            pts: "100 PTS",
-            icon: (
-              <RadioButtonChecked style={{ color: "#0284c7", fontSize: 16 }} />
-            ),
-          },
-          {
-            rank: "Participation Points",
-            desc: "Verified Tournament Check-in",
-            pts: "50 PTS",
-            icon: (
-              <RadioButtonChecked style={{ color: "#0d9488", fontSize: 16 }} />
-            ),
-          },
-        ].map((item, idx) => (
+        {(tournament.categories || []).map((category, categoryIndex) => (
           <div
-            key={idx}
+            key={category.id || `${category.categoryCode}-${categoryIndex}`}
             style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              padding: "14px 0",
-              borderBottom: idx === 5 ? "none" : "1px solid #f1f3f6",
+              padding: "12px 0",
+              borderBottom:
+                categoryIndex === tournament.categories.length - 1
+                  ? "none"
+                  : "1px solid #f1f3f6",
             }}
           >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "12px",
-                fontSize: "14.5px",
-                fontWeight: "700",
-                color: "#172033",
-              }}
-            >
-              <span style={{ display: "flex", alignItems: "center" }}>
-                {item.icon}
-              </span>
-              {item.rank}{" "}
-              <span
-                style={{
-                  fontSize: "13px",
-                  color: "#727987",
-                  fontWeight: "500",
-                }}
-              >
-                {item.desc}
-              </span>
-            </div>
-            <div
-              style={{
-                fontSize: "15.5px",
-                fontWeight: "900",
-                color: "#ae1236",
-              }}
-            >
-              {item.pts}
-            </div>
+            <h4 style={{ margin: "0 0 8px", color: "#172033" }}>
+              {category.categoryName} ({category.categoryCode})
+            </h4>
+            {(category.pointTiers || []).length === 0 ? (
+              <p style={{ margin: 0, color: "#727987" }}>
+                No leaderboard points configured.
+              </p>
+            ) : (
+              category.pointTiers.map((tier, tierIndex) => (
+                <div
+                  key={tier.id || `${tier.position}-${tierIndex}`}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    padding: "10px 0",
+                    borderBottom:
+                      tierIndex === category.pointTiers.length - 1
+                        ? "none"
+                        : "1px solid #f1f3f6",
+                  }}
+                >
+                  <span
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "12px",
+                      fontSize: "14px",
+                      fontWeight: "700",
+                      color: "#172033",
+                    }}
+                  >
+                    <EmojiEventsOutlined
+                      style={{ color: "#d97706", fontSize: 20 }}
+                    />
+                    {tier.label}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: "15px",
+                      fontWeight: "900",
+                      color: "#ae1236",
+                    }}
+                  >
+                    {Number(tier.points || 0).toLocaleString()} PTS
+                  </span>
+                </div>
+              ))
+            )}
           </div>
         ))}
+        {(tournament.categories || []).length === 0 && (
+          <p style={{ color: "#727987" }}>
+            No leaderboard points are configured.
+          </p>
+        )}
       </div>
 
       {/* Included Categories & Draw Caps */}
@@ -317,7 +273,7 @@ export default function Overview({ tournament }) {
           <span
             style={{ fontSize: "12px", fontWeight: "800", color: "#727987" }}
           >
-            4 Events Active
+            {(tournament.categories || []).length} Events Active
           </span>
         </div>
 
@@ -328,28 +284,7 @@ export default function Overview({ tournament }) {
             gap: "16px",
           }}
         >
-          {[
-            {
-              title: "Men's Singles",
-              code: "MS",
-              sub: "Individual Knockout • Single Player",
-            },
-            {
-              title: "Women's Singles",
-              code: "WS",
-              sub: "Individual Knockout • Single Player",
-            },
-            {
-              title: "Men's Doubles",
-              code: "MD",
-              sub: "Pairs Knockout • Two Players per Team",
-            },
-            {
-              title: "Mixed Doubles",
-              code: "XD",
-              sub: "Male + Female Tandem • Knockout",
-            },
-          ].map((cat, idx) => (
+          {(tournament.categories || []).map((cat, idx) => (
             <div
               key={idx}
               style={{
@@ -390,7 +325,11 @@ export default function Overview({ tournament }) {
                     borderRadius: "6px",
                   }}
                 >
-                  {cat.left}
+                  {cat.entryStatus === "closing_soon"
+                    ? "Closing Soon"
+                    : cat.entryStatus === "closed"
+                      ? "Closed"
+                      : "Open"}
                 </span>
               </div>
               <h4
@@ -401,7 +340,7 @@ export default function Overview({ tournament }) {
                   margin: "0 0 4px",
                 }}
               >
-                {cat.title}
+                {cat.categoryName}
               </h4>
               <p
                 style={{
@@ -411,10 +350,15 @@ export default function Overview({ tournament }) {
                   fontWeight: "500",
                 }}
               >
-                {cat.sub}
+                {cat.pairingType} • {cat.seedCount} seeded positions
               </p>
             </div>
           ))}
+          {(tournament.categories || []).length === 0 && (
+            <p style={{ color: "#727987" }}>
+              No categories are configured for this tournament.
+            </p>
+          )}
         </div>
       </div>
 
