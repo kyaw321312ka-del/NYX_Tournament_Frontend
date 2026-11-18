@@ -1,8 +1,11 @@
 import { useNavigate } from "react-router-dom";
 import { FormatListNumberedOutlined } from "@mui/icons-material";
+import { useAuth } from "../features/auth/useAuth";
 
 export default function Events({ tournament }) {
   const navigate = useNavigate();
+  const { session } = useAuth();
+  const isAuthenticated = Boolean(session?.token);
 
   const categoriesList = (tournament.categories || []).map((category) => ({
     code: category.categoryCode,
@@ -331,21 +334,34 @@ export default function Events({ tournament }) {
             >
               <button
                 onClick={() => handleEnrollClick(cat.name)}
-                disabled={cat.isClosed}
+                disabled={cat.isClosed || !isAuthenticated}
+                title={
+                  !isAuthenticated
+                    ? "Log in to enroll in this event."
+                    : undefined
+                }
                 style={{
-                  background: cat.isClosed ? "#9ca3af" : "#ae1236",
+                  background:
+                    cat.isClosed || !isAuthenticated ? "#9ca3af" : "#ae1236",
                   color: "#fff",
                   border: "none",
                   padding: "12px 24px",
                   borderRadius: "10px",
                   fontSize: "14px",
                   fontWeight: "800",
-                  cursor: cat.isClosed ? "not-allowed" : "pointer",
+                  cursor:
+                    cat.isClosed || !isAuthenticated
+                      ? "not-allowed"
+                      : "pointer",
                   boxShadow: "0 3px 12px rgba(174, 18, 54, 0.25)",
                   transition: "background 0.2s",
                 }}
               >
-                {cat.isClosed ? "Enrollment Closed" : cat.btnText}
+                {cat.isClosed
+                  ? "Enrollment Closed"
+                  : !isAuthenticated
+                    ? "Log in to Enroll"
+                    : cat.btnText}
               </button>
             </div>
           </div>
