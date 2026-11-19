@@ -86,12 +86,37 @@ export async function createTournament(tournament, banner) {
     body: formData,
   });
 
-  if (response?.success !== true) {
+  if (response?.success !== true || response.data?.id == null) {
     throw new Error(
       (typeof response?.message === "string" && response.message) ||
-        "The server did not confirm tournament creation.",
+        "The server did not return the created tournament ID.",
     );
   }
 
-  return response;
+  return response.data;
+}
+
+export async function updateTournament(id, tournament, banner) {
+  const formData = new FormData();
+  formData.append("tournament", JSON.stringify(tournament));
+  if (banner) {
+    formData.append("banner", banner, banner.name);
+  }
+
+  const response = await apiRequest(
+    `/tournaments/${encodeURIComponent(id)}`,
+    {
+      method: "PUT",
+      body: formData,
+    },
+  );
+
+  if (response?.success !== true || !response.data) {
+    throw new Error(
+      (typeof response?.message === "string" && response.message) ||
+        "The server did not confirm tournament updates.",
+    );
+  }
+
+  return response.data;
 }

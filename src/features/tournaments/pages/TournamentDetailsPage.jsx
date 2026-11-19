@@ -6,7 +6,11 @@ import AddIcon from "@mui/icons-material/Add";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutlined";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import EditModeIcon from "@mui/icons-material/Edit";
-import { getTournament } from "../api/tournamentApi";
+import {
+  getTournament,
+  publishTournament,
+  updateTournament,
+} from "../api/tournamentApi";
 import { resolveApiAssetUrl } from "../../../core/api/apiClient";
 
 export default function TournamentDetailsPage() {
@@ -26,6 +30,10 @@ export default function TournamentDetailsPage() {
   const [courtName, setCourtName] = useState("");
   const [address, setAddress] = useState("");
   const [bannerImage, setBannerImage] = useState("");
+  const [bannerFile, setBannerFile] = useState(null);
+  const [originalTournament, setOriginalTournament] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [updateError, setUpdateError] = useState("");
 
   // Edit Mode State (Default: Read-Only)
   const [isEditing, setIsEditing] = useState(false);
@@ -40,6 +48,9 @@ export default function TournamentDetailsPage() {
   const [categories, setCategories] = useState([]);
 
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const isPublished =
+    (originalTournament?.publicationStatus || "").toLowerCase() ===
+    "published";
 
   useEffect(() => {
     let cancelled = false;
@@ -51,6 +62,7 @@ export default function TournamentDetailsPage() {
         const tournament = await getTournament(id);
         if (cancelled) return;
 
+        setOriginalTournament(tournament);
         const firstCategory = tournament.categories?.[0];
         setTitle(tournament.title || "");
         setFee(firstCategory?.entryFee?.toString() || "");
@@ -76,10 +88,7 @@ export default function TournamentDetailsPage() {
           [...(tournament.rules || [])]
             .sort((a, b) => a.sortOrder - b.sortOrder)
             .map(
-              ({
-                title: ruleTitle,
-                description: ruleDescription,
-              }) => ({
+              ({ title: ruleTitle, description: ruleDescription }) => ({
                 title: ruleTitle || "",
                 description: ruleDescription || "",
               }),
@@ -87,6 +96,7 @@ export default function TournamentDetailsPage() {
         );
         setCategories(
           (tournament.categories || []).map((category) => ({
+            source: category,
             code: category.categoryCode || "",
             name: category.categoryName || "",
             seeds: `${category.pairingType || "singles"} - ${category.seedCount || 0} Seeded Positions`,
@@ -103,6 +113,7 @@ export default function TournamentDetailsPage() {
               ? `${category.shuttleName || ""} (Speed ${category.shuttleSpeed})`
               : category.shuttleName || "",
             pointTiers: (category.pointTiers || []).map((tier) => ({
+              source: tier,
               place: tier.label || "",
               points: String(tier.points ?? ""),
             })),
@@ -127,12 +138,35 @@ export default function TournamentDetailsPage() {
     };
   }, [id]);
 
+  useEffect(() => {
+    if (!bannerImage.startsWith("blob:")) return undefined;
+    return () => URL.revokeObjectURL(bannerImage);
+  }, [bannerImage]);
+
   const handleImageChange = (e) => {
     if (!isEditing) return;
-    const file = e.target.files[0];
-    if (file) {
-      setBannerImage(URL.createObjectURL(file));
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!["image/jpeg", "image/png", "image/webp"].includes(file.type)) {
+      setBannerFile(null);
+      setBannerImage(resolveApiAssetUrl(originalTournament?.bannerUrl));
+      setUpdateError("Choose a JPEG, PNG, or WebP banner image.");
+      e.target.value = "";
+      return;
     }
+
+    if (file.size > 10 * 1024 * 1024) {
+      setBannerFile(null);
+      setBannerImage(resolveApiAssetUrl(originalTournament?.bannerUrl));
+      setUpdateError("The banner image must be 10 MB or smaller.");
+      e.target.value = "";
+      return;
+    }
+
+    setUpdateError("");
+    setBannerFile(file);
+    setBannerImage(URL.createObjectURL(file));
   };
 
   const handleAddRule = () => {
@@ -150,6 +184,7 @@ export default function TournamentDetailsPage() {
     setCategories([
       ...categories,
       {
+        source: null,
         code: "",
         name: "",
         seeds: "8 Seeded Positions",
@@ -178,6 +213,7 @@ export default function TournamentDetailsPage() {
               pointTiers: [
                 ...category.pointTiers,
                 {
+                  source: null,
                   place: `${category.pointTiers.length + 1}th Place`,
                   points: "150",
                 },
@@ -222,42 +258,190 @@ export default function TournamentDetailsPage() {
   };
 
   // Comprehensive Validation on Update
-  const handleUpdate = (e) => {
+  const handleUpdate = async (e) => {
     e.preventDefault();
     if (!isEditing) return;
+    if (isPublished) {
+      setIsEditing(false);
+      setUpdateError("Published tournaments cannot be edited.");
+      return;
+    }
 
     setAttemptedSubmit(true);
+    setUpdateError("");
 
-    // 1. Validate Banner Image
-    if (!bannerImage) return;
-
-    // 2. Validate Basic Details
+    if (!bannerImage) {
+      setUpdateError("A banner image is required.");
+      return;
+    }
     if (!title || !fee || !startDate || !endDate || !pointsPool || !description)
       return;
-
-    // 3. Validate Venue & Location
     if (!courtName || !address) return;
-
-    // 4. Validate Official Rules
-    for (let r of rules) {
-      if (!r.title || !r.description) return;
+    if (
+      rules.some(
+        (rule) => !rule.title.trim() || !rule.description.trim(),
+      ) ||
+      categories.some(
+        (category) =>
+          !category.code.trim() ||
+          !category.name.trim() ||
+          !category.criteria.trim() ||
+          !category.pointsPool ||
+          !category.shuttle.trim() ||
+          category.pointTiers.some(
+            (tier) => !tier.place.trim() || !tier.points,
+          ),
+      )
+    ) {
+      return;
     }
 
-    // 5. Validate Event Categories
-    for (let c of categories) {
-      if (!c.code || !c.name || !c.criteria || !c.pointsPool || !c.shuttle)
-        return;
+    const numericFields = [
+      fee,
+      pointsPool,
+      ...categories.flatMap((category) => [
+        category.pointsPool,
+        ...category.pointTiers.map((tier) => tier.points),
+      ]),
+    ].map(Number);
+    if (numericFields.some((value) => !Number.isFinite(value) || value < 0)) {
+      setUpdateError(
+        "Entry fees and ranking points must be valid non-negative numbers.",
+      );
+      return;
     }
 
-    // 6. Validate each category's leaderboard tiers
-    for (let category of categories) {
-      for (let tier of category.pointTiers) {
-        if (!tier.place || !tier.points) return;
+    if (!originalTournament) {
+      setUpdateError("Tournament details have not finished loading.");
+      return;
+    }
+
+    const existingVenueNames = (originalTournament.venues || [])
+      .map((venue) => venue.venueName)
+      .filter(Boolean)
+      .join(", ");
+    const existingAddresses = (originalTournament.venues || [])
+      .map((venue) => venue.address)
+      .filter(Boolean)
+      .join(", ");
+    const venues =
+      courtName === existingVenueNames && address === existingAddresses
+        ? (originalTournament.venues || []).map((venue) => ({
+            venueName: venue.venueName,
+            address: venue.address,
+          }))
+        : [
+            { venueName: courtName.trim(), address: address.trim() },
+          ];
+
+    const tournamentPayload = {
+      title: title.trim(),
+      description: description.trim(),
+      startDate,
+      endDate,
+      rankingPointsPool: Number(pointsPool),
+      venues,
+      rules: rules.map((rule, index) => ({
+        title: rule.title.trim(),
+        description: rule.description.trim(),
+        sortOrder: index + 1,
+      })),
+      categories: categories.map((category, index) => {
+        const seedCount =
+          Number(category.seeds.match(/(\d+)\s*Seeded/i)?.[1]) ||
+          Number(category.source?.seedCount) ||
+          0;
+        const shuttleMatch = category.shuttle.match(
+          /^(.*?)\s*\(Speed\s+([^)]+)\)$/i,
+        );
+        const status =
+          category.status === "Enrollment Closed"
+            ? "closed"
+            : category.status === "Enrollment Open"
+              ? "open"
+              : "closing_soon";
+
+        return {
+          categoryCode: category.code.trim().toUpperCase(),
+          categoryName: category.name.trim(),
+          pairingType:
+            category.source?.pairingType ||
+            (/doubles/i.test(category.name) ? "doubles" : "singles"),
+          seedCount,
+          matchFormat: category.format,
+          entryFee:
+            index === 0
+              ? Number(fee)
+              : Number(category.source?.entryFee ?? fee),
+          entryStatus: status,
+          eligibilityCriteria: category.criteria.trim(),
+          pointsPool: Number(category.pointsPool),
+          shuttleName: shuttleMatch
+            ? shuttleMatch[1].trim()
+            : category.shuttle.trim(),
+          shuttleSpeed:
+            shuttleMatch?.[2] || category.source?.shuttleSpeed || "",
+          ageGroup: category.source?.ageGroup ?? null,
+          pointTiers: category.pointTiers.map((tier, tierIndex) => ({
+            position: tier.source?.position ?? tierIndex + 1,
+            label: tier.place.trim(),
+            points: Number(tier.points),
+          })),
+        };
+      }),
+    };
+
+    const shouldPublish =
+      regStatus === "published" &&
+      originalTournament.publicationStatus !== "published";
+
+    setIsSaving(true);
+    let detailsSaved = false;
+    try {
+      const updatedTournament = await updateTournament(
+        id,
+        tournamentPayload,
+        bannerFile,
+      );
+      detailsSaved = true;
+      setOriginalTournament((current) => ({
+        ...current,
+        ...updatedTournament,
+      }));
+
+      if (shouldPublish) {
+        await publishTournament(id);
       }
-    }
 
-    // All valid
-    setShowSuccessModal(true);
+      const savedTournament = shouldPublish
+        ? { ...updatedTournament, publicationStatus: "published" }
+        : updatedTournament;
+      const savedPublicationStatus =
+        savedTournament.publicationStatus ||
+        originalTournament.publicationStatus ||
+        "draft";
+      setOriginalTournament((current) => ({
+        ...current,
+        ...savedTournament,
+      }));
+      setRegStatus(savedPublicationStatus);
+      if (savedTournament.bannerUrl) {
+        setBannerImage(resolveApiAssetUrl(savedTournament.bannerUrl));
+      }
+      setBannerFile(null);
+      setIsEditing(false);
+      setShowSuccessModal(true);
+    } catch (error) {
+      setUpdateError(
+        detailsSaved
+          ? `Tournament details were saved, but publishing failed: ${error instanceof Error ? error.message : "Unable to publish tournament."}`
+          : error instanceof Error
+            ? error.message
+            : "Unable to update tournament.",
+      );
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const renderCategoryLeaderboard = (category, categoryIndex) => (
@@ -524,27 +708,46 @@ export default function TournamentDetailsPage() {
         <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
           {/* Toggle Edit Mode Button */}
           <button
+            disabled={isSaving || isPublished}
             onClick={() => {
               setIsEditing(!isEditing);
               setAttemptedSubmit(false);
+              setUpdateError("");
             }}
+            title={
+              isPublished
+                ? "Published tournaments cannot be edited."
+                : undefined
+            }
             style={{
               display: "flex",
               alignItems: "center",
               gap: "6px",
-              backgroundColor: isEditing ? "#fee2e2" : "#f1f5f9",
-              color: isEditing ? "#dc2626" : "#475569",
+              backgroundColor: isPublished
+                ? "#f1f5f9"
+                : isEditing
+                  ? "#fee2e2"
+                  : "#f1f5f9",
+              color: isPublished
+                ? "#64748b"
+                : isEditing
+                  ? "#dc2626"
+                  : "#475569",
               border: isEditing ? "1px solid #fecaca" : "1px solid #cbd5e1",
               padding: "10px 16px",
               borderRadius: "8px",
               fontSize: "13px",
               fontWeight: "bold",
-              cursor: "pointer",
+              cursor: isPublished ? "not-allowed" : "pointer",
               transition: "all 0.2s",
             }}
           >
             <EditModeIcon style={{ fontSize: "16px" }} />
-            {isEditing ? "Edit Mode Active" : "Enable Edit Mode"}
+            {isPublished
+              ? "Published (Read-Only)"
+              : isEditing
+                ? "Edit Mode Active"
+                : "Enable Edit Mode"}
           </button>
         </div>
       </div>
@@ -622,17 +825,30 @@ export default function TournamentDetailsPage() {
 
           {/* Banner Image Preview */}
           <div style={{ position: "relative", marginBottom: "24px" }}>
-            <img
-              src={bannerImage}
-              alt="Tournament Banner"
-              style={{
-                width: "100%",
-                height: "220px",
-                objectFit: "cover",
-                borderRadius: "10px",
-                opacity: isEditing ? 1 : 0.95,
-              }}
-            />
+            {bannerImage ? (
+              <img
+                src={bannerImage}
+                alt="Tournament Banner"
+                style={{
+                  width: "100%",
+                  height: "220px",
+                  objectFit: "cover",
+                  borderRadius: "10px",
+                  opacity: isEditing ? 1 : 0.95,
+                }}
+              />
+            ) : (
+              <div
+                role="img"
+                aria-label="No tournament banner available"
+                style={{
+                  width: "100%",
+                  height: "220px",
+                  backgroundColor: "#e2e8f0",
+                  borderRadius: "10px",
+                }}
+              />
+            )}
             {isEditing && (
               <label
                 style={{
@@ -655,11 +871,30 @@ export default function TournamentDetailsPage() {
                 Banner
                 <input
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/png,image/webp"
                   onChange={handleImageChange}
                   style={{ display: "none" }}
                 />
               </label>
+            )}
+            {bannerFile && (
+              <span
+                style={{
+                  position: "absolute",
+                  left: "12px",
+                  bottom: "14px",
+                  padding: "7px 10px",
+                  backgroundColor: "rgba(15,23,42,0.85)",
+                  color: "#fff",
+                  borderRadius: "8px",
+                  fontSize: "11px",
+                  fontWeight: "bold",
+                  maxWidth: "70%",
+                  overflowWrap: "anywhere",
+                }}
+              >
+                Selected: {bannerFile.name}
+              </span>
             )}
           </div>
 
@@ -1947,6 +2182,22 @@ export default function TournamentDetailsPage() {
         </div>
 
         {/* Bottom Actions */}
+        {updateError && (
+          <div
+            role="alert"
+            style={{
+              marginTop: "16px",
+              padding: "12px 14px",
+              borderRadius: "8px",
+              background: "#fef2f2",
+              color: "#b91c1c",
+              fontSize: "13px",
+              fontWeight: "700",
+            }}
+          >
+            {updateError}
+          </div>
+        )}
         <div
           style={{
             display: "flex",
@@ -1957,6 +2208,7 @@ export default function TournamentDetailsPage() {
         >
           <button
             onClick={() => navigate("/admin/tournament")}
+            disabled={isSaving}
             style={{
               padding: "14px 32px",
               backgroundColor: "#ffffff",
@@ -1973,22 +2225,30 @@ export default function TournamentDetailsPage() {
 
           <button
             onClick={handleUpdate}
-            disabled={!isEditing}
+            disabled={!isEditing || isSaving}
             style={{
               padding: "14px 36px",
-              backgroundColor: isEditing ? "#dc2626" : "#cbd5e1",
-              color: isEditing ? "#fff" : "#64748b",
+              backgroundColor: isEditing && !isSaving ? "#dc2626" : "#cbd5e1",
+              color: isEditing && !isSaving ? "#fff" : "#64748b",
               border: "none",
               borderRadius: "10px",
               fontSize: "13px",
               fontWeight: "bold",
-              cursor: isEditing ? "pointer" : "not-allowed",
-              boxShadow: isEditing ? "0 4px 12px rgba(220,38,38,0.3)" : "none",
-              opacity: isEditing ? 1 : 0.6,
+              cursor: isEditing && !isSaving ? "pointer" : "not-allowed",
+              boxShadow:
+                isEditing && !isSaving
+                  ? "0 4px 12px rgba(220,38,38,0.3)"
+                  : "none",
+              opacity: isEditing && !isSaving ? 1 : 0.6,
               transition: "all 0.2s",
             }}
           >
-            💾 SAVE CHANGES & UPDATE
+            {isSaving
+              ? "SAVING..."
+              : regStatus === "published" &&
+                  originalTournament?.publicationStatus !== "published"
+                ? "SAVE CHANGES & PUBLISH"
+                : "SAVE CHANGES & UPDATE"}
           </button>
         </div>
       </div>

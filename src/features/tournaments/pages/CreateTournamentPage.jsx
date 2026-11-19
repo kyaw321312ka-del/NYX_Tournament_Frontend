@@ -8,6 +8,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import {
   createTournament,
   getTournamentCategories,
+  publishTournament,
 } from "../api/tournamentApi";
 
 function parseNumericField(value) {
@@ -74,6 +75,7 @@ export default function CreateTournamentPage() {
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionError, setSubmissionError] = useState("");
+  const [createdTournamentId, setCreatedTournamentId] = useState(null);
   const [availableCategories, setAvailableCategories] = useState([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
   const [categoryLoadError, setCategoryLoadError] = useState("");
@@ -199,9 +201,26 @@ export default function CreateTournamentPage() {
   const handlePublish = async (e) => {
     e.preventDefault();
     if (isSubmitting) return;
-    setAttemptedSubmit(true);
     setSubmissionError("");
 
+    if (createdTournamentId != null) {
+      setIsSubmitting(true);
+      try {
+        await publishTournament(createdTournamentId);
+        setShowSuccessModal(true);
+      } catch (error) {
+        setSubmissionError(
+          error instanceof Error
+            ? error.message
+            : "Unable to publish the created tournament.",
+        );
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
+    }
+
+    setAttemptedSubmit(true);
     if (isLoadingCategories || categoryLoadError) {
       setSubmissionError(
         categoryLoadError ||
@@ -305,11 +324,20 @@ export default function CreateTournamentPage() {
 
     setIsSubmitting(true);
     try {
-      await createTournament(tournament, bannerFile);
+      const createdTournament = await createTournament(tournament, bannerFile);
+      setCreatedTournamentId(createdTournament.id);
+      try {
+        await publishTournament(createdTournament.id);
+      } catch (error) {
+        setSubmissionError(
+          `Tournament created as a draft, but publishing failed: ${error instanceof Error ? error.message : "Unable to publish tournament."}`,
+        );
+        return;
+      }
       setShowSuccessModal(true);
     } catch (error) {
       setSubmissionError(
-        error instanceof Error ? error.message : "Unable to publish tournament.",
+        error instanceof Error ? error.message : "Unable to create tournament.",
       );
     } finally {
       setIsSubmitting(false);
@@ -2144,7 +2172,11 @@ export default function CreateTournamentPage() {
               boxShadow: "0 4px 12px rgba(220,38,38,0.3)",
             }}
           >
-            {isSubmitting ? "PUBLISHING..." : "🚀 PUBLISH TOURNAMENT"}
+            {isSubmitting
+              ? "PUBLISHING..."
+              : createdTournamentId != null
+                ? "RETRY PUBLISH"
+                : "🚀 PUBLISH TOURNAMENT"}
           </button>
         </div>
       </div>
