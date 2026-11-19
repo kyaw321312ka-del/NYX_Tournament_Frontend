@@ -8,8 +8,10 @@ export default function Events({ tournament }) {
   const isAuthenticated = Boolean(session?.token);
 
   const categoriesList = (tournament.categories || []).map((category) => ({
+    id: category.id,
     code: category.categoryCode,
     name: category.categoryName,
+    entryFee: category.entryFee,
     eligibility: category.eligibilityCriteria || "Not specified",
     pointsPool: `${Number(category.pointsPool || 0).toLocaleString()} PTS`,
     matchFormat: category.matchFormat || "Not specified",
@@ -333,7 +335,7 @@ export default function Events({ tournament }) {
               }}
             >
               <button
-                onClick={() => handleEnrollClick(cat.name)}
+                onClick={() => handleEnrollClick(cat)}
                 disabled={cat.isClosed || !isAuthenticated}
                 title={
                   !isAuthenticated

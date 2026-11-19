@@ -1,8 +1,7 @@
 import { apiRequest } from "../../../core/api/apiClient";
 
-export async function getPaymentMethods() {
-  const response = await apiRequest("/admin/payment-methods");
-
+async function fetchPaymentMethods(path) {
+  const response = await apiRequest(path);
   if (response?.success !== true || !Array.isArray(response.data)) {
     throw new Error(
       (typeof response?.message === "string" && response.message) ||
@@ -11,6 +10,14 @@ export async function getPaymentMethods() {
   }
 
   return response.data;
+}
+
+export async function getPaymentMethods() {
+  return fetchPaymentMethods("/admin/payment-methods");
+}
+
+export async function getEnrollmentPaymentMethods() {
+  return fetchPaymentMethods("/payment-methods");
 }
 
 export async function createPaymentMethod({
