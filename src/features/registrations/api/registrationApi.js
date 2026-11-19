@@ -52,6 +52,64 @@ export async function createPartnerInvitation(
   return response.data;
 }
 
+export async function getPartnerInvitations(
+  direction,
+  { page = 1, pageSize = 20 } = {},
+) {
+  if (!["sent", "received"].includes(direction)) {
+    throw new Error("Invitation direction must be sent or received.");
+  }
+
+  const query = new URLSearchParams({
+    page: String(page),
+    pageSize: String(pageSize),
+  });
+  const response = await apiRequest(
+    `/registrations/partner-invitations/${direction}?${query}`,
+  );
+
+  if (response?.success !== true || !Array.isArray(response.data)) {
+    throw new Error(
+      getErrorMessage(
+        response,
+        `The server returned an invalid ${direction} invitations list.`,
+      ),
+    );
+  }
+
+  return {
+    invitations: response.data,
+    pagination: response.pagination || {
+      page,
+      pageSize,
+      total: response.data.length,
+      pageCount: 1,
+    },
+  };
+}
+
+export async function respondToPartnerInvitation(invitationId, action) {
+  if (!["accept", "decline", "cancel"].includes(action)) {
+    throw new Error("Unsupported partner invitation action.");
+  }
+
+  const response = await apiRequest(
+    `/registrations/partner-invitations/${encodeURIComponent(invitationId)}/${action}`,
+    { method: "POST" },
+  );
+
+  if (response?.success !== true) {
+    throw new Error(
+      getErrorMessage(
+        response,
+        `The server did not confirm the invitation ${action}.`,
+      ),
+    );
+  }
+
+  return response.data;
+}
+
 export async function getMyRegistrations({ page = 1, pageSize = 20 } = {}) {
   const query = new URLSearchParams({
     page: String(page),

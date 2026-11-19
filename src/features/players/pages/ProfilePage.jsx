@@ -19,6 +19,10 @@ import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined";
 import { useAuth } from "../../auth/hooks/useAuth";
 import { resolveApiAssetUrl } from "../../../core/api/apiClient";
+import {
+  getPartnerInvitations,
+  respondToPartnerInvitation,
+} from "../../registrations/api/registrationApi";
 
 const initialCategories = ["U-13 Singles", "U-13 Doubles", "U-15 Singles"];
 
@@ -83,6 +87,11 @@ const paymentSlipsHistory = [
   },
 ];
 
+function formatInvitationExpiry(value) {
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? "Unknown" : date.toLocaleString();
+}
+
 export default function Profile() {
   const navigate = useNavigate();
   const { session, refreshUser, signOut } = useAuth();
@@ -125,6 +134,20 @@ export default function Profile() {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [selectedDocument, setSelectedDocument] = useState(null);
+  const [sentInvitations, setSentInvitations] = useState([]);
+  const [receivedInvitations, setReceivedInvitations] = useState([]);
+  const [sentInvitationPage, setSentInvitationPage] = useState(1);
+  const [receivedInvitationPage, setReceivedInvitationPage] = useState(1);
+  const [sentInvitationPageCount, setSentInvitationPageCount] = useState(1);
+  const [receivedInvitationPageCount, setReceivedInvitationPageCount] =
+    useState(1);
+  const [invitationsLoading, setInvitationsLoading] = useState(true);
+  const [invitationRefresh, setInvitationRefresh] = useState(0);
+  const [invitationsError, setInvitationsError] = useState("");
+  const [invitationActionId, setInvitationActionId] = useState(null);
+  const [invitationMessage, setInvitationMessage] = useState("");
+  const [invitationMessageIsError, setInvitationMessageIsError] =
+    useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -168,6 +191,89 @@ export default function Profile() {
       cancelled = true;
     };
   }, [isAuthenticated, navigate, refreshUser]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadInvitations() {
+      if (!isAuthenticated) return;
+
+      setInvitationsLoading(true);
+      setInvitationsError("");
+      const [sentResult, receivedResult] = await Promise.allSettled([
+        getPartnerInvitations("sent", { page: sentInvitationPage }),
+        getPartnerInvitations("received", { page: receivedInvitationPage }),
+      ]);
+
+      if (cancelled) return;
+
+      const errors = [];
+      if (sentResult.status === "fulfilled") {
+        setSentInvitations(sentResult.value.invitations);
+        setSentInvitationPageCount(sentResult.value.pagination.pageCount || 1);
+      } else {
+        setSentInvitations([]);
+        setSentInvitationPageCount(1);
+        errors.push(
+          `Sent invitations: ${sentResult.reason instanceof Error ? sentResult.reason.message : "Unable to load."}`,
+        );
+      }
+
+      if (receivedResult.status === "fulfilled") {
+        setReceivedInvitations(receivedResult.value.invitations);
+        setReceivedInvitationPageCount(
+          receivedResult.value.pagination.pageCount || 1,
+        );
+      } else {
+        setReceivedInvitations([]);
+        setReceivedInvitationPageCount(1);
+        errors.push(
+          `Received invitations: ${receivedResult.reason instanceof Error ? receivedResult.reason.message : "Unable to load."}`,
+        );
+      }
+
+      setInvitationsError(errors.join(" "));
+      setInvitationsLoading(false);
+    }
+
+    loadInvitations();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    isAuthenticated,
+    invitationRefresh,
+    sentInvitationPage,
+    receivedInvitationPage,
+  ]);
+
+  const handleInvitationAction = async (invitation, action) => {
+    setInvitationActionId(invitation.id);
+    setInvitationMessage("");
+    setInvitationMessageIsError(false);
+    try {
+      const result = await respondToPartnerInvitation(invitation.id, action);
+      if (action === "cancel") setSentInvitationPage(1);
+      else setReceivedInvitationPage(1);
+      setInvitationRefresh((value) => value + 1);
+      setInvitationMessage(
+        action === "accept"
+          ? `Invitation accepted.${result?.id != null ? ` Registration #${result.id} was created.` : ""} The inviter can now submit payment.`
+          : action === "decline"
+            ? "Invitation declined."
+            : "Invitation cancelled.",
+      );
+    } catch (error) {
+      setInvitationMessage(
+        error instanceof Error
+          ? error.message
+          : `Unable to ${action} the invitation.`,
+      );
+      setInvitationMessageIsError(true);
+    } finally {
+      setInvitationActionId(null);
+    }
+  };
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
@@ -1249,7 +1355,391 @@ export default function Profile() {
           )}
         </div>
 
-        {/* SECTION C: Tournament Payment Proof Slips History */}
+        {/* SECTION C: Partner Invitations */}
+        <section
+          style={{
+            background: "#fff",
+            border: "1px solid #eef0f3",
+            borderRadius: "16px",
+            padding: "20px 16px",
+            boxShadow: "0 4px 16px rgba(20, 30, 50, 0.03)",
+            boxSizing: "border-box",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              gap: "12px",
+              marginBottom: "4px",
+            }}
+          >
+            <h2
+              style={{
+                fontSize: "16px",
+                fontWeight: "900",
+                color: "#172033",
+                margin: 0,
+              }}
+            >
+              C. Partner Invitations
+            </h2>
+            <button
+              type="button"
+              onClick={() => setInvitationRefresh((value) => value + 1)}
+              disabled={invitationsLoading}
+              style={{
+                border: "1px solid #cbd5e1",
+                borderRadius: "7px",
+                background: "#fff",
+                color: "#334155",
+                padding: "7px 10px",
+                fontSize: "11px",
+                fontWeight: "800",
+                cursor: invitationsLoading ? "wait" : "pointer",
+              }}
+            >
+              Refresh
+            </button>
+          </div>
+          <p
+            style={{
+              fontSize: "12px",
+              color: "#64748b",
+              margin: "0 0 16px",
+              fontWeight: "600",
+            }}
+          >
+            Track invitations you sent and respond to invitations from other
+            players.
+          </p>
+
+          {invitationMessage && (
+            <p
+              role={invitationMessageIsError ? "alert" : "status"}
+              style={{
+                margin: "0 0 14px",
+                padding: "10px 12px",
+                borderRadius: "8px",
+                color: invitationMessageIsError ? "#b91c1c" : "#166534",
+                background: invitationMessageIsError ? "#fef2f2" : "#f0fdf4",
+                fontSize: "12px",
+                fontWeight: "700",
+              }}
+            >
+              {invitationMessage}
+            </p>
+          )}
+          {invitationsError && (
+            <p
+              role="alert"
+              style={{
+                margin: "0 0 14px",
+                color: "#b91c1c",
+                fontSize: "12px",
+                fontWeight: "700",
+              }}
+            >
+              {invitationsError}
+            </p>
+          )}
+
+          {invitationsLoading ? (
+            <p role="status" style={{ color: "#64748b", fontSize: "13px" }}>
+              Loading invitations...
+            </p>
+          ) : (
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+                gap: "14px",
+              }}
+            >
+              {[
+                {
+                  title: "Sent",
+                  invitations: sentInvitations,
+                  page: sentInvitationPage,
+                  pageCount: sentInvitationPageCount,
+                  setPage: setSentInvitationPage,
+                  otherUser: (invitation) => invitation.invitedUser,
+                  emptyText: "You have no pending sent invitations.",
+                  actions: (invitation) =>
+                    invitation.status === "pending" ? (
+                      <button
+                        type="button"
+                        disabled={invitationActionId !== null}
+                        onClick={() =>
+                          handleInvitationAction(invitation, "cancel")
+                        }
+                        style={{
+                          border: "1px solid #dc2626",
+                          borderRadius: "7px",
+                          background: "#fff",
+                          color: "#b91c1c",
+                          padding: "7px 10px",
+                          fontSize: "11px",
+                          fontWeight: "800",
+                          cursor: "pointer",
+                        }}
+                      >
+                        {invitationActionId === invitation.id
+                          ? "Working..."
+                          : "Cancel"}
+                      </button>
+                    ) : null,
+                },
+                {
+                  title: "Received",
+                  invitations: receivedInvitations,
+                  page: receivedInvitationPage,
+                  pageCount: receivedInvitationPageCount,
+                  setPage: setReceivedInvitationPage,
+                  otherUser: (invitation) => invitation.inviter,
+                  emptyText: "You have no pending received invitations.",
+                  actions: (invitation) =>
+                    invitation.status === "pending" ? (
+                      <div style={{ display: "flex", gap: "7px" }}>
+                        <button
+                          type="button"
+                          disabled={invitationActionId !== null}
+                          onClick={() =>
+                            handleInvitationAction(invitation, "accept")
+                          }
+                          style={{
+                            border: "none",
+                            borderRadius: "7px",
+                            background: "#21865b",
+                            color: "#fff",
+                            padding: "7px 10px",
+                            fontSize: "11px",
+                            fontWeight: "800",
+                            cursor: "pointer",
+                          }}
+                        >
+                          Accept
+                        </button>
+                        <button
+                          type="button"
+                          disabled={invitationActionId !== null}
+                          onClick={() =>
+                            handleInvitationAction(invitation, "decline")
+                          }
+                          style={{
+                            border: "1px solid #dc2626",
+                            borderRadius: "7px",
+                            background: "#fff",
+                            color: "#b91c1c",
+                            padding: "7px 10px",
+                            fontSize: "11px",
+                            fontWeight: "800",
+                            cursor: "pointer",
+                          }}
+                        >
+                          Decline
+                        </button>
+                      </div>
+                    ) : null,
+                },
+              ].map((group) => (
+                <div
+                  key={group.title}
+                  style={{
+                    border: "1px solid #e2e8f0",
+                    borderRadius: "12px",
+                    padding: "14px",
+                    minWidth: 0,
+                  }}
+                >
+                  <h3
+                    style={{
+                      margin: "0 0 10px",
+                      color: "#172033",
+                      fontSize: "14px",
+                      fontWeight: "900",
+                    }}
+                  >
+                    {group.title} ({group.invitations.length})
+                  </h3>
+                  {group.invitations.length === 0 ? (
+                    <p
+                      style={{
+                        margin: 0,
+                        color: "#64748b",
+                        fontSize: "12px",
+                      }}
+                    >
+                      {group.emptyText}
+                    </p>
+                  ) : (
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "9px",
+                      }}
+                    >
+                      {group.invitations.map((invitation) => {
+                        const otherUser = group.otherUser(invitation);
+                        return (
+                          <article
+                            key={invitation.id}
+                            style={{
+                              background: "#f8f9fa",
+                              border: "1px solid #e2e8f0",
+                              borderRadius: "9px",
+                              padding: "11px",
+                            }}
+                          >
+                            <div
+                              style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "flex-start",
+                                gap: "8px",
+                              }}
+                            >
+                              <div style={{ minWidth: 0 }}>
+                                <div
+                                  style={{
+                                    color: "#172033",
+                                    fontSize: "12px",
+                                    fontWeight: "900",
+                                  }}
+                                >
+                                  {otherUser?.name || "Player"}
+                                </div>
+                                <div
+                                  style={{
+                                    color: "#64748b",
+                                    fontSize: "11px",
+                                    overflowWrap: "anywhere",
+                                  }}
+                                >
+                                  {otherUser?.email || "Email unavailable"}
+                                </div>
+                              </div>
+                              <span
+                                style={{
+                                  flexShrink: 0,
+                                  color:
+                                    invitation.status === "pending"
+                                      ? "#92400e"
+                                      : "#475569",
+                                  background:
+                                    invitation.status === "pending"
+                                      ? "#fef3c7"
+                                      : "#e2e8f0",
+                                  borderRadius: "6px",
+                                  padding: "3px 7px",
+                                  fontSize: "10px",
+                                  fontWeight: "800",
+                                  textTransform: "capitalize",
+                                }}
+                              >
+                                {invitation.status}
+                              </span>
+                            </div>
+                            <div
+                              style={{
+                                marginTop: "8px",
+                                color: "#334155",
+                                fontSize: "11px",
+                                fontWeight: "700",
+                              }}
+                            >
+                              {invitation.category?.tournament?.title ||
+                                "Tournament"}{" "}
+                              ·{" "}
+                              {invitation.category?.categoryName ||
+                                "Category"}
+                            </div>
+                            {invitation.expiresAt && (
+                              <div
+                                style={{
+                                  marginTop: "4px",
+                                  color: "#64748b",
+                                  fontSize: "10px",
+                                }}
+                              >
+                                Expires{" "}
+                                {formatInvitationExpiry(invitation.expiresAt)}
+                              </div>
+                            )}
+                            <div
+                              style={{
+                                display: "flex",
+                                justifyContent: "flex-end",
+                                marginTop: "9px",
+                              }}
+                            >
+                              {group.actions(invitation)}
+                            </div>
+                          </article>
+                        );
+                      })}
+                    </div>
+                  )}
+                  {group.pageCount > 1 && (
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        gap: "8px",
+                        marginTop: "10px",
+                      }}
+                    >
+                      <button
+                        type="button"
+                        disabled={invitationsLoading || group.page <= 1}
+                        onClick={() => group.setPage((page) => page - 1)}
+                        style={{
+                          border: "1px solid #cbd5e1",
+                          borderRadius: "7px",
+                          background: "#fff",
+                          color: "#334155",
+                          padding: "6px 9px",
+                          fontSize: "11px",
+                          fontWeight: "800",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Previous
+                      </button>
+                      <span style={{ color: "#64748b", fontSize: "11px" }}>
+                        Page {group.page} of {group.pageCount}
+                      </span>
+                      <button
+                        type="button"
+                        disabled={
+                          invitationsLoading || group.page >= group.pageCount
+                        }
+                        onClick={() => group.setPage((page) => page + 1)}
+                        style={{
+                          border: "1px solid #cbd5e1",
+                          borderRadius: "7px",
+                          background: "#fff",
+                          color: "#334155",
+                          padding: "6px 9px",
+                          fontSize: "11px",
+                          fontWeight: "800",
+                          cursor: "pointer",
+                        }}
+                      >
+                        Next
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+
+        {/* SECTION D: Tournament Payment Proof Slips History */}
         <div
           style={{
             background: "#fff",
@@ -1279,7 +1769,7 @@ export default function Profile() {
                   margin: "0 0 3px",
                 }}
               >
-                C. Tournament Payment Proof Slips History
+                D. Tournament Payment Proof Slips History
               </h2>
               <p
                 style={{
@@ -1432,7 +1922,7 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* SECTION D: Past Tournament History & Earned Points */}
+        {/* SECTION E: Past Tournament History & Earned Points */}
         <div
           style={{
             background: "#fff",
@@ -1462,7 +1952,7 @@ export default function Profile() {
                   margin: "0 0 3px",
                 }}
               >
-                D. Past Tournament History & Earned Points
+                E. Past Tournament History & Earned Points
               </h2>
               <p
                 style={{

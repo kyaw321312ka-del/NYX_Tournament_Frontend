@@ -1,4 +1,4 @@
-import { Routes, Route, useNavigate } from "react-router-dom";
+import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 
 // Pages Import (သသင့်ရဲ့ folder structure အတိုင်း path များကို စစ်ပါ)
 import ForgotPassword from "../features/auth/pages/ForgotPassword";
