@@ -11,8 +11,9 @@ export default function Overview({ tournament }) {
       style={{
         display: "flex",
         flexDirection: "column",
-        gap: "24px",
+        gap: "16px",
         width: "100%",
+        boxSizing: "border-box",
       }}
     >
       {/* Tournament Overview & Official Rules */}
@@ -20,31 +21,31 @@ export default function Overview({ tournament }) {
         style={{
           background: "#fff",
           border: "1px solid #eef0f3",
-          borderRadius: "16px",
-          padding: "24px",
+          borderRadius: "14px",
+          padding: "18px 16px",
           boxShadow: "0 4px 16px rgba(20, 30, 50, 0.03)",
         }}
       >
         <h3
           style={{
-            fontSize: "18px",
+            fontSize: "16px",
             fontWeight: "800",
             color: "#172033",
-            margin: "0 0 12px",
+            margin: "0 0 10px",
             display: "flex",
             alignItems: "center",
-            gap: "10px",
+            gap: "8px",
           }}
         >
-          <InfoOutlined style={{ fontSize: 22, color: "#ae1236" }} /> Tournament
+          <InfoOutlined style={{ fontSize: 20, color: "#ae1236" }} /> Tournament
           Overview & Official Rules
         </h3>
         <p
           style={{
-            fontSize: "15px",
-            lineHeight: "1.75",
+            fontSize: "13.5px",
+            lineHeight: "1.65",
             color: "#4b5563",
-            margin: "0 0 20px",
+            margin: "0 0 16px",
           }}
         >
           {tournament.description}
@@ -53,8 +54,8 @@ export default function Overview({ tournament }) {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-            gap: "16px",
+            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+            gap: "12px",
           }}
         >
           {(tournament.rules || []).map((rule, idx) => (
@@ -62,24 +63,24 @@ export default function Overview({ tournament }) {
               key={rule.id || `${rule.title}-${idx}`}
               style={{
                 display: "flex",
-                gap: "14px",
+                gap: "12px",
                 background: "#f8f9fa",
-                padding: "16px",
-                borderRadius: "12px",
+                padding: "14px",
+                borderRadius: "10px",
                 border: "1px solid #edf0f3",
               }}
             >
               <div
                 style={{
-                  width: "28px",
-                  height: "28px",
+                  width: "26px",
+                  height: "26px",
                   background: "#fde9ee",
                   color: "#ae1236",
-                  borderRadius: "8px",
+                  borderRadius: "6px",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  fontSize: "12px",
+                  fontSize: "11px",
                   fontWeight: "800",
                   flexShrink: 0,
                 }}
@@ -89,8 +90,8 @@ export default function Overview({ tournament }) {
               <div>
                 <h4
                   style={{
-                    margin: "0 0 4px",
-                    fontSize: "14px",
+                    margin: "0 0 3px",
+                    fontSize: "13.5px",
                     fontWeight: "800",
                     color: "#172033",
                   }}
@@ -100,9 +101,9 @@ export default function Overview({ tournament }) {
                 <p
                   style={{
                     margin: 0,
-                    fontSize: "12.5px",
+                    fontSize: "12px",
                     color: "#6b7280",
-                    lineHeight: "1.5",
+                    lineHeight: "1.45",
                   }}
                 >
                   {rule.description}
@@ -123,8 +124,8 @@ export default function Overview({ tournament }) {
         style={{
           background: "#fff",
           border: "1px solid #eef0f3",
-          borderRadius: "16px",
-          padding: "24px",
+          borderRadius: "14px",
+          padding: "18px 16px",
           boxShadow: "0 4px 16px rgba(20, 30, 50, 0.03)",
         }}
       >
@@ -133,39 +134,38 @@ export default function Overview({ tournament }) {
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            marginBottom: "4px",
+            marginBottom: "12px",
             flexWrap: "wrap",
             gap: "8px",
           }}
         >
           <h3
             style={{
-              fontSize: "18px",
+              fontSize: "16px",
               fontWeight: "800",
               color: "#172033",
               margin: 0,
               display: "flex",
               alignItems: "center",
-              gap: "10px",
+              gap: "8px",
             }}
           >
-            <EmojiEventsOutlined style={{ fontSize: 22, color: "#ae1236" }} />{" "}
+            <EmojiEventsOutlined style={{ fontSize: 20, color: "#ae1236" }} />{" "}
             Leaderboard Points Allocation
           </h3>
           <span
             style={{
-              fontSize: "11px",
+              fontSize: "10.5px",
               fontWeight: "700",
               color: "#596170",
               background: "#f1f3f6",
-              padding: "4px 10px",
+              padding: "3px 8px",
               borderRadius: "6px",
             }}
           >
-            Pure Ranking Points • No Monetary Purse
+            Pure Ranking Points
           </span>
         </div>
-        <div style={{ height: "14px" }} />
 
         {(tournament.categories || []).map((category, categoryIndex) => (
           <div
@@ -241,8 +241,8 @@ export default function Overview({ tournament }) {
         style={{
           background: "#fff",
           border: "1px solid #eef0f3",
-          borderRadius: "16px",
-          padding: "24px",
+          borderRadius: "14px",
+          padding: "18px 16px",
           boxShadow: "0 4px 16px rgba(20, 30, 50, 0.03)",
         }}
       >
@@ -251,27 +251,27 @@ export default function Overview({ tournament }) {
             display: "flex",
             justifyContent: "space-between",
             alignItems: "center",
-            marginBottom: "16px",
+            marginBottom: "12px",
           }}
         >
           <h3
             style={{
-              fontSize: "18px",
+              fontSize: "16px",
               fontWeight: "800",
               color: "#172033",
               margin: 0,
               display: "flex",
               alignItems: "center",
-              gap: "10px",
+              gap: "8px",
             }}
           >
             <FormatListNumberedOutlined
-              style={{ fontSize: 22, color: "#ae1236" }}
+              style={{ fontSize: 20, color: "#ae1236" }}
             />{" "}
-            Included Categories & Draw Caps
+            Included Categories
           </h3>
           <span
-            style={{ fontSize: "12px", fontWeight: "800", color: "#727987" }}
+            style={{ fontSize: "11px", fontWeight: "800", color: "#727987" }}
           >
             {(tournament.categories || []).length} Events Active
           </span>
@@ -280,8 +280,8 @@ export default function Overview({ tournament }) {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
-            gap: "16px",
+            gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
+            gap: "12px",
           }}
         >
           {(tournament.categories || []).map((cat, idx) => (
@@ -290,8 +290,8 @@ export default function Overview({ tournament }) {
               style={{
                 background: "#f8f9fa",
                 border: "1px solid #eef0f3",
-                borderRadius: "12px",
-                padding: "18px",
+                borderRadius: "10px",
+                padding: "14px",
                 position: "relative",
               }}
             >
@@ -300,17 +300,17 @@ export default function Overview({ tournament }) {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
-                  marginBottom: "8px",
+                  marginBottom: "6px",
                 }}
               >
                 <span
                   style={{
                     background: "#172033",
                     color: "#fff",
-                    fontSize: "11px",
+                    fontSize: "10px",
                     fontWeight: "800",
-                    padding: "3px 8px",
-                    borderRadius: "6px",
+                    padding: "2px 6px",
+                    borderRadius: "4px",
                   }}
                 >
                   {cat.code}
@@ -334,17 +334,17 @@ export default function Overview({ tournament }) {
               </div>
               <h4
                 style={{
-                  fontSize: "15px",
+                  fontSize: "14px",
                   fontWeight: "800",
                   color: "#172033",
-                  margin: "0 0 4px",
+                  margin: "0 0 2px",
                 }}
               >
                 {cat.categoryName}
               </h4>
               <p
                 style={{
-                  fontSize: "12px",
+                  fontSize: "11.5px",
                   color: "#6b7280",
                   margin: 0,
                   fontWeight: "500",
@@ -367,29 +367,29 @@ export default function Overview({ tournament }) {
         style={{
           background: "#fff",
           border: "1px solid #eef0f3",
-          borderRadius: "16px",
-          padding: "24px",
+          borderRadius: "14px",
+          padding: "18px 16px",
           boxShadow: "0 4px 16px rgba(20, 30, 50, 0.03)",
         }}
       >
         <h3
           style={{
-            fontSize: "18px",
+            fontSize: "16px",
             fontWeight: "800",
             color: "#172033",
-            margin: "0 0 10px",
+            margin: "0 0 8px",
             display: "flex",
             alignItems: "center",
-            gap: "10px",
+            gap: "8px",
           }}
         >
-          <LocationOnOutlined style={{ fontSize: 22, color: "#ae1236" }} />{" "}
+          <LocationOnOutlined style={{ fontSize: 20, color: "#ae1236" }} />{" "}
           Location Address
         </h3>
         <p
           style={{
             margin: 0,
-            fontSize: "14.5px",
+            fontSize: "13.5px",
             color: "#4b5563",
             fontWeight: "600",
           }}

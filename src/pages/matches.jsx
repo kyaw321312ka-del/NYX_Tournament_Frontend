@@ -4,7 +4,6 @@ import {
   CalendarMonthRounded,
   CheckCircleRounded,
   EmojiEventsRounded,
-  RefreshRounded,
   SportsTennisRounded,
   AccountTreeRounded,
   CloseRounded,
@@ -159,31 +158,6 @@ const tournamentDatabase = {
           },
         ],
       },
-      {
-        id: "ym-live-2",
-        court: "COURT 2",
-        tournament: "Yangon Masters",
-        category: "MS",
-        categoryFull: "Men's Singles",
-        round: "Round of 16",
-        setLabel: "SET 3",
-        players: [
-          {
-            name: "Nay Lin",
-            region: "NPT",
-            seed: "#3",
-            scores: [19, 21],
-            current: 15,
-          },
-          {
-            name: "Kyaw Zin",
-            region: "YGN",
-            seed: "Unseeded",
-            scores: [21, 17],
-            current: 13,
-          },
-        ],
-      },
     ],
     schedule: [
       {
@@ -197,18 +171,6 @@ const tournamentDatabase = {
         teamB: "Myo Min",
         teamBCode: "MDY",
         estimate: "Scheduled",
-      },
-      {
-        id: "ym-up-2",
-        time: "03:30 PM MMT",
-        court: "Court 2",
-        tournament: "Yangon Masters",
-        category: "MEN'S SINGLES (MS) · SEMI-FINAL",
-        teamA: "Hein Htet",
-        teamACode: "MDY",
-        teamB: "Nay Lin",
-        teamBCode: "NPT",
-        estimate: "Rescheduled",
       },
     ],
     finished: [
@@ -227,22 +189,6 @@ const tournamentDatabase = {
           [18, 21, 15],
         ],
         matchId: "#YGM-1092",
-      },
-      {
-        id: "ym-fin-2",
-        tournament: "Yangon Masters",
-        court: "Court 1",
-        time: "Finished (09:00 AM)",
-        category: "Men's Singles",
-        winner: "Lin Htut",
-        winnerCode: "BGO",
-        runnerUp: "Aung Kyaw",
-        runnerUpCode: "YGN",
-        scores: [
-          [21, 21],
-          [15, 12],
-        ],
-        matchId: "#YGM-1085",
       },
     ],
   },
@@ -274,31 +220,6 @@ const tournamentDatabase = {
           },
         ],
       },
-      {
-        id: "mns-live-2",
-        court: "COURT 1",
-        tournament: "Myanmar National Series",
-        category: "MS",
-        categoryFull: "Men's Singles",
-        round: "Semi-final",
-        setLabel: "SET 2",
-        players: [
-          {
-            name: "Min Thant",
-            region: "YGN",
-            seed: "#3",
-            scores: [21],
-            current: 14,
-          },
-          {
-            name: "Zarni Tun",
-            region: "MDY",
-            seed: "#4",
-            scores: [16],
-            current: 12,
-          },
-        ],
-      },
     ],
     schedule: [
       {
@@ -311,18 +232,6 @@ const tournamentDatabase = {
         teamACode: "YGN",
         teamB: "Min Thant",
         teamBCode: "YGN",
-        estimate: "Scheduled",
-      },
-      {
-        id: "mns-up-2",
-        time: "04:30 PM MMT",
-        court: "Court 2",
-        tournament: "Myanmar National Series",
-        category: "MEN'S SINGLES (MS) · 3RD PLACE",
-        teamA: "Thura Zaw",
-        teamACode: "MDY",
-        teamB: "Zarni Tun",
-        teamBCode: "MDY",
         estimate: "Scheduled",
       },
     ],
@@ -342,22 +251,6 @@ const tournamentDatabase = {
           [14, 18],
         ],
         matchId: "#MNS-001",
-      },
-      {
-        id: "mns-fin-2",
-        tournament: "Myanmar National Series",
-        court: "Court 2",
-        time: "Finished (08:30 AM)",
-        category: "Men's Singles",
-        winner: "Thura Zaw",
-        winnerCode: "MDY",
-        runnerUp: "Aung Myo",
-        runnerUpCode: "YGN",
-        scores: [
-          [19, 21, 21],
-          [21, 17, 16],
-        ],
-        matchId: "#MNS-002",
       },
     ],
   },
@@ -545,34 +438,63 @@ function BracketModal({ onClose, tournamentName }) {
           </button>
         </div>
 
-        <div className="bracket-grid">
-          <div className="bracket-round">
-            <span className="bracket-round-title">QUARTER-FINAL</span>
-            <div className="bracket-team">
-              Min Thant <b>2</b>
+        {/* ဤနေရာတွင် ဘယ်ညာနှင့် အပေါ်အောက် နှစ်ဖက်စလုံး Scroll ဆွဲ၍ရအောင် ပြင်ဆင်ထားပါသည် */}
+        <div
+          style={{
+            overflow: "auto",
+            maxHeight: "calc(80vh - 80px)",
+            maxWidth: "100%",
+            padding: "4px",
+            boxSizing: "border-box",
+          }}
+        >
+          <div className="bracket-grid" style={{ minWidth: "750px" }}>
+            <div className="bracket-round">
+              <span className="bracket-round-title">ROUND OF 16</span>
+              <div className="bracket-team">
+                Min Thant <b>2</b>
+              </div>
+              <div className="bracket-team">
+                Kyaw Swar <b>0</b>
+              </div>
+              <div className="bracket-team">
+                Zarni Tun <b>2</b>
+              </div>
+              <div className="bracket-team">
+                Aung Myo <b>1</b>
+              </div>
             </div>
-            <div className="bracket-team">
-              Zarni Tun <b>1</b>
+            <div className="bracket-round">
+              <span className="bracket-round-title">QUARTER-FINAL</span>
+              <div className="bracket-team">
+                Min Thant <b>2</b>
+              </div>
+              <div className="bracket-team">
+                Zarni Tun <b>1</b>
+              </div>
+              <div className="bracket-team bracket-pending">
+                Match 3 <b>—</b>
+              </div>
+              <div className="bracket-team bracket-pending">
+                Match 4 <b>—</b>
+              </div>
             </div>
-            <div className="bracket-team bracket-pending">
-              Match 2 <b>—</b>
+            <div className="bracket-round">
+              <span className="bracket-round-title">SEMI-FINAL</span>
+              <div className="bracket-team bracket-pending">
+                Winner QF 1 <b>—</b>
+              </div>
+              <div className="bracket-team bracket-pending">
+                Winner QF 2 <b>—</b>
+              </div>
             </div>
-          </div>
-          <div className="bracket-round">
-            <span className="bracket-round-title">SEMI-FINAL</span>
-            <div className="bracket-team bracket-pending">
-              Winner QF 1 <b>—</b>
-            </div>
-            <div className="bracket-team bracket-pending">
-              Winner QF 2 <b>—</b>
-            </div>
-          </div>
-          <div className="bracket-round">
-            <span className="bracket-round-title">FINAL</span>
-            <div className="bracket-champion">
-              <EmojiEventsRounded />
-              Champion
-              <b>TBD</b>
+            <div className="bracket-round">
+              <span className="bracket-round-title">FINAL</span>
+              <div className="bracket-champion">
+                <EmojiEventsRounded />
+                Champion
+                <b>TBD</b>
+              </div>
             </div>
           </div>
         </div>
@@ -674,23 +596,6 @@ export default function WebMatches() {
     setNotice("Court sync status updated.");
   };
 
-  const changeDay = (day) => {
-    setLoading(true);
-    setActiveDay(day);
-    if (day === "YESTERDAY") setSelectedDate("2026-12-05");
-    if (day === "TODAY") setSelectedDate("2026-12-06");
-    if (day === "TOMORROW") setSelectedDate("2026-12-07");
-    setNotice(`Switched view to ${day.toLowerCase()}`);
-  };
-
-  const refreshBoard = () => {
-    setLoading(true);
-    window.setTimeout(() => {
-      setLoading(false);
-      setNotice("Match board refreshed successfully.");
-    }, 700);
-  };
-
   return (
     <>
       <style>{`
@@ -698,95 +603,59 @@ export default function WebMatches() {
 
         .tournament-page {
           min-height: 100vh;
-          padding: 36px 24px 64px;
+          padding: 24px 16px 48px;
           background: #f7f8fa;
           color: #172033;
           font-family: "DM Sans", "Manrope", sans-serif;
-          font-size: 16px;
+          font-size: 15px;
+          box-sizing: border-box;
+          width: 100%;
         }
 
         .tournament-container {
           width: 100%;
           max-width: 1400px;
           margin: 0 auto;
+          box-sizing: border-box;
         }
 
         .topbar {
           display: flex;
           align-items: center;
-          justify-content: space-between;
-          gap: 16px;
-          margin-bottom: 24px;
+          justify-content: flex-end;
+          gap: 12px;
+          margin-bottom: 20px;
           flex-wrap: wrap;
-        }
-
-        .day-switcher {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-          padding: 6px;
-          border: 1px solid #eef0f3;
-          border-radius: 14px;
-          background: #fff;
-          box-shadow: 0 3px 12px rgba(20, 30, 50, 0.03);
-        }
-
-        .day-button {
-          min-height: 40px;
-          padding: 0 18px;
-          display: inline-flex;
-          align-items: center;
-          justify-content: center;
-          gap: 7px;
-          border: 0;
-          border-radius: 10px;
-          color: #727987;
-          background: transparent;
-          font-size: 13px;
-          font-weight: 700;
-          cursor: pointer;
-          transition: all 0.2s ease;
-        }
-
-        .day-button:hover {
-          color: #172033;
-          background: #f3f4f6;
-        }
-
-        .day-button-active {
-          color: #fff;
-          background: #172033;
-          box-shadow: 0 4px 12px rgba(23, 32, 51, 0.2);
-        }
-
-        .today-dot {
-          font-size: 9px !important;
-          color: #ae1236;
+          width: 100%;
         }
 
         .topbar-actions {
           display: flex;
           align-items: center;
-          gap: 12px;
+          gap: 10px;
           position: relative;
           flex-wrap: wrap;
+          width: 100%;
+          justify-content: flex-end;
         }
 
         .select-date-button {
-          min-height: 48px;
+          min-height: 44px;
           display: inline-flex;
           align-items: center;
           gap: 8px;
-          padding: 0 18px;
+          padding: 0 16px;
           border: 1px solid #eef0f3;
           border-radius: 12px;
           background: #fff;
           color: #354052;
-          font-size: 14px;
+          font-size: 13.5px;
           font-weight: 700;
           cursor: pointer;
           box-shadow: 0 3px 12px rgba(20, 30, 50, 0.03);
           transition: all 0.2s ease;
+          flex: 1;
+          justify-content: center;
         }
 
         .select-date-button:hover,
@@ -797,19 +666,24 @@ export default function WebMatches() {
 
         .date-picker-wrap, .tourney-dropdown-wrap {
           position: relative;
+          flex: 1;
+          min-width: 180px;
         }
 
+        /* Fixed Mobile Popover Overflow Issue */
         .date-popover {
           position: absolute;
           z-index: 100;
           top: calc(100% + 8px);
-          right: 0;
-          width: 260px;
-          padding: 18px;
+          left: 0;
+          right: auto;
+          width: min(280px, 85vw);
+          padding: 16px;
           border: 1px solid #eef0f3;
           border-radius: 14px;
           background: #fff;
           box-shadow: 0 15px 40px rgba(20, 30, 50, 0.15);
+          box-sizing: border-box;
         }
 
         .date-label {
@@ -829,12 +703,13 @@ export default function WebMatches() {
           background: #fff;
           font: inherit;
           font-size: 14px;
+          box-sizing: border-box;
         }
 
         .date-apply {
           width: 100%;
           margin-top: 12px;
-          padding: 11px;
+          padding: 10px;
           border: 0;
           border-radius: 8px;
           color: #fff;
@@ -845,13 +720,13 @@ export default function WebMatches() {
         }
 
         .tournament-select-custom {
-          min-width: 270px;
-          min-height: 48px;
+          width: 100%;
+          min-height: 44px;
           display: inline-flex;
           align-items: center;
           justify-content: space-between;
-          gap: 12px;
-          padding: 0 16px;
+          gap: 10px;
+          padding: 0 14px;
           border: 1px solid #eef0f3;
           border-radius: 12px;
           background: #fff;
@@ -859,7 +734,8 @@ export default function WebMatches() {
           color: #ae1236;
           cursor: pointer;
           font-weight: 700;
-          font-size: 14px;
+          font-size: 13.5px;
+          box-sizing: border-box;
         }
 
         .tournament-select-custom span {
@@ -876,18 +752,20 @@ export default function WebMatches() {
           position: absolute;
           z-index: 100;
           top: calc(100% + 8px);
-          right: 0;
-          width: 300px;
+          left: 0;
+          right: auto;
+          width: min(300px, 90vw);
           padding: 8px;
           border: 1px solid #eef0f3;
           border-radius: 14px;
           background: #fff;
           box-shadow: 0 15px 40px rgba(20, 30, 50, 0.15);
+          box-sizing: border-box;
         }
 
         .tourney-option {
           width: 100%;
-          padding: 12px 14px;
+          padding: 10px 12px;
           border: 0;
           border-radius: 8px;
           background: transparent;
@@ -907,27 +785,28 @@ export default function WebMatches() {
         .category-tabs {
           display: flex;
           align-items: center;
-          gap: 10px;
-          margin-bottom: 24px;
+          gap: 8px;
+          margin-bottom: 20px;
           overflow-x: auto;
           padding-bottom: 4px;
+          -webkit-overflow-scrolling: touch;
         }
 
         .category-tab {
           display: inline-flex;
           align-items: center;
-          gap: 8px;
+          gap: 6px;
           flex: 0 0 auto;
-          min-height: 44px;
-          padding: 0 18px;
+          min-height: 40px;
+          padding: 0 14px;
           border: 1px solid #eef0f3;
-          border-radius: 12px;
+          border-radius: 10px;
           color: #596170;
           background: #fff;
           box-shadow: 0 3px 12px rgba(20, 30, 50, 0.03);
           cursor: pointer;
           font: inherit;
-          font-size: 13px;
+          font-size: 12.5px;
           font-weight: 700;
           transition: all 0.2s ease;
         }
@@ -947,11 +826,11 @@ export default function WebMatches() {
         .tournament-info {
           display: flex;
           position: relative;
-          margin-bottom: 30px;
-          padding: 24px 28px;
+          margin-bottom: 24px;
+          padding: 20px;
           border: 1px solid #eef0f3;
-          border-left: 6px solid #ae1236;
-          border-radius: 16px;
+          border-left: 5px solid #ae1236;
+          border-radius: 14px;
           background: #fff;
           box-shadow: 0 4px 16px rgba(20, 30, 50, 0.04);
         }
@@ -963,9 +842,9 @@ export default function WebMatches() {
 
         .info-heading-row {
           display: flex;
-          align-items: center;
+          align-items: flex-start;
           justify-content: space-between;
-          gap: 18px;
+          gap: 12px;
           flex-wrap: wrap;
         }
 
@@ -973,24 +852,25 @@ export default function WebMatches() {
           margin: 0;
           color: #172033;
           font-family: "Manrope", sans-serif;
-          font-size: 26px;
+          font-size: 20px;
           font-weight: 800;
         }
 
         .bracket-button {
           display: inline-flex;
           align-items: center;
-          gap: 8px;
-          min-height: 42px;
-          padding: 0 16px;
+          gap: 6px;
+          min-height: 38px;
+          padding: 0 14px;
           border: 1px solid #dfe3e9;
           border-radius: 10px;
           color: #354052;
           background: #f8f9fb;
           font: inherit;
-          font-size: 13px;
+          font-size: 12px;
           font-weight: 700;
           cursor: pointer;
+          white-space: nowrap;
         }
 
         .bracket-button:hover {
@@ -1001,38 +881,38 @@ export default function WebMatches() {
 
         .tournament-description {
           max-width: 1000px;
-          margin: 14px 0 0;
+          margin: 10px 0 0;
           color: #596170;
-          font-size: 15px;
-          line-height: 1.8;
+          font-size: 13.5px;
+          line-height: 1.6;
         }
 
         .section-block {
-          margin-bottom: 30px;
+          margin-bottom: 24px;
         }
 
         .section-heading-row {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          gap: 12px;
-          margin-bottom: 16px;
+          gap: 10px;
+          margin-bottom: 12px;
           flex-wrap: wrap;
         }
 
         .section-heading {
           display: inline-flex;
           align-items: center;
-          gap: 10px;
+          gap: 8px;
           margin: 0;
           color: #172033;
-          font-size: 18px;
+          font-size: 16px;
           font-weight: 800;
         }
 
         .live-pulse {
-          width: 10px;
-          height: 10px;
+          width: 9px;
+          height: 9px;
           border-radius: 50%;
           background: #ae1236;
           box-shadow: 0 0 0 4px rgba(174, 18, 54, 0.15);
@@ -1044,11 +924,11 @@ export default function WebMatches() {
         .verified-status {
           display: inline-flex;
           align-items: center;
-          gap: 7px;
-          min-height: 34px;
-          padding: 0 14px;
+          gap: 6px;
+          min-height: 30px;
+          padding: 0 10px;
           border-radius: 999px;
-          font-size: 12px;
+          font-size: 11px;
           font-weight: 800;
           white-space: nowrap;
         }
@@ -1061,7 +941,6 @@ export default function WebMatches() {
         .upcoming-status {
           color: #957027;
           background: #fff4d9;
-          margin-left: auto;
         }
 
         .verified-status {
@@ -1073,15 +952,15 @@ export default function WebMatches() {
         .schedule-list,
         .finished-list {
           display: grid;
-          gap: 16px;
+          gap: 14px;
         }
 
         .live-card {
           position: relative;
-          padding: 18px 20px;
+          padding: 16px;
           border: 1px solid #eef0f3;
-          border-left: 5px solid #ae1236;
-          border-radius: 14px;
+          border-left: 4px solid #ae1236;
+          border-radius: 12px;
           background: #fff;
           box-shadow: 0 4px 14px rgba(20, 30, 50, 0.04);
         }
@@ -1090,15 +969,15 @@ export default function WebMatches() {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          gap: 12px;
-          margin-bottom: 14px;
+          gap: 10px;
+          margin-bottom: 12px;
           flex-wrap: wrap;
         }
 
         .match-meta {
           display: flex;
           align-items: center;
-          gap: 10px;
+          gap: 8px;
           flex-wrap: wrap;
         }
 
@@ -1107,27 +986,27 @@ export default function WebMatches() {
           display: inline-flex;
           align-items: center;
           justify-content: center;
-          min-height: 24px;
-          padding: 0 10px;
+          min-height: 22px;
+          padding: 0 8px;
           border-radius: 6px;
           color: #fff;
           background: #172033;
-          font-size: 11px;
+          font-size: 10.5px;
           font-weight: 800;
         }
 
         .match-meta-text {
           color: #596170;
-          font-size: 13px;
+          font-size: 12px;
           font-weight: 600;
         }
 
         .sync-button {
           display: inline-flex;
           align-items: center;
-          gap: 6px;
-          min-height: 34px;
-          padding: 0 14px;
+          gap: 5px;
+          min-height: 32px;
+          padding: 0 12px;
           border: 1px solid #172033;
           border-radius: 8px;
           color: #fff;
@@ -1145,50 +1024,50 @@ export default function WebMatches() {
 
         .live-score-panel {
           display: grid;
-          grid-template-columns: minmax(180px, 1.4fr) 40px minmax(90px, 0.7fr) minmax(85px, 0.55fr);
+          grid-template-columns: minmax(140px, 1.4fr) 30px minmax(80px, 0.7fr) minmax(75px, 0.55fr);
           align-items: center;
-          gap: 12px;
-          padding: 16px;
-          border-radius: 12px;
+          gap: 10px;
+          padding: 12px;
+          border-radius: 10px;
           background: #f8f9fb;
         }
 
         .players-column {
           display: grid;
-          gap: 14px;
+          gap: 10px;
           min-width: 0;
         }
 
         .player-row {
           display: flex;
           align-items: center;
-          gap: 10px;
+          gap: 8px;
           min-width: 0;
         }
 
         .player-dot {
           color: #ae1236;
-          font-size: 10px !important;
+          font-size: 9px !important;
           flex-shrink: 0;
         }
 
         .player-name-wrap {
           display: flex;
           align-items: baseline;
-          gap: 8px;
+          gap: 6px;
           flex-wrap: wrap;
           min-width: 0;
         }
 
         .player-name {
           color: #172033;
-          font-size: 15px;
+          font-size: 13.5px;
           font-weight: 800;
         }
 
         .player-sub {
           color: #727987;
-          font-size: 11px;
+          font-size: 10.5px;
           font-weight: 700;
           white-space: nowrap;
         }
@@ -1207,40 +1086,40 @@ export default function WebMatches() {
         .set-column {
           display: grid;
           justify-items: center;
-          gap: 6px;
+          gap: 4px;
         }
 
         .set-heading {
           color: #727987;
-          font-size: 11px;
+          font-size: 10px;
           font-weight: 800;
         }
 
         .past-score {
           color: #354052;
-          font-size: 14px;
+          font-size: 13px;
           font-weight: 700;
         }
 
         .current-set {
           display: grid;
           justify-items: center;
-          gap: 4px;
-          padding: 10px;
-          border-radius: 10px;
+          gap: 2px;
+          padding: 8px;
+          border-radius: 8px;
           background: #fff;
           box-shadow: 0 2px 8px rgba(20, 30, 50, 0.05);
         }
 
         .current-set-label {
           color: #ae1236;
-          font-size: 10px;
+          font-size: 9.5px;
           font-weight: 900;
         }
 
         .current-score {
           color: #172033;
-          font-size: 22px;
+          font-size: 18px;
           font-weight: 800;
         }
 
@@ -1248,10 +1127,10 @@ export default function WebMatches() {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          gap: 20px;
-          padding: 20px;
+          gap: 16px;
+          padding: 16px;
           border: 1px solid #eef0f3;
-          border-radius: 16px;
+          border-radius: 12px;
           background: #fff;
           box-shadow: 0 4px 14px rgba(20, 30, 50, 0.04);
         }
@@ -1264,24 +1143,24 @@ export default function WebMatches() {
         .schedule-topline {
           display: flex;
           align-items: center;
-          gap: 10px;
-          margin-bottom: 12px;
+          gap: 8px;
+          margin-bottom: 10px;
           flex-wrap: wrap;
         }
 
         .schedule-location {
           color: #596170;
-          font-size: 12px;
+          font-size: 11.5px;
           font-weight: 700;
         }
 
         .schedule-status {
           margin-left: auto;
-          padding: 4px 10px;
+          padding: 3px 8px;
           border-radius: 6px;
           color: #596170;
           background: #f3f4f6;
-          font-size: 11px;
+          font-size: 10.5px;
           font-weight: 800;
         }
 
@@ -1290,35 +1169,35 @@ export default function WebMatches() {
         }
 
         .schedule-category {
-          margin-bottom: 8px;
+          margin-bottom: 6px;
           color: #ae1236;
-          font-size: 12px;
+          font-size: 11px;
           font-weight: 800;
         }
 
         .team-name {
           color: #172033;
-          font-size: 16px;
+          font-size: 14.5px;
           font-weight: 800;
         }
 
         .team-code {
           color: #727987;
-          font-size: 12px;
+          font-size: 11px;
           font-weight: 700;
         }
 
         .versus {
-          margin: 4px 0;
+          margin: 3px 0;
           color: #727987;
-          font-size: 12px;
+          font-size: 11px;
           font-weight: 800;
         }
 
         .finished-card {
-          padding: 20px;
+          padding: 16px;
           border: 1px solid #eef0f3;
-          border-radius: 16px;
+          border-radius: 12px;
           background: #fff;
           box-shadow: 0 4px 14px rgba(20, 30, 50, 0.04);
         }
@@ -1327,15 +1206,15 @@ export default function WebMatches() {
           display: flex;
           align-items: center;
           justify-content: space-between;
-          margin-bottom: 14px;
+          margin-bottom: 12px;
           flex-wrap: wrap;
-          gap: 8px;
+          gap: 6px;
         }
 
         .finished-meta,
         .match-id {
           color: #727987;
-          font-size: 12px;
+          font-size: 11.5px;
           font-weight: 700;
         }
 
@@ -1344,32 +1223,32 @@ export default function WebMatches() {
           align-items: center;
           justify-content: space-between;
           flex-wrap: wrap;
-          gap: 15px;
+          gap: 12px;
         }
 
         .finished-players {
           display: grid;
-          gap: 10px;
+          gap: 8px;
         }
 
         .finished-player {
           display: flex;
           align-items: center;
-          gap: 10px;
+          gap: 8px;
         }
 
         .finished-player-name {
-          font-size: 16px;
+          font-size: 14.5px;
           font-weight: 800;
         }
 
         .winner-icon {
           color: #ae1236;
-          font-size: 18px !important;
+          font-size: 16px !important;
         }
 
         .winner-icon-placeholder {
-          width: 18px;
+          width: 16px;
         }
 
         .runner-player .finished-player-name {
@@ -1379,96 +1258,99 @@ export default function WebMatches() {
 
         .finished-scores {
           display: flex;
-          gap: 16px;
+          gap: 14px;
         }
 
         .finished-set {
           display: grid;
           justify-items: center;
-          gap: 4px;
+          gap: 3px;
         }
 
         .finished-score {
           color: #727987;
-          font-size: 14px;
+          font-size: 13px;
           font-weight: 600;
         }
 
         .winner-score {
           color: #172033;
-          font-size: 18px;
+          font-size: 16px;
           font-weight: 900;
         }
 
         .empty-state {
-          padding: 30px;
+          padding: 24px;
           text-align: center;
           color: #727987;
           background: #fff;
           border-radius: 12px;
           border: 1px dashed #eef0f3;
           font-weight: 700;
-        }
-
-        .dashboard-footer {
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-          margin-top: 40px;
-          padding-top: 20px;
-          border-top: 1px solid #eef0f3;
-          color: #727987;
-          font-size: 12px;
-          font-weight: 600;
-          flex-wrap: wrap;
-          gap: 10px;
-        }
-
-        .footer-mark {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          color: #354052;
-          font-weight: 900;
-        }
-
-        .footer-refresh {
-          background: transparent;
-          border: 0;
-          color: #727987;
-          font: inherit;
-          font-weight: 700;
-          cursor: pointer;
-        }
-
-        .footer-refresh:hover {
-          color: #ae1236;
+          font-size: 13.5px;
         }
 
         .modal-backdrop {
           position: fixed;
           inset: 0;
           z-index: 1000;
-          display: grid;
-          place-items: center;
-          padding: 20px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 12px;
           background: rgba(11, 18, 32, 0.6);
           backdrop-filter: blur(4px);
+          box-sizing: border-box;
         }
 
         .bracket-modal {
-          width: min(900px, 100%);
-          padding: 24px;
+          width: 100%;
+          max-width: 850px;
+          max-height: 85vh;
+          display: flex;
+          flex-direction: column;
+          padding: 20px;
           border-radius: 16px;
           background: #fff;
-          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+          box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+          box-sizing: border-box;
+          margin: auto;
+        }
+
+        .bracket-scroll-area {
+          width: 100%;
+          overflow-x: auto;
+          overflow-y: auto;
+          max-height: calc(85vh - 90px);
+          padding-bottom: 10px;
+          -webkit-overflow-scrolling: touch;
+        }
+
+        .bracket-grid {
+          display: flex;
+          gap: 16px;
+          min-width: 720px;
+          padding: 4px;
+        }
+
+        .bracket-round {
+          flex: 1;
+          display: grid;
+          gap: 10px;
+          padding: 12px;
+          border: 1px solid #eef0f3;
+          border-radius: 12px;
+          background: #f8f9fb;
+          min-width: 165px;
+          box-sizing: border-box;
         }
 
         .modal-header {
           display: flex;
           align-items: flex-start;
           justify-content: space-between;
-          margin-bottom: 20px;
+          margin-bottom: 16px;
+          flex-shrink: 0;
         }
 
         .eyebrow {
@@ -1481,15 +1363,15 @@ export default function WebMatches() {
         .modal-title {
           margin: 4px 0 0;
           color: #172033;
-          font-size: 22px;
+          font-size: 18px;
           font-weight: 800;
         }
 
         .icon-button {
           display: grid;
           place-items: center;
-          width: 36px;
-          height: 36px;
+          width: 32px;
+          height: 32px;
           border: 0;
           border-radius: 8px;
           background: #f1f3f6;
@@ -1497,19 +1379,29 @@ export default function WebMatches() {
           cursor: pointer;
         }
 
+        .bracket-scroll-area {
+          overflow-x: auto;
+          overflow-y: auto;
+          max-height: calc(90vh - 100px);
+          padding-bottom: 8px;
+          -webkit-overflow-scrolling: touch;
+        }
+
         .bracket-grid {
-          display: grid;
-          grid-template-columns: repeat(3, 1fr);
-          gap: 20px;
+          display: flex;
+          gap: 16px;
+          min-width: 700px;
         }
 
         .bracket-round {
+          flex: 1;
           display: grid;
           gap: 10px;
-          padding: 14px;
+          padding: 12px;
           border: 1px solid #eef0f3;
           border-radius: 12px;
           background: #f8f9fb;
+          min-width: 170px;
         }
 
         .bracket-round-title {
@@ -1522,11 +1414,12 @@ export default function WebMatches() {
         .bracket-champion {
           display: flex;
           justify-content: space-between;
-          padding: 10px 12px;
+          align-items: center;
+          padding: 10px;
           border: 1px solid #eef0f3;
           border-radius: 8px;
           background: #fff;
-          font-size: 13px;
+          font-size: 12.5px;
           font-weight: 700;
         }
 
@@ -1547,18 +1440,18 @@ export default function WebMatches() {
 
         .toast-message {
           position: fixed;
-          right: 24px;
-          bottom: 24px;
+          right: 20px;
+          bottom: 20px;
           z-index: 1000;
           display: flex;
           align-items: center;
-          gap: 10px;
-          padding: 14px 20px;
+          gap: 8px;
+          padding: 12px 16px;
           border-radius: 10px;
           color: #087b59;
           background: #e4f7ef;
           box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
-          font-size: 13px;
+          font-size: 12.5px;
           font-weight: 700;
         }
 
@@ -1567,36 +1460,18 @@ export default function WebMatches() {
           50% { box-shadow: 0 0 0 7px rgba(174, 18, 54, 0.2); }
         }
 
-        @media (max-width: 900px) {
-          .live-score-panel { grid-template-columns: 1fr; gap: 12px; }
-          .bracket-grid { grid-template-columns: 1fr; }
+        @media (max-width: 768px) {
+          .live-score-panel { grid-template-columns: 1fr; gap: 10px; }
           .schedule-card { flex-direction: column; align-items: flex-start; }
-          .tournament-page { padding: 16px 10px; }
+          .tournament-page { padding: 16px 5px; }
+          .topbar { flex-direction: column; align-items: stretch; }
+          .topbar-actions { width: 100%; justify-content: space-between; }
         }
       `}</style>
 
       <main className="tournament-page">
         <div className="tournament-container">
           <header className="topbar">
-            <div className="day-switcher" aria-label="Choose day">
-              {["YESTERDAY", "TODAY", "TOMORROW"].map((day) => (
-                <button
-                  className={`day-button ${activeDay === day ? "day-button-active" : ""}`}
-                  key={day}
-                  onClick={() => changeDay(day)}
-                >
-                  {day === "TODAY" && (
-                    <FiberManualRecordRounded className="today-dot" />
-                  )}
-                  {day === "YESTERDAY"
-                    ? "Yesterday"
-                    : day === "TODAY"
-                      ? "TODAY"
-                      : "Tomorrow"}
-                </button>
-              ))}
-            </div>
-
             <div className="topbar-actions">
               <div className="date-picker-wrap" ref={datePickerRef}>
                 <button
@@ -1606,7 +1481,7 @@ export default function WebMatches() {
                     setShowTourneyDropdown(false);
                   }}
                 >
-                  <CalendarMonthRounded className="button-icon" />
+                  <CalendarMonthRounded style={{ fontSize: 18 }} />
                   Select Date
                 </button>
 
@@ -1622,7 +1497,6 @@ export default function WebMatches() {
                       value={selectedDate}
                       onChange={(e) => {
                         setSelectedDate(e.target.value);
-                        setActiveDay("CUSTOM");
                       }}
                     />
                     <button
@@ -1648,7 +1522,7 @@ export default function WebMatches() {
                 >
                   <span>
                     <EmojiEventsRounded
-                      style={{ fontSize: 18, color: "#ae1236" }}
+                      style={{ fontSize: 17, color: "#ae1236" }}
                     />
                     {selectedTournament}
                   </span>
@@ -1700,7 +1574,7 @@ export default function WebMatches() {
                   className="bracket-button"
                   onClick={() => setShowBracket(true)}
                 >
-                  <AccountTreeRounded className="button-icon" />
+                  <AccountTreeRounded style={{ fontSize: 16 }} />
                   View Tournament Bracket Tree
                 </button>
               </div>
@@ -1714,10 +1588,7 @@ export default function WebMatches() {
                 <span className="live-pulse" />
                 LIVE MATCHES NOW
               </h2>
-              <span className="live-status">
-                <span className="live-status-dot" />
-                LIVE SCORE · COURT SET 3
-              </span>
+              <span className="live-status">LIVE SCORE</span>
             </div>
 
             <div className="live-list">
@@ -1746,13 +1617,10 @@ export default function WebMatches() {
           <section className="section-block schedule-section">
             <div className="section-heading-row">
               <h2 className="section-heading">
-                <ScheduleRounded className="heading-icon" />
+                <ScheduleRounded style={{ fontSize: 18 }} />
                 UPCOMING SCHEDULE ({dayLabel})
               </h2>
-              <span className="upcoming-status">
-                <AccessTimeRounded className="status-icon" />
-                Scheduled (Up Next)
-              </span>
+              <span className="upcoming-status">Up Next</span>
             </div>
 
             <div className="schedule-list">
@@ -1776,13 +1644,12 @@ export default function WebMatches() {
           <section className="section-block finished-section">
             <div className="section-heading-row">
               <h2 className="section-heading">
-                <CheckCircleRounded className="heading-icon finished-heading-icon" />
-                FINISHED MATCHES TODAY ({dayLabel})
+                <CheckCircleRounded
+                  style={{ fontSize: 18, color: "#087b59" }}
+                />
+                FINISHED MATCHES ({dayLabel})
               </h2>
-              <span className="verified-status">
-                <VerifiedRounded className="status-icon" />
-                Official Admin Verified Result
-              </span>
+              <span className="verified-status">Verified Result</span>
             </div>
 
             <div className="finished-list">

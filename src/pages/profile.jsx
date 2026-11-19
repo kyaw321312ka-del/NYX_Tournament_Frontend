@@ -267,7 +267,7 @@ export default function Profile() {
       style={{
         minHeight: "100vh",
         width: "100%",
-        padding: "24px 20px 60px",
+
         background: "#f7f8fa",
         color: "#172033",
         fontFamily: "'Inter', sans-serif",
@@ -282,7 +282,8 @@ export default function Profile() {
           maxWidth: "100%",
           display: "flex",
           flexDirection: "column",
-          gap: "24px",
+          gap: "20px",
+          boxSizing: "border-box",
         }}
       >
         {/* Profile Header */}
@@ -291,24 +292,25 @@ export default function Profile() {
             background: "#fff",
             border: "1px solid #eef0f3",
             borderRadius: "16px",
-            padding: "32px 20px",
+            padding: "24px 16px",
             boxShadow: "0 4px 16px rgba(20, 30, 50, 0.03)",
             textAlign: "center",
             display: "flex",
             flexDirection: "column",
             alignItems: "center",
             position: "relative",
+            boxSizing: "border-box",
           }}
         >
-          <div style={{ position: "relative", marginBottom: "16px" }}>
+          <div style={{ position: "relative", marginBottom: "14px" }}>
             <div
               onClick={() => setShowImageMenu(!showImageMenu)}
               style={{
-                width: "110px",
-                height: "110px",
+                width: "96px",
+                height: "96px",
                 borderRadius: "50%",
                 background: "#0f172a",
-                border: "4px solid #ae1236",
+                border: "3px solid #ae1236",
                 overflow: "hidden",
                 cursor: "pointer",
                 display: "grid",
@@ -324,7 +326,7 @@ export default function Profile() {
                 />
               ) : (
                 <span
-                  style={{ color: "#fff", fontSize: "32px", fontWeight: "900" }}
+                  style={{ color: "#fff", fontSize: "28px", fontWeight: "900" }}
                 >
                   {(player.fullName || "Player")
                     .split(/\s+/)
@@ -340,26 +342,26 @@ export default function Profile() {
             <div
               style={{
                 position: "absolute",
-                bottom: "4px",
-                right: "4px",
+                bottom: "2px",
+                right: "2px",
                 background: "#21865b",
                 color: "#fff",
                 borderRadius: "50%",
-                width: "28px",
-                height: "28px",
+                width: "24px",
+                height: "24px",
                 display: "grid",
                 placeItems: "center",
-                border: "3px solid #fff",
+                border: "2px solid #fff",
               }}
             >
-              <VerifiedRoundedIcon style={{ fontSize: "16px" }} />
+              <VerifiedRoundedIcon style={{ fontSize: "14px" }} />
             </div>
 
             {showImageMenu && (
               <div
                 style={{
                   position: "absolute",
-                  top: "120px",
+                  top: "105px",
                   left: "50%",
                   transform: "translateX(-50%)",
                   background: "#fff",
@@ -368,7 +370,7 @@ export default function Profile() {
                   padding: "8px",
                   boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
                   zIndex: 50,
-                  width: "180px",
+                  width: "160px",
                 }}
               >
                 <label
@@ -420,7 +422,7 @@ export default function Profile() {
 
           <h1
             style={{
-              fontSize: "24px",
+              fontSize: "20px",
               fontWeight: "900",
               color: "#172033",
               margin: "0 0 4px",
@@ -430,13 +432,13 @@ export default function Profile() {
           </h1>
           <div
             style={{
-              fontSize: "13.5px",
+              fontSize: "12.5px",
               color: "#64748b",
               fontWeight: "700",
               display: "flex",
               alignItems: "center",
               gap: "6px",
-              marginBottom: "16px",
+              marginBottom: "14px",
             }}
           >
             <ShieldRoundedIcon style={{ fontSize: "16px", color: "#ae1236" }} />{" "}
@@ -446,7 +448,7 @@ export default function Profile() {
           <div
             style={{
               display: "flex",
-              gap: "10px",
+              gap: "8px",
               justifyContent: "center",
               flexWrap: "wrap",
             }}
@@ -456,16 +458,16 @@ export default function Profile() {
                 background: "#fff5f7",
                 color: "#ae1236",
                 border: "1px solid #f8d7da",
-                padding: "6px 14px",
+                padding: "5px 12px",
                 borderRadius: "8px",
-                fontSize: "12px",
+                fontSize: "11.5px",
                 fontWeight: "800",
                 display: "flex",
                 alignItems: "center",
-                gap: "6px",
+                gap: "5px",
               }}
             >
-              <EmojiEventsRoundedIcon style={{ fontSize: "16px" }} /> Rank #1
+              <EmojiEventsRoundedIcon style={{ fontSize: "15px" }} /> Rank #1
               Global
             </div>
             <div
@@ -473,17 +475,17 @@ export default function Profile() {
                 background: "#f8f9fa",
                 color: "#334155",
                 border: "1px solid #cbd5e1",
-                padding: "6px 14px",
+                padding: "5px 12px",
                 borderRadius: "8px",
-                fontSize: "12px",
+                fontSize: "11.5px",
                 fontWeight: "800",
                 display: "flex",
                 alignItems: "center",
-                gap: "6px",
+                gap: "5px",
               }}
             >
               <VerifiedRoundedIcon
-                style={{ fontSize: "16px", color: "#21865b" }}
+                style={{ fontSize: "15px", color: "#21865b" }}
               />{" "}
               Official Athlete
             </div>
@@ -494,8 +496,9 @@ export default function Profile() {
         <div
           style={{
             display: "grid",
-            gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-            gap: "14px",
+            gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))",
+            gap: "12px",
+            boxSizing: "border-box",
           }}
         >
           <div
@@ -503,19 +506,19 @@ export default function Profile() {
               background: "#fff",
               border: "1px solid #eef0f3",
               borderRadius: "14px",
-              padding: "20px",
+              padding: "16px",
               textAlign: "center",
               boxShadow: "0 4px 16px rgba(20, 30, 50, 0.03)",
             }}
           >
             <div
-              style={{ fontSize: "24px", fontWeight: "900", color: "#172033" }}
+              style={{ fontSize: "20px", fontWeight: "900", color: "#172033" }}
             >
               4,850
             </div>
             <div
               style={{
-                fontSize: "11px",
+                fontSize: "10.5px",
                 fontWeight: "800",
                 color: "#64748b",
                 marginTop: "4px",
@@ -529,19 +532,19 @@ export default function Profile() {
               background: "#fff",
               border: "1px solid #eef0f3",
               borderRadius: "14px",
-              padding: "20px",
+              padding: "16px",
               textAlign: "center",
               boxShadow: "0 4px 16px rgba(20, 30, 50, 0.03)",
             }}
           >
             <div
-              style={{ fontSize: "24px", fontWeight: "900", color: "#21865b" }}
+              style={{ fontSize: "20px", fontWeight: "900", color: "#21865b" }}
             >
               16W - 1L
             </div>
             <div
               style={{
-                fontSize: "11px",
+                fontSize: "10.5px",
                 fontWeight: "800",
                 color: "#64748b",
                 marginTop: "4px",
@@ -555,19 +558,19 @@ export default function Profile() {
               background: "#fff",
               border: "1px solid #eef0f3",
               borderRadius: "14px",
-              padding: "20px",
+              padding: "16px",
               textAlign: "center",
               boxShadow: "0 4px 16px rgba(20, 30, 50, 0.03)",
             }}
           >
             <div
-              style={{ fontSize: "24px", fontWeight: "900", color: "#ae1236" }}
+              style={{ fontSize: "20px", fontWeight: "900", color: "#ae1236" }}
             >
               94.1%
             </div>
             <div
               style={{
-                fontSize: "11px",
+                fontSize: "10.5px",
                 fontWeight: "800",
                 color: "#64748b",
                 marginTop: "4px",
@@ -584,36 +587,37 @@ export default function Profile() {
             background: "#fff",
             border: "1px solid #eef0f3",
             borderRadius: "16px",
-            padding: "28px",
+            padding: "20px 16px",
             boxShadow: "0 4px 16px rgba(20, 30, 50, 0.03)",
             display: "flex",
             flexDirection: "column",
-            gap: "22px",
+            gap: "18px",
+            boxSizing: "border-box",
           }}
         >
           <div
             style={{
               display: "flex",
               justifyContent: "space-between",
-              alignItems: "center",
+              alignItems: "flex-start",
               flexWrap: "wrap",
-              gap: "10px",
+              gap: "8px",
             }}
           >
             <div>
               <h2
                 style={{
-                  fontSize: "18px",
+                  fontSize: "16px",
                   fontWeight: "900",
                   color: "#172033",
-                  margin: "0 0 4px",
+                  margin: "0 0 3px",
                 }}
               >
                 A. Personal Information & Event Categories
               </h2>
               <p
                 style={{
-                  fontSize: "13px",
+                  fontSize: "12px",
                   color: "#64748b",
                   margin: 0,
                   fontWeight: "600",
@@ -626,9 +630,9 @@ export default function Profile() {
               style={{
                 background: "#f8f9fa",
                 border: "1px solid #cbd5e1",
-                padding: "6px 12px",
+                padding: "5px 10px",
                 borderRadius: "8px",
-                fontSize: "12px",
+                fontSize: "11px",
                 fontWeight: "800",
                 color: "#334155",
               }}
@@ -640,18 +644,19 @@ export default function Profile() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-              gap: "16px",
+              gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+              gap: "14px",
+              boxSizing: "border-box",
             }}
           >
             <div>
               <label
                 style={{
                   display: "block",
-                  fontSize: "12px",
+                  fontSize: "11.5px",
                   fontWeight: "800",
                   color: "#334155",
-                  marginBottom: "6px",
+                  marginBottom: "5px",
                 }}
               >
                 Full Name
@@ -662,10 +667,10 @@ export default function Profile() {
                 onChange={(e) => updateField("fullName", e.target.value)}
                 style={{
                   width: "100%",
-                  padding: "12px 14px",
+                  padding: "11px 12px",
                   borderRadius: "10px",
                   border: "1px solid #cbd5e1",
-                  fontSize: "14px",
+                  fontSize: "13.5px",
                   fontWeight: "700",
                   outline: "none",
                   boxSizing: "border-box",
@@ -710,12 +715,12 @@ export default function Profile() {
                   marginBottom: "6px",
                 }}
               >
-                Phone Number
+                Gender
               </label>
               <input
                 type="text"
-                value={player.phone}
-                onChange={(e) => updateField("phone", e.target.value)}
+                value={player.gender}
+                onChange={(e) => updateField("gender", e.target.value)}
                 style={{
                   width: "100%",
                   padding: "12px 14px",
@@ -732,10 +737,38 @@ export default function Profile() {
               <label
                 style={{
                   display: "block",
-                  fontSize: "12px",
+                  fontSize: "11.5px",
                   fontWeight: "800",
                   color: "#334155",
-                  marginBottom: "6px",
+                  marginBottom: "5px",
+                }}
+              >
+                Phone Number
+              </label>
+              <input
+                type="text"
+                value={player.phone}
+                onChange={(e) => updateField("phone", e.target.value)}
+                style={{
+                  width: "100%",
+                  padding: "11px 12px",
+                  borderRadius: "10px",
+                  border: "1px solid #cbd5e1",
+                  fontSize: "13.5px",
+                  fontWeight: "700",
+                  outline: "none",
+                  boxSizing: "border-box",
+                }}
+              />
+            </div>
+            <div>
+              <label
+                style={{
+                  display: "block",
+                  fontSize: "11.5px",
+                  fontWeight: "800",
+                  color: "#334155",
+                  marginBottom: "5px",
                 }}
               >
                 Email Address
@@ -746,10 +779,10 @@ export default function Profile() {
                 onChange={(e) => updateField("email", e.target.value)}
                 style={{
                   width: "100%",
-                  padding: "12px 14px",
+                  padding: "11px 12px",
                   borderRadius: "10px",
                   border: "1px solid #cbd5e1",
-                  fontSize: "14px",
+                  fontSize: "13.5px",
                   fontWeight: "700",
                   outline: "none",
                   boxSizing: "border-box",
@@ -760,10 +793,10 @@ export default function Profile() {
               <label
                 style={{
                   display: "block",
-                  fontSize: "12px",
+                  fontSize: "11.5px",
                   fontWeight: "800",
                   color: "#334155",
-                  marginBottom: "6px",
+                  marginBottom: "5px",
                 }}
               >
                 Team / Club Name
@@ -774,10 +807,10 @@ export default function Profile() {
                 onChange={(e) => updateField("club", e.target.value)}
                 style={{
                   width: "100%",
-                  padding: "12px 14px",
+                  padding: "11px 12px",
                   borderRadius: "10px",
                   border: "1px solid #cbd5e1",
-                  fontSize: "14px",
+                  fontSize: "13.5px",
                   fontWeight: "700",
                   outline: "none",
                   boxSizing: "border-box",
@@ -788,10 +821,10 @@ export default function Profile() {
               <label
                 style={{
                   display: "block",
-                  fontSize: "12px",
+                  fontSize: "11.5px",
                   fontWeight: "800",
                   color: "#334155",
-                  marginBottom: "6px",
+                  marginBottom: "5px",
                 }}
               >
                 Full Address
@@ -802,10 +835,10 @@ export default function Profile() {
                 onChange={(e) => updateField("address", e.target.value)}
                 style={{
                   width: "100%",
-                  padding: "12px 14px",
+                  padding: "11px 12px",
                   borderRadius: "10px",
                   border: "1px solid #cbd5e1",
-                  fontSize: "14px",
+                  fontSize: "13.5px",
                   fontWeight: "700",
                   outline: "none",
                   boxSizing: "border-box",
@@ -820,12 +853,12 @@ export default function Profile() {
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                marginBottom: "10px",
+                marginBottom: "8px",
               }}
             >
               <label
                 style={{
-                  fontSize: "13px",
+                  fontSize: "12.5px",
                   fontWeight: "900",
                   color: "#172033",
                 }}
@@ -834,7 +867,7 @@ export default function Profile() {
               </label>
               <span
                 style={{
-                  fontSize: "12px",
+                  fontSize: "11.5px",
                   fontWeight: "800",
                   color: "#ae1236",
                 }}
@@ -846,8 +879,8 @@ export default function Profile() {
               style={{
                 display: "flex",
                 flexWrap: "wrap",
-                gap: "10px",
-                marginBottom: "12px",
+                gap: "8px",
+                marginBottom: "10px",
               }}
             >
               {categories.map((cat) => (
@@ -856,17 +889,17 @@ export default function Profile() {
                   style={{
                     background: "#fff5f7",
                     border: "1px solid #f8d7da",
-                    padding: "8px 14px",
+                    padding: "6px 12px",
                     borderRadius: "8px",
-                    fontSize: "13px",
+                    fontSize: "12px",
                     fontWeight: "800",
                     color: "#ae1236",
                     display: "flex",
                     alignItems: "center",
-                    gap: "8px",
+                    gap: "6px",
                   }}
                 >
-                  <SportsTennisRoundedIcon style={{ fontSize: "16px" }} /> {cat}
+                  <SportsTennisRoundedIcon style={{ fontSize: "15px" }} /> {cat}
                   <button
                     type="button"
                     onClick={() => removeCategory(cat)}
@@ -879,7 +912,7 @@ export default function Profile() {
                       alignItems: "center",
                     }}
                   >
-                    <CloseRoundedIcon style={{ fontSize: "16px" }} />
+                    <CloseRoundedIcon style={{ fontSize: "15px" }} />
                   </button>
                 </div>
               ))}
@@ -889,15 +922,17 @@ export default function Profile() {
                 value=""
                 onChange={(e) => addCategory(e.target.value)}
                 style={{
-                  padding: "10px 14px",
+                  width: "100%",
+                  padding: "10px 12px",
                   borderRadius: "8px",
                   border: "1px dashed #cbd5e1",
-                  fontSize: "13px",
+                  fontSize: "12.5px",
                   fontWeight: "800",
                   color: "#475569",
                   background: "#f8f9fa",
                   cursor: "pointer",
                   outline: "none",
+                  boxSizing: "border-box",
                 }}
               >
                 <option value="">+ Add Competition Category</option>
@@ -913,31 +948,32 @@ export default function Profile() {
           </div>
         </div>
 
-        {/* SECTION B: Verified ID Documents (Front & Back NRC Previews) + Save / Cancel Buttons Here */}
+        {/* SECTION B: Verified ID Documents (Front & Back NRC Previews) */}
         <div
           style={{
             background: "#fff",
             border: "1px solid #eef0f3",
             borderRadius: "16px",
-            padding: "28px",
+            padding: "20px 16px",
             boxShadow: "0 4px 16px rgba(20, 30, 50, 0.03)",
+            boxSizing: "border-box",
           }}
         >
           <h2
             style={{
-              fontSize: "18px",
+              fontSize: "16px",
               fontWeight: "900",
               color: "#172033",
-              margin: "0 0 4px",
+              margin: "0 0 3px",
             }}
           >
             B. Verified ID Documents (Front & Back NRC / Birth Certificate)
           </h2>
           <p
             style={{
-              fontSize: "13px",
+              fontSize: "12px",
               color: "#64748b",
-              margin: "0 0 20px",
+              margin: "0 0 16px",
               fontWeight: "600",
             }}
           >
@@ -948,9 +984,10 @@ export default function Profile() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-              gap: "20px",
-              marginBottom: "24px",
+              gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+              gap: "14px",
+              marginBottom: "18px",
+              boxSizing: "border-box",
             }}
           >
             {/* Front Card Preview */}
@@ -958,11 +995,11 @@ export default function Profile() {
               style={{
                 background: "#f8f9fa",
                 border: "1px solid #cbd5e1",
-                borderRadius: "14px",
-                padding: "16px",
+                borderRadius: "12px",
+                padding: "12px",
                 display: "flex",
                 flexDirection: "column",
-                gap: "12px",
+                gap: "10px",
               }}
             >
               <div
@@ -974,7 +1011,7 @@ export default function Profile() {
               >
                 <span
                   style={{
-                    fontSize: "13px",
+                    fontSize: "12px",
                     fontWeight: "900",
                     color: "#172033",
                   }}
@@ -983,11 +1020,11 @@ export default function Profile() {
                 </span>
                 <span
                   style={{
-                    fontSize: "11px",
+                    fontSize: "10.5px",
                     color: "#21865b",
                     fontWeight: "800",
                     background: "#e7f7ee",
-                    padding: "2px 8px",
+                    padding: "2px 6px",
                     borderRadius: "6px",
                   }}
                 >
@@ -1003,7 +1040,7 @@ export default function Profile() {
                 }
                 style={{
                   width: "100%",
-                  height: "140px",
+                  height: "130px",
                   borderRadius: "8px",
                   overflow: "hidden",
                   border: "1px solid #cbd5e1",
@@ -1030,7 +1067,7 @@ export default function Profile() {
                   border: "1px solid #cbd5e1",
                   borderRadius: "8px",
                   padding: "8px",
-                  fontSize: "12px",
+                  fontSize: "11.5px",
                   fontWeight: "900",
                   color: "#ae1236",
                   cursor: "pointer",
@@ -1040,7 +1077,7 @@ export default function Profile() {
                   gap: "6px",
                 }}
               >
-                <OpenInNewRoundedIcon style={{ fontSize: "16px" }} /> View Full
+                <OpenInNewRoundedIcon style={{ fontSize: "15px" }} /> View Full
                 Document
               </button>
             </div>
@@ -1050,11 +1087,11 @@ export default function Profile() {
               style={{
                 background: "#f8f9fa",
                 border: "1px solid #cbd5e1",
-                borderRadius: "14px",
-                padding: "16px",
+                borderRadius: "12px",
+                padding: "12px",
                 display: "flex",
                 flexDirection: "column",
-                gap: "12px",
+                gap: "10px",
               }}
             >
               <div
@@ -1066,7 +1103,7 @@ export default function Profile() {
               >
                 <span
                   style={{
-                    fontSize: "13px",
+                    fontSize: "12px",
                     fontWeight: "900",
                     color: "#172033",
                   }}
@@ -1075,11 +1112,11 @@ export default function Profile() {
                 </span>
                 <span
                   style={{
-                    fontSize: "11px",
+                    fontSize: "10.5px",
                     color: "#21865b",
                     fontWeight: "800",
                     background: "#e7f7ee",
-                    padding: "2px 8px",
+                    padding: "2px 6px",
                     borderRadius: "6px",
                   }}
                 >
@@ -1095,7 +1132,7 @@ export default function Profile() {
                 }
                 style={{
                   width: "100%",
-                  height: "140px",
+                  height: "130px",
                   borderRadius: "8px",
                   overflow: "hidden",
                   border: "1px solid #cbd5e1",
@@ -1122,7 +1159,7 @@ export default function Profile() {
                   border: "1px solid #cbd5e1",
                   borderRadius: "8px",
                   padding: "8px",
-                  fontSize: "12px",
+                  fontSize: "11.5px",
                   fontWeight: "900",
                   color: "#ae1236",
                   cursor: "pointer",
@@ -1132,20 +1169,21 @@ export default function Profile() {
                   gap: "6px",
                 }}
               >
-                <OpenInNewRoundedIcon style={{ fontSize: "16px" }} /> View Full
+                <OpenInNewRoundedIcon style={{ fontSize: "15px" }} /> View Full
                 Document
               </button>
             </div>
           </div>
 
-          {/* Cancel & Save Changes Buttons placed right under Section B */}
+          {/* Cancel & Save Changes Buttons placed properly under Section B */}
           <div
             style={{
               display: "flex",
               justifyContent: "flex-end",
-              gap: "12px",
+              gap: "10px",
               borderTop: "1px solid #eef0f3",
-              paddingTop: "20px",
+              paddingTop: "16px",
+              flexWrap: "wrap",
             }}
           >
             <button
@@ -1160,10 +1198,11 @@ export default function Profile() {
                 color: "#334155",
                 border: "1px solid #cbd5e1",
                 borderRadius: "10px",
-                padding: "10px 22px",
-                fontSize: "13.5px",
+                padding: "10px 20px",
+                fontSize: "13px",
                 fontWeight: "900",
                 cursor: "pointer",
+                flex: "1 1 auto",
               }}
             >
               Cancel
@@ -1176,29 +1215,31 @@ export default function Profile() {
                 color: "#fff",
                 border: "none",
                 borderRadius: "10px",
-                padding: "10px 24px",
-                fontSize: "13.5px",
+                padding: "10px 22px",
+                fontSize: "13px",
                 fontWeight: "900",
                 cursor: "pointer",
                 display: "flex",
                 alignItems: "center",
+                justifyContent: "center",
                 gap: "8px",
                 boxShadow: "0 4px 14px rgba(174,18,54,0.3)",
+                flex: "2 1 auto",
               }}
             >
-              <SaveRoundedIcon style={{ fontSize: "18px" }} /> Save Changes
+              <SaveRoundedIcon style={{ fontSize: "17px" }} /> Save Changes
             </button>
           </div>
 
           {message && (
             <div
               style={{
-                marginTop: "14px",
-                padding: "12px 16px",
+                marginTop: "12px",
+                padding: "10px 14px",
                 borderRadius: "8px",
                 background: saved ? "#e7f7ee" : "#fff5f7",
                 color: saved ? "#21865b" : "#ae1236",
-                fontSize: "13px",
+                fontSize: "12.5px",
                 fontWeight: "800",
                 textAlign: "center",
               }}
@@ -1214,34 +1255,35 @@ export default function Profile() {
             background: "#fff",
             border: "1px solid #eef0f3",
             borderRadius: "16px",
-            padding: "28px",
+            padding: "20px 16px",
             boxShadow: "0 4px 16px rgba(20, 30, 50, 0.03)",
+            boxSizing: "border-box",
           }}
         >
           <div
             style={{
               display: "flex",
               justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "20px",
+              alignItems: "flex-start",
+              marginBottom: "16px",
               flexWrap: "wrap",
-              gap: "10px",
+              gap: "8px",
             }}
           >
             <div>
               <h2
                 style={{
-                  fontSize: "18px",
+                  fontSize: "16px",
                   fontWeight: "900",
                   color: "#172033",
-                  margin: "0 0 4px",
+                  margin: "0 0 3px",
                 }}
               >
                 C. Tournament Payment Proof Slips History
               </h2>
               <p
                 style={{
-                  fontSize: "13px",
+                  fontSize: "12px",
                   color: "#64748b",
                   margin: 0,
                   fontWeight: "600",
@@ -1252,20 +1294,20 @@ export default function Profile() {
             </div>
             <span
               style={{
-                fontSize: "12px",
+                fontSize: "11px",
                 fontWeight: "800",
                 color: "#21865b",
                 background: "#e7f7ee",
-                padding: "4px 10px",
+                padding: "4px 8px",
                 borderRadius: "6px",
               }}
             >
-              {paymentSlipsHistory.length} Verified Transactions
+              {paymentSlipsHistory.length} Verified
             </span>
           </div>
 
           <div
-            style={{ display: "flex", flexDirection: "column", gap: "12px" }}
+            style={{ display: "flex", flexDirection: "column", gap: "10px" }}
           >
             {paymentSlipsHistory.map((slip) => (
               <div
@@ -1274,74 +1316,90 @@ export default function Profile() {
                   background: "#f8f9fa",
                   border: "1px solid #e2e8f0",
                   borderRadius: "12px",
-                  padding: "16px 20px",
+                  padding: "14px",
                   display: "flex",
                   justifyContent: "space-between",
                   alignItems: "center",
                   flexWrap: "wrap",
-                  gap: "12px",
+                  gap: "10px",
+                  boxSizing: "border-box",
                 }}
               >
                 <div
-                  style={{ display: "flex", alignItems: "center", gap: "14px" }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "12px",
+                    flex: "1 1 200px",
+                    minWidth: 0,
+                  }}
                 >
                   <div
                     style={{
-                      width: "42px",
-                      height: "42px",
+                      width: "38px",
+                      height: "38px",
                       background: "#fff5f7",
                       color: "#ae1236",
                       borderRadius: "10px",
                       display: "grid",
                       placeItems: "center",
                       border: "1px solid #f8d7da",
+                      flexShrink: 0,
                     }}
                   >
-                    <ReceiptLongRoundedIcon />
+                    <ReceiptLongRoundedIcon style={{ fontSize: "20px" }} />
                   </div>
-                  <div>
+                  <div style={{ minWidth: 0 }}>
                     <div
                       style={{
-                        fontSize: "14px",
+                        fontSize: "13px",
                         fontWeight: "900",
                         color: "#172033",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
                       }}
                     >
                       {slip.tournament}
                     </div>
                     <div
                       style={{
-                        fontSize: "12px",
+                        fontSize: "11px",
                         color: "#64748b",
                         fontWeight: "700",
                         marginTop: "2px",
                       }}
                     >
                       {slip.gateway} •{" "}
-                      <span style={{ color: "#ae1236" }}>{slip.amount}</span> •
-                      Enroll: {slip.enrollId} • {slip.date}
+                      <span style={{ color: "#ae1236" }}>{slip.amount}</span> •{" "}
+                      {slip.enrollId}
                     </div>
                   </div>
                 </div>
 
                 <div
-                  style={{ display: "flex", alignItems: "center", gap: "12px" }}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "8px",
+                    flexShrink: 0,
+                  }}
                 >
                   <span
                     style={{
-                      fontSize: "11.5px",
+                      fontSize: "11px",
                       fontWeight: "800",
                       color: "#21865b",
                       background: "#e7f7ee",
-                      padding: "4px 10px",
+                      padding: "4px 8px",
                       borderRadius: "6px",
                       display: "flex",
                       alignItems: "center",
                       gap: "4px",
                     }}
                   >
-                    <CheckCircleRoundedIcon style={{ fontSize: "14px" }} />{" "}
-                    {slip.status}
+                    <CheckCircleRoundedIcon style={{ fontSize: "13px" }} />{" "}
+                    Verified
                   </span>
                   <button
                     type="button"
@@ -1355,9 +1413,9 @@ export default function Profile() {
                       background: "#172033",
                       color: "#fff",
                       border: "none",
-                      padding: "8px 14px",
+                      padding: "7px 12px",
                       borderRadius: "8px",
-                      fontSize: "12px",
+                      fontSize: "11.5px",
                       fontWeight: "800",
                       cursor: "pointer",
                       display: "flex",
@@ -1366,7 +1424,7 @@ export default function Profile() {
                     }}
                   >
                     View Slip{" "}
-                    <OpenInNewRoundedIcon style={{ fontSize: "14px" }} />
+                    <OpenInNewRoundedIcon style={{ fontSize: "13px" }} />
                   </button>
                 </div>
               </div>
@@ -1380,34 +1438,35 @@ export default function Profile() {
             background: "#fff",
             border: "1px solid #eef0f3",
             borderRadius: "16px",
-            padding: "28px",
+            padding: "20px 16px",
             boxShadow: "0 4px 16px rgba(20, 30, 50, 0.03)",
+            boxSizing: "border-box",
           }}
         >
           <div
             style={{
               display: "flex",
               justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "20px",
+              alignItems: "flex-start",
+              marginBottom: "16px",
               flexWrap: "wrap",
-              gap: "10px",
+              gap: "8px",
             }}
           >
             <div>
               <h2
                 style={{
-                  fontSize: "18px",
+                  fontSize: "16px",
                   fontWeight: "900",
                   color: "#172033",
-                  margin: "0 0 4px",
+                  margin: "0 0 3px",
                 }}
               >
                 D. Past Tournament History & Earned Points
               </h2>
               <p
                 style={{
-                  fontSize: "13px",
+                  fontSize: "12px",
                   color: "#64748b",
                   margin: 0,
                   fontWeight: "600",
@@ -1416,25 +1475,25 @@ export default function Profile() {
                 Official BWF Grade 2 Sanctioned Circuits & Results
               </p>
             </div>
-            <div
+            <span
               style={{
                 background: "#f8f9fa",
                 border: "1px solid #cbd5e1",
-                padding: "6px 12px",
+                padding: "5px 10px",
                 borderRadius: "8px",
-                fontSize: "12px",
+                fontSize: "11px",
                 fontWeight: "800",
                 color: "#334155",
                 display: "flex",
                 alignItems: "center",
-                gap: "6px",
+                gap: "5px",
               }}
             >
               <CalendarMonthRoundedIcon
-                style={{ fontSize: "16px", color: "#ae1236" }}
+                style={{ fontSize: "15px", color: "#ae1236" }}
               />{" "}
               Season 2026
-            </div>
+            </span>
           </div>
 
           <div style={{ width: "100%", overflowX: "auto" }}>
@@ -1443,7 +1502,7 @@ export default function Profile() {
                 width: "100%",
                 borderCollapse: "collapse",
                 textAlign: "left",
-                minWidth: "650px",
+                minWidth: "600px",
               }}
             >
               <thead>
@@ -1451,15 +1510,15 @@ export default function Profile() {
                   style={{
                     borderBottom: "2px solid #eef0f3",
                     color: "#64748b",
-                    fontSize: "11px",
+                    fontSize: "10.5px",
                     fontWeight: "900",
                   }}
                 >
-                  <th style={{ padding: "12px" }}>TOURNAMENT NAME</th>
-                  <th style={{ padding: "12px" }}>EVENT DATE</th>
-                  <th style={{ padding: "12px" }}>CATEGORY</th>
-                  <th style={{ padding: "12px" }}>RESULT</th>
-                  <th style={{ padding: "12px" }}>POINTS EARNED</th>
+                  <th style={{ padding: "10px" }}>TOURNAMENT NAME</th>
+                  <th style={{ padding: "10px" }}>EVENT DATE</th>
+                  <th style={{ padding: "10px" }}>CATEGORY</th>
+                  <th style={{ padding: "10px" }}>RESULT</th>
+                  <th style={{ padding: "10px" }}>POINTS EARNED</th>
                 </tr>
               </thead>
               <tbody>
@@ -1468,26 +1527,26 @@ export default function Profile() {
                     key={i}
                     style={{
                       borderBottom: "1px solid #f1f5f9",
-                      fontSize: "13px",
+                      fontSize: "12px",
                       fontWeight: "700",
                       color: "#172033",
                     }}
                   >
-                    <td style={{ padding: "14px 12px" }}>{t.name}</td>
-                    <td style={{ padding: "14px 12px", color: "#64748b" }}>
+                    <td style={{ padding: "12px 10px" }}>{t.name}</td>
+                    <td style={{ padding: "12px 10px", color: "#64748b" }}>
                       {t.date}
                     </td>
-                    <td style={{ padding: "14px 12px" }}>{t.category}</td>
-                    <td style={{ padding: "14px 12px" }}>
+                    <td style={{ padding: "12px 10px" }}>{t.category}</td>
+                    <td style={{ padding: "12px 10px" }}>
                       <span
                         style={{
                           background:
                             t.status === "champion" ? "#e7f7ee" : "#f1f5f9",
                           color:
                             t.status === "champion" ? "#21865b" : "#475569",
-                          padding: "4px 10px",
+                          padding: "3px 8px",
                           borderRadius: "6px",
-                          fontSize: "11px",
+                          fontSize: "10.5px",
                           fontWeight: "900",
                         }}
                       >
@@ -1496,7 +1555,7 @@ export default function Profile() {
                     </td>
                     <td
                       style={{
-                        padding: "14px 12px",
+                        padding: "12px 10px",
                         color: "#ae1236",
                         fontWeight: "900",
                       }}
@@ -1514,11 +1573,12 @@ export default function Profile() {
         <div
           style={{
             display: "flex",
-            gap: "14px",
+            gap: "10px",
             flexWrap: "wrap",
             justifyContent: "flex-end",
             borderTop: "1px solid #eef0f3",
-            paddingTop: "20px",
+            paddingTop: "16px",
+            boxSizing: "border-box",
           }}
         >
           <button
@@ -1529,13 +1589,15 @@ export default function Profile() {
               color: "#334155",
               border: "1px solid #cbd5e1",
               borderRadius: "10px",
-              padding: "12px 20px",
-              fontSize: "13px",
+              padding: "11px 18px",
+              fontSize: "12.5px",
               fontWeight: "900",
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
-              gap: "8px",
+              gap: "6px",
+              flex: "1 1 auto",
+              justifyContent: "center",
             }}
           >
             <LockResetRoundedIcon style={{ fontSize: "18px" }} /> Change
@@ -1549,22 +1611,24 @@ export default function Profile() {
               color: "#dc2626",
               border: "1px solid #f8d7da",
               borderRadius: "10px",
-              padding: "12px 20px",
-              fontSize: "13px",
+              padding: "11px 18px",
+              fontSize: "14px",
               fontWeight: "900",
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
-              gap: "8px",
+              gap: "6px",
+              flex: "1 1 auto",
+              justifyContent: "center",
             }}
           >
-            <LogoutRoundedIcon style={{ fontSize: "18px" }} /> Log Out of
+            <LogoutRoundedIcon style={{ fontSize: "17px" }} /> Log Out of
             Account
           </button>
         </div>
       </div>
 
-      {/* REDESIGNED PASSWORD CONFIRMATION MODAL FOR SAVING CHANGES */}
+      {/* MODALS (Password confirmation, document preview, change password, logout) */}
       {showSavePasswordModal && (
         <div
           style={{
@@ -1575,51 +1639,53 @@ export default function Profile() {
             backdropFilter: "blur(5px)",
             display: "grid",
             placeItems: "center",
-            padding: "20px",
+            padding: "16px",
+            boxSizing: "border-box",
           }}
         >
           <div
             style={{
               background: "#fff",
-              borderRadius: "18px",
-              padding: "32px",
-              maxWidth: "420px",
+              borderRadius: "16px",
+              padding: "24px",
+              maxWidth: "380px",
               width: "100%",
               boxShadow: "0 20px 40px rgba(0,0,0,0.2)",
               textAlign: "center",
+              boxSizing: "border-box",
             }}
           >
             <div
               style={{
-                width: "56px",
-                height: "56px",
+                width: "48px",
+                height: "48px",
                 borderRadius: "50%",
                 background: "#fff5f7",
                 color: "#ae1236",
                 display: "grid",
                 placeItems: "center",
-                margin: "0 auto 16px",
+                margin: "0 auto 14px",
                 border: "1px solid #f8d7da",
               }}
             >
-              <LockResetRoundedIcon style={{ fontSize: "26px" }} />
+              <LockResetRoundedIcon style={{ fontSize: "22px" }} />
             </div>
             <h2
               style={{
-                fontSize: "19px",
+                fontSize: "17px",
                 fontWeight: "900",
                 color: "#172033",
-                margin: "0 0 8px",
+                margin: "0 0 6px",
               }}
             >
               Confirm Account Password
             </h2>
             <p
               style={{
-                fontSize: "13px",
+                fontSize: "12.5px",
                 color: "#64748b",
-                margin: "0 0 20px",
-                lineHeight: "1.5",
+                margin: "0 0 16px",
+                lineHeight: "1.4",
               }}
             >
               To ensure account security, please enter your password to save
@@ -1627,7 +1693,7 @@ export default function Profile() {
             </p>
             <form
               onSubmit={verifyAndSave}
-              style={{ display: "flex", flexDirection: "column", gap: "14px" }}
+              style={{ display: "flex", flexDirection: "column", gap: "12px" }}
             >
               <div
                 style={{
@@ -1644,10 +1710,10 @@ export default function Profile() {
                   onChange={(e) => setConfirmPasswordInput(e.target.value)}
                   style={{
                     width: "100%",
-                    padding: "12px 42px 12px 14px",
+                    padding: "11px 40px 11px 12px",
                     borderRadius: "10px",
                     border: "1px solid #cbd5e1",
-                    fontSize: "14px",
+                    fontSize: "13.5px",
                     outline: "none",
                     boxSizing: "border-box",
                   }}
@@ -1657,7 +1723,7 @@ export default function Profile() {
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   style={{
                     position: "absolute",
-                    right: "12px",
+                    right: "10px",
                     background: "none",
                     border: "none",
                     cursor: "pointer",
@@ -1666,13 +1732,13 @@ export default function Profile() {
                   }}
                 >
                   {showConfirmPassword ? (
-                    <VisibilityOffOutlinedIcon style={{ fontSize: "20px" }} />
+                    <VisibilityOffOutlinedIcon style={{ fontSize: "18px" }} />
                   ) : (
-                    <VisibilityOutlinedIcon style={{ fontSize: "20px" }} />
+                    <VisibilityOutlinedIcon style={{ fontSize: "18px" }} />
                   )}
                 </button>
               </div>
-              <div style={{ display: "flex", gap: "10px", marginTop: "6px" }}>
+              <div style={{ display: "flex", gap: "8px", marginTop: "4px" }}>
                 <button
                   type="button"
                   onClick={() => setShowSavePasswordModal(false)}
@@ -1681,7 +1747,7 @@ export default function Profile() {
                     background: "#f1f5f9",
                     color: "#334155",
                     border: "none",
-                    padding: "12px",
+                    padding: "11px",
                     borderRadius: "10px",
                     fontWeight: "900",
                     cursor: "pointer",
@@ -1696,7 +1762,7 @@ export default function Profile() {
                     background: "#ae1236",
                     color: "#fff",
                     border: "none",
-                    padding: "12px",
+                    padding: "11px",
                     borderRadius: "10px",
                     fontWeight: "900",
                     cursor: "pointer",
@@ -1710,7 +1776,6 @@ export default function Profile() {
         </div>
       )}
 
-      {/* DOCUMENT / SLIP PREVIEW MODAL */}
       {selectedDocument && (
         <div
           style={{
@@ -1721,19 +1786,21 @@ export default function Profile() {
             backdropFilter: "blur(5px)",
             display: "grid",
             placeItems: "center",
-            padding: "20px",
+            padding: "16px",
+            boxSizing: "border-box",
           }}
           onClick={() => setSelectedDocument(null)}
         >
           <div
             style={{
               background: "#fff",
-              borderRadius: "18px",
-              padding: "24px",
-              maxWidth: "560px",
+              borderRadius: "16px",
+              padding: "20px",
+              maxWidth: "520px",
               width: "100%",
               textAlign: "center",
               boxShadow: "0 20px 40px rgba(0,0,0,0.2)",
+              boxSizing: "border-box",
             }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -1742,12 +1809,12 @@ export default function Profile() {
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
-                marginBottom: "14px",
+                marginBottom: "12px",
               }}
             >
               <h2
                 style={{
-                  fontSize: "16px",
+                  fontSize: "15px",
                   fontWeight: "900",
                   color: "#172033",
                   margin: 0,
@@ -1762,25 +1829,25 @@ export default function Profile() {
                   background: "#f1f5f9",
                   border: "none",
                   borderRadius: "50%",
-                  width: "32px",
-                  height: "32px",
+                  width: "30px",
+                  height: "30px",
                   display: "grid",
                   placeItems: "center",
                   cursor: "pointer",
                 }}
               >
-                <CloseRoundedIcon style={{ fontSize: "18px" }} />
+                <CloseRoundedIcon style={{ fontSize: "16px" }} />
               </button>
             </div>
             <div
               style={{
                 width: "100%",
-                maxHeight: "360px",
+                maxHeight: "320px",
                 borderRadius: "10px",
                 overflow: "hidden",
                 border: "1px solid #cbd5e1",
                 background: "#f8f9fa",
-                marginBottom: "16px",
+                marginBottom: "14px",
               }}
             >
               <img
@@ -1797,7 +1864,7 @@ export default function Profile() {
                 background: "#172033",
                 color: "#fff",
                 border: "none",
-                padding: "12px",
+                padding: "11px",
                 borderRadius: "10px",
                 fontWeight: "900",
                 cursor: "pointer",
@@ -1809,7 +1876,6 @@ export default function Profile() {
         </div>
       )}
 
-      {/* REDESIGNED CHANGE PASSWORD MODAL WITH EYE ICONS */}
       {showPasswordModal && (
         <div
           style={{
@@ -1820,52 +1886,54 @@ export default function Profile() {
             backdropFilter: "blur(5px)",
             display: "grid",
             placeItems: "center",
-            padding: "20px",
+            padding: "16px",
+            boxSizing: "border-box",
           }}
           onClick={() => setShowPasswordModal(false)}
         >
           <div
             style={{
               background: "#fff",
-              borderRadius: "18px",
-              padding: "32px",
-              maxWidth: "420px",
+              borderRadius: "16px",
+              padding: "24px",
+              maxWidth: "380px",
               width: "100%",
               boxShadow: "0 20px 40px rgba(0,0,0,0.2)",
               textAlign: "center",
+              boxSizing: "border-box",
             }}
             onClick={(e) => e.stopPropagation()}
           >
             <div
               style={{
-                width: "56px",
-                height: "56px",
+                width: "48px",
+                height: "48px",
                 borderRadius: "50%",
                 background: "#fff5f7",
                 color: "#ae1236",
                 display: "grid",
                 placeItems: "center",
-                margin: "0 auto 16px",
+                margin: "0 auto 14px",
                 border: "1px solid #f8d7da",
               }}
             >
-              <LockResetRoundedIcon style={{ fontSize: "26px" }} />
+              <LockResetRoundedIcon style={{ fontSize: "22px" }} />
             </div>
             <h2
               style={{
-                fontSize: "19px",
+                fontSize: "17px",
                 fontWeight: "900",
                 color: "#172033",
-                margin: "0 0 6px",
+                margin: "0 0 5px",
               }}
             >
               Change Account Password
             </h2>
             <p
               style={{
-                fontSize: "13px",
+                fontSize: "12.5px",
                 color: "#64748b",
-                margin: "0 0 20px",
+                margin: "0 0 16px",
                 fontWeight: "600",
               }}
             >
@@ -1878,9 +1946,8 @@ export default function Profile() {
                 setShowPasswordModal(false);
                 alert("Password updated successfully!");
               }}
-              style={{ display: "flex", flexDirection: "column", gap: "14px" }}
+              style={{ display: "flex", flexDirection: "column", gap: "12px" }}
             >
-              {/* Current Password */}
               <div
                 style={{
                   position: "relative",
@@ -1896,10 +1963,10 @@ export default function Profile() {
                   onChange={(e) => setCurrentPass(e.target.value)}
                   style={{
                     width: "100%",
-                    padding: "12px 42px 12px 14px",
+                    padding: "11px 40px 11px 12px",
                     borderRadius: "10px",
                     border: "1px solid #cbd5e1",
-                    fontSize: "14px",
+                    fontSize: "13.5px",
                     outline: "none",
                     boxSizing: "border-box",
                   }}
@@ -1909,7 +1976,7 @@ export default function Profile() {
                   onClick={() => setShowPass1(!showPass1)}
                   style={{
                     position: "absolute",
-                    right: "12px",
+                    right: "10px",
                     background: "none",
                     border: "none",
                     cursor: "pointer",
@@ -1918,14 +1985,13 @@ export default function Profile() {
                   }}
                 >
                   {showPass1 ? (
-                    <VisibilityOffOutlinedIcon style={{ fontSize: "20px" }} />
+                    <VisibilityOffOutlinedIcon style={{ fontSize: "18px" }} />
                   ) : (
-                    <VisibilityOutlinedIcon style={{ fontSize: "20px" }} />
+                    <VisibilityOutlinedIcon style={{ fontSize: "18px" }} />
                   )}
                 </button>
               </div>
 
-              {/* New Password */}
               <div
                 style={{
                   position: "relative",
@@ -1941,10 +2007,10 @@ export default function Profile() {
                   onChange={(e) => setNewPass(e.target.value)}
                   style={{
                     width: "100%",
-                    padding: "12px 42px 12px 14px",
+                    padding: "11px 40px 11px 12px",
                     borderRadius: "10px",
                     border: "1px solid #cbd5e1",
-                    fontSize: "14px",
+                    fontSize: "13.5px",
                     outline: "none",
                     boxSizing: "border-box",
                   }}
@@ -1954,7 +2020,7 @@ export default function Profile() {
                   onClick={() => setShowPass2(!showPass2)}
                   style={{
                     position: "absolute",
-                    right: "12px",
+                    right: "10px",
                     background: "none",
                     border: "none",
                     cursor: "pointer",
@@ -1963,14 +2029,13 @@ export default function Profile() {
                   }}
                 >
                   {showPass2 ? (
-                    <VisibilityOffOutlinedIcon style={{ fontSize: "20px" }} />
+                    <VisibilityOffOutlinedIcon style={{ fontSize: "18px" }} />
                   ) : (
-                    <VisibilityOutlinedIcon style={{ fontSize: "20px" }} />
+                    <VisibilityOutlinedIcon style={{ fontSize: "18px" }} />
                   )}
                 </button>
               </div>
 
-              {/* Confirm New Password */}
               <div
                 style={{
                   position: "relative",
@@ -1986,10 +2051,10 @@ export default function Profile() {
                   onChange={(e) => setConfirmPass(e.target.value)}
                   style={{
                     width: "100%",
-                    padding: "12px 42px 12px 14px",
+                    padding: "11px 40px 11px 12px",
                     borderRadius: "10px",
                     border: "1px solid #cbd5e1",
-                    fontSize: "14px",
+                    fontSize: "13.5px",
                     outline: "none",
                     boxSizing: "border-box",
                   }}
@@ -1999,7 +2064,7 @@ export default function Profile() {
                   onClick={() => setShowPass3(!showPass3)}
                   style={{
                     position: "absolute",
-                    right: "12px",
+                    right: "10px",
                     background: "none",
                     border: "none",
                     cursor: "pointer",
@@ -2008,14 +2073,14 @@ export default function Profile() {
                   }}
                 >
                   {showPass3 ? (
-                    <VisibilityOffOutlinedIcon style={{ fontSize: "20px" }} />
+                    <VisibilityOffOutlinedIcon style={{ fontSize: "18px" }} />
                   ) : (
-                    <VisibilityOutlinedIcon style={{ fontSize: "20px" }} />
+                    <VisibilityOutlinedIcon style={{ fontSize: "18px" }} />
                   )}
                 </button>
               </div>
 
-              <div style={{ display: "flex", gap: "10px", marginTop: "6px" }}>
+              <div style={{ display: "flex", gap: "8px", marginTop: "4px" }}>
                 <button
                   type="button"
                   onClick={() => setShowPasswordModal(false)}
@@ -2024,7 +2089,7 @@ export default function Profile() {
                     background: "#f1f5f9",
                     color: "#334155",
                     border: "none",
-                    padding: "12px",
+                    padding: "11px",
                     borderRadius: "10px",
                     fontWeight: "900",
                     cursor: "pointer",
@@ -2039,7 +2104,7 @@ export default function Profile() {
                     background: "#ae1236",
                     color: "#fff",
                     border: "none",
-                    padding: "12px",
+                    padding: "11px",
                     borderRadius: "10px",
                     fontWeight: "900",
                     cursor: "pointer",
@@ -2053,7 +2118,6 @@ export default function Profile() {
         </div>
       )}
 
-      {/* LOGOUT MODAL */}
       {showLogoutModal && (
         <div
           style={{
@@ -2064,58 +2128,60 @@ export default function Profile() {
             backdropFilter: "blur(5px)",
             display: "grid",
             placeItems: "center",
-            padding: "20px",
+            padding: "16px",
+            boxSizing: "border-box",
           }}
           onClick={() => setShowLogoutModal(false)}
         >
           <div
             style={{
               background: "#fff",
-              borderRadius: "18px",
-              padding: "32px",
-              maxWidth: "400px",
+              borderRadius: "16px",
+              padding: "24px",
+              maxWidth: "360px",
               width: "100%",
               textAlign: "center",
               boxShadow: "0 20px 40px rgba(0,0,0,0.2)",
+              boxSizing: "border-box",
             }}
             onClick={(e) => e.stopPropagation()}
           >
             <div
               style={{
-                width: "56px",
-                height: "56px",
+                width: "48px",
+                height: "48px",
                 borderRadius: "50%",
                 background: "#fff5f7",
                 color: "#dc2626",
                 display: "grid",
                 placeItems: "center",
-                margin: "0 auto 14px",
+                margin: "0 auto 12px",
                 border: "1px solid #f8d7da",
               }}
             >
-              <LogoutRoundedIcon style={{ fontSize: "26px" }} />
+              <LogoutRoundedIcon style={{ fontSize: "22px" }} />
             </div>
             <h2
               style={{
-                fontSize: "19px",
+                fontSize: "17px",
                 fontWeight: "900",
                 color: "#172033",
-                margin: "0 0 8px",
+                margin: "0 0 6px",
               }}
             >
               Log out of your account?
             </h2>
             <p
               style={{
-                fontSize: "13px",
+                fontSize: "12.5px",
                 color: "#64748b",
-                margin: "0 0 20px",
+                margin: "0 0 18px",
                 fontWeight: "600",
               }}
             >
               Are you sure you want to end your current session?
             </p>
-            <div style={{ display: "flex", gap: "10px" }}>
+            <div style={{ display: "flex", gap: "8px" }}>
               <button
                 type="button"
                 onClick={() => setShowLogoutModal(false)}
@@ -2124,7 +2190,7 @@ export default function Profile() {
                   background: "#f1f5f9",
                   color: "#334155",
                   border: "none",
-                  padding: "12px",
+                  padding: "11px",
                   borderRadius: "10px",
                   fontWeight: "900",
                   cursor: "pointer",
@@ -2141,7 +2207,7 @@ export default function Profile() {
                   background: "#dc2626",
                   color: "#fff",
                   border: "none",
-                  padding: "12px",
+                  padding: "11px",
                   borderRadius: "10px",
                   fontWeight: "900",
                   cursor: isLoggingOut ? "wait" : "pointer",

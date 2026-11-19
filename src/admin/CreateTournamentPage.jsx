@@ -1541,121 +1541,179 @@ export default function CreateTournamentPage() {
                 </div>
               </div>
 
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 1fr 1fr",
-                  gap: "20px",
-                  marginBottom: "16px",
-                }}
-              >
-                <div>
-                  <label
-                    style={{
-                      display: "block",
-                      fontSize: "11px",
-                      fontWeight: "bold",
-                      color: "#334155",
-                      marginBottom: "6px",
-                    }}
-                  >
-                    Seeds / Pairing Type
-                  </label>
-                  <select
-                    value={cat.seeds}
-                    onChange={(e) => {
-                      const c = [...categories];
-                      c[idx].seeds = e.target.value;
-                      setCategories(c);
-                    }}
-                    style={{
-                      width: "100%",
-                      padding: "12px 16px",
-                      borderRadius: "8px",
-                      border: "1px solid #cbd5e1",
-                      backgroundColor: "#fff",
-                      fontSize: "12px",
-                      outline: "none",
-                    }}
-                  >
-                    <option>Single Elimination</option>
-                    <option>Double Elimination</option>
-                    <option>Round Robin</option>
-                    <option>8 Seeded Positions</option>
-                    <option>16 Seeded Positions</option>
-                    <option>Unseeded Knockout</option>
-                  </select>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr 1fr",
+                    gap: "20px",
+                    marginBottom: "16px",
+                  }}
+                >
+                  {/* Seeds / Pairing Type */}
+                  <div>
+                    <label
+                      style={{
+                        display: "block",
+                        fontSize: "11px",
+                        fontWeight: "bold",
+                        color: "#334155",
+                        marginBottom: "6px",
+                      }}
+                    >
+                      Seeds / Pairing Type
+                    </label>
+                    <select
+                      value={isCustomSeed ? "Other" : cat.seeds}
+                      onChange={(e) => {
+                        const c = [...categories];
+                        if (e.target.value === "Other") {
+                          c[idx].seeds = ""; // Other ရွေးရင် အစက အလွတ်စပေးမယ်
+                        } else {
+                          c[idx].seeds = e.target.value;
+                        }
+                        setCategories(c);
+                      }}
+                      style={{
+                        width: "100%",
+                        padding: "12px 16px",
+                        borderRadius: "8px",
+                        border: "1px solid #cbd5e1",
+                        backgroundColor: "#fff",
+                        fontSize: "12px",
+                        outline: "none",
+                        marginBottom: isCustomSeed ? "8px" : "0",
+                      }}
+                    >
+                      <option>Single Elimination</option>
+                      <option>Double Elimination</option>
+                      <option>Round Robin</option>
+                      <option>8 Seeded Positions</option>
+                      <option>16 Seeded Positions</option>
+                      <option>Unseeded Knockout</option>
+                      <option>Other</option>
+                    </select>
+                    {isCustomSeed && (
+                      <input
+                        type="text"
+                        value={cat.seeds}
+                        onChange={(e) => {
+                          const c = [...categories];
+                          c[idx].seeds = e.target.value;
+                          setCategories(c);
+                        }}
+                        placeholder="Type custom seeds/pairing..."
+                        style={{
+                          width: "100%",
+                          padding: "10px 14px",
+                          borderRadius: "8px",
+                          border: "1px solid #cbd5e1",
+                          fontSize: "12px",
+                          outline: "none",
+                          boxSizing: "border-box",
+                        }}
+                      />
+                    )}
+                  </div>
+
+                  {/* Match Format */}
+                  <div>
+                    <label
+                      style={{
+                        display: "block",
+                        fontSize: "11px",
+                        fontWeight: "bold",
+                        color: "#334155",
+                        marginBottom: "6px",
+                      }}
+                    >
+                      Match Format
+                    </label>
+                    <select
+                      value={isCustomFormat ? "Other" : cat.format}
+                      onChange={(e) => {
+                        const c = [...categories];
+                        if (e.target.value === "Other") {
+                          c[idx].format = ""; // Other ရွေးရင် အစက အလွတ်စပေးမယ်
+                        } else {
+                          c[idx].format = e.target.value;
+                        }
+                        setCategories(c);
+                      }}
+                      style={{
+                        width: "100%",
+                        padding: "12px 16px",
+                        borderRadius: "8px",
+                        border: "1px solid #cbd5e1",
+                        backgroundColor: "#fff",
+                        fontSize: "12px",
+                        outline: "none",
+                        marginBottom: isCustomFormat ? "8px" : "0",
+                      }}
+                    >
+                      <option>Best of 3 Sets to 21 Points</option>
+                      <option>Best of 5 Sets to 11 Points</option>
+                      <option>Single Set to 30 Points</option>
+                      <option>Best of 3 Sets to 11 Points</option>
+                      <option>Other</option>
+                    </select>
+                    {isCustomFormat && (
+                      <input
+                        type="text"
+                        value={cat.format}
+                        onChange={(e) => {
+                          const c = [...categories];
+                          c[idx].format = e.target.value;
+                          setCategories(c);
+                        }}
+                        placeholder="Type custom match format..."
+                        style={{
+                          width: "100%",
+                          padding: "10px 14px",
+                          borderRadius: "8px",
+                          border: "1px solid #cbd5e1",
+                          fontSize: "12px",
+                          outline: "none",
+                          boxSizing: "border-box",
+                        }}
+                      />
+                    )}
+                  </div>
+
+                  <div>
+                    <label
+                      style={{
+                        display: "block",
+                        fontSize: "11px",
+                        fontWeight: "bold",
+                        color: "#334155",
+                        marginBottom: "6px",
+                      }}
+                    >
+                      Entry Status Tag
+                    </label>
+                    <select
+                      value={cat.status}
+                      onChange={(e) => {
+                        const c = [...categories];
+                        c[idx].status = e.target.value;
+                        setCategories(c);
+                      }}
+                      style={{
+                        width: "100%",
+                        padding: "12px 16px",
+                        borderRadius: "8px",
+                        border: "1px solid #cbd5e1",
+                        backgroundColor: "#fff",
+                        fontSize: "12px",
+                        outline: "none",
+                      }}
+                    >
+                      <option>Open (Fast Closing)</option>
+                      <option>Enrollment Open</option>
+                      <option>Enrollment Closed</option>
+                    </select>
+                  </div>
                 </div>
-                <div>
-                  <label
-                    style={{
-                      display: "block",
-                      fontSize: "11px",
-                      fontWeight: "bold",
-                      color: "#334155",
-                      marginBottom: "6px",
-                    }}
-                  >
-                    Match Format
-                  </label>
-                  <select
-                    value={cat.format}
-                    onChange={(e) => {
-                      const c = [...categories];
-                      c[idx].format = e.target.value;
-                      setCategories(c);
-                    }}
-                    style={{
-                      width: "100%",
-                      padding: "12px 16px",
-                      borderRadius: "8px",
-                      border: "1px solid #cbd5e1",
-                      backgroundColor: "#fff",
-                      fontSize: "12px",
-                      outline: "none",
-                    }}
-                  >
-                    <option>Best of 3 Sets to 21 Points</option>
-                    <option>Best of 5 Sets to 11 Points</option>
-                    <option>Single Set to 30 Points</option>
-                    <option>Best of 3 Sets to 11 Points</option>
-                  </select>
-                </div>
-                <div>
-                  <label
-                    style={{
-                      display: "block",
-                      fontSize: "11px",
-                      fontWeight: "bold",
-                      color: "#334155",
-                      marginBottom: "6px",
-                    }}
-                  >
-                    Entry Status Tag
-                  </label>
-                  <select
-                    value={cat.status}
-                    onChange={(e) => {
-                      const c = [...categories];
-                      c[idx].status = e.target.value;
-                      setCategories(c);
-                    }}
-                    style={{
-                      width: "100%",
-                      padding: "12px 16px",
-                      borderRadius: "8px",
-                      border: "1px solid #cbd5e1",
-                      backgroundColor: "#fff",
-                      fontSize: "12px",
-                      outline: "none",
-                    }}
-                  >
-                    <option>Open (Fast Closing)</option>
-                    <option>Enrollment Open</option>
-                    <option>Enrollment Closed</option>
-                  </select>
-                </div>
-              </div>
 
               <div
                 style={{

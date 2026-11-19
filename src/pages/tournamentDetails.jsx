@@ -147,14 +147,21 @@ export default function TournamentDetails() {
       style={{
         minHeight: "100vh",
         width: "100%",
-        padding: "24px 32px 60px",
+
         background: "#f7f8fa",
         color: "#172033",
         fontFamily: "'Inter', sans-serif",
         boxSizing: "border-box",
       }}
     >
-      <div style={{ width: "100%", maxWidth: "1400px", margin: "0 auto" }}>
+      <div
+        style={{
+          width: "100%",
+          maxWidth: "1400px",
+          margin: "0 auto",
+          padding: "5px",
+        }}
+      >
         {/* Hero Banner with Smart Centered Content Width */}
         <div
           style={{

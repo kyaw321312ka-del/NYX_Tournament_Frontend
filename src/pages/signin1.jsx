@@ -74,7 +74,7 @@ export default function Signin1() {
       style={{
         minHeight: "100vh",
         width: "100%",
-        padding: "10px 20px 60px",
+        padding: "5px",
         background: "#f7f8fa",
         color: "#172033",
         fontFamily: "'Inter', sans-serif",
@@ -89,24 +89,25 @@ export default function Signin1() {
           maxWidth: "100%",
           display: "flex",
           flexDirection: "column",
-          gap: "24px",
+          gap: "18px",
+          boxSizing: "border-box",
         }}
       >
         {/* Header Title */}
         <div>
           <h1
             style={{
-              fontSize: "28px",
+              fontSize: "22px",
               fontWeight: "900",
               color: "#172033",
-              margin: "0 0 6px",
+              margin: "0 0 4px",
             }}
           >
             Athlete Registration Portal
           </h1>
           <p
             style={{
-              fontSize: "14.5px",
+              fontSize: "13px",
               color: "#596170",
               margin: 0,
               fontWeight: "600",
@@ -122,18 +123,19 @@ export default function Signin1() {
             background: "#fff",
             border: "1px solid #eef0f3",
             borderRadius: "14px",
-            padding: "20px",
+            padding: "16px",
             boxShadow: "0 4px 16px rgba(20, 30, 50, 0.03)",
             display: "flex",
             flexDirection: "column",
-            gap: "12px",
+            gap: "10px",
+            boxSizing: "border-box",
           }}
         >
           <div
             style={{
               display: "flex",
               justifyContent: "space-between",
-              fontSize: "13px",
+              fontSize: "12px",
               fontWeight: "800",
               color: "#64748b",
             }}
@@ -144,7 +146,7 @@ export default function Signin1() {
           <div
             style={{
               width: "100%",
-              height: "7px",
+              height: "6px",
               background: "#f1f5f9",
               borderRadius: "4px",
               overflow: "hidden",
@@ -163,22 +165,22 @@ export default function Signin1() {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-              gap: "12px",
-              marginTop: "4px",
+              gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))",
+              gap: "8px",
+              marginTop: "2px",
             }}
           >
             <div
               style={{
                 background: "#ae1236",
                 color: "#fff",
-                padding: "16px 20px",
+                padding: "12px 14px",
                 borderRadius: "10px",
-                fontSize: "15px",
+                fontSize: "13px",
                 fontWeight: "900",
               }}
             >
-              1. Personal & Categories <br />
+              1. Personal <br />
               <span style={{ fontSize: "10px", opacity: 0.85 }}>
                 Active Stage
               </span>
@@ -188,13 +190,13 @@ export default function Signin1() {
                 background: "#f8f9fa",
                 color: "#94a3b8",
                 border: "1px solid #e2e8f0",
-                padding: "16px 20px",
+                padding: "12px 14px",
                 borderRadius: "10px",
-                fontSize: "15px",
+                fontSize: "13px",
                 fontWeight: "800",
               }}
             >
-              2. ID Verification <br />
+              2. ID Verify <br />
               <span style={{ fontSize: "10px" }}>Up Next</span>
             </div>
             <div
@@ -202,9 +204,9 @@ export default function Signin1() {
                 background: "#f8f9fa",
                 color: "#94a3b8",
                 border: "1px solid #e2e8f0",
-                padding: "16px 20px",
+                padding: "12px 14px",
                 borderRadius: "10px",
-                fontSize: "15px",
+                fontSize: "13px",
                 fontWeight: "800",
               }}
             >
@@ -216,7 +218,7 @@ export default function Signin1() {
 
         <form
           onSubmit={handleSubmit}
-          style={{ display: "flex", flexDirection: "column", gap: "24px" }}
+          style={{ display: "flex", flexDirection: "column", gap: "18px" }}
         >
           {/* 1. Personal Information & Club Details */}
           <div
@@ -224,16 +226,17 @@ export default function Signin1() {
               background: "#fff",
               border: "1px solid #eef0f3",
               borderRadius: "16px",
-              padding: "26px",
+              padding: "20px 16px",
               boxShadow: "0 4px 16px rgba(20, 30, 50, 0.03)",
+              boxSizing: "border-box",
             }}
           >
             <h3
               style={{
-                fontSize: "17px",
+                fontSize: "16px",
                 fontWeight: "900",
                 color: "#172033",
-                margin: "0 0 6px",
+                margin: "0 0 4px",
                 display: "flex",
                 alignItems: "center",
                 gap: "8px",
@@ -243,8 +246,8 @@ export default function Signin1() {
                 style={{
                   background: "#ae1236",
                   color: "#fff",
-                  width: "6px",
-                  height: "18px",
+                  width: "5px",
+                  height: "16px",
                   borderRadius: "3px",
                   display: "inline-block",
                 }}
@@ -253,9 +256,9 @@ export default function Signin1() {
             </h3>
             <p
               style={{
-                fontSize: "13px",
+                fontSize: "12px",
                 color: "#727987",
-                margin: "0 0 20px",
+                margin: "0 0 16px",
                 fontWeight: "600",
               }}
             >
@@ -266,8 +269,9 @@ export default function Signin1() {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
-                gap: "18px",
+                gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))",
+                gap: "14px",
+                boxSizing: "border-box",
               }}
             >
               {/* Full Name */}
@@ -275,10 +279,10 @@ export default function Signin1() {
                 <label
                   style={{
                     display: "block",
-                    fontSize: "12.5px",
+                    fontSize: "11.5px",
                     fontWeight: "800",
                     color: "#334155",
-                    marginBottom: "6px",
+                    marginBottom: "5px",
                   }}
                 >
                   Full Name <span style={{ color: "#ef4444" }}>*</span>
@@ -293,12 +297,12 @@ export default function Signin1() {
                   <span
                     style={{
                       position: "absolute",
-                      left: "14px",
+                      left: "12px",
                       color: "#94a3b8",
                       display: "flex",
                     }}
                   >
-                    <PersonOutlined style={{ fontSize: "20px" }} />
+                    <PersonOutlined style={{ fontSize: "18px" }} />
                   </span>
                   <input
                     type="text"
@@ -309,11 +313,11 @@ export default function Signin1() {
                     onChange={handleInputChange}
                     style={{
                       width: "100%",
-                      padding: "12px 14px 12px 42px",
+                      padding: "11px 12px 11px 38px",
                       backgroundColor: "#f8fafc",
                       border: "1px solid #cbd5e1",
                       borderRadius: "10px",
-                      fontSize: "14px",
+                      fontSize: "13.5px",
                       color: "#0f172a",
                       outline: "none",
                       boxSizing: "border-box",
@@ -327,10 +331,10 @@ export default function Signin1() {
                 <label
                   style={{
                     display: "block",
-                    fontSize: "12.5px",
+                    fontSize: "11.5px",
                     fontWeight: "800",
                     color: "#334155",
-                    marginBottom: "6px",
+                    marginBottom: "5px",
                   }}
                 >
                   Phone Number <span style={{ color: "#ef4444" }}>*</span>
@@ -345,12 +349,12 @@ export default function Signin1() {
                   <span
                     style={{
                       position: "absolute",
-                      left: "14px",
+                      left: "12px",
                       color: "#94a3b8",
                       display: "flex",
                     }}
                   >
-                    <PhoneOutlined style={{ fontSize: "20px" }} />
+                    <PhoneOutlined style={{ fontSize: "18px" }} />
                   </span>
                   <input
                     type="tel"
@@ -361,11 +365,11 @@ export default function Signin1() {
                     onChange={handleInputChange}
                     style={{
                       width: "100%",
-                      padding: "12px 14px 12px 42px",
+                      padding: "11px 12px 11px 38px",
                       backgroundColor: "#f8fafc",
                       border: "1px solid #cbd5e1",
                       borderRadius: "10px",
-                      fontSize: "14px",
+                      fontSize: "13.5px",
                       color: "#0f172a",
                       outline: "none",
                       boxSizing: "border-box",
@@ -379,10 +383,10 @@ export default function Signin1() {
                 <label
                   style={{
                     display: "block",
-                    fontSize: "12.5px",
+                    fontSize: "11.5px",
                     fontWeight: "800",
                     color: "#334155",
-                    marginBottom: "6px",
+                    marginBottom: "5px",
                   }}
                 >
                   Email Address <span style={{ color: "#ef4444" }}>*</span>
@@ -397,12 +401,12 @@ export default function Signin1() {
                   <span
                     style={{
                       position: "absolute",
-                      left: "14px",
+                      left: "12px",
                       color: "#94a3b8",
                       display: "flex",
                     }}
                   >
-                    <EmailOutlined style={{ fontSize: "20px" }} />
+                    <EmailOutlined style={{ fontSize: "18px" }} />
                   </span>
                   <input
                     type="email"
@@ -413,11 +417,11 @@ export default function Signin1() {
                     onChange={handleInputChange}
                     style={{
                       width: "100%",
-                      padding: "12px 14px 12px 42px",
+                      padding: "11px 12px 11px 38px",
                       backgroundColor: "#f8fafc",
                       border: "1px solid #cbd5e1",
                       borderRadius: "10px",
-                      fontSize: "14px",
+                      fontSize: "13.5px",
                       color: "#0f172a",
                       outline: "none",
                       boxSizing: "border-box",
@@ -431,10 +435,10 @@ export default function Signin1() {
                 <label
                   style={{
                     display: "block",
-                    fontSize: "12.5px",
+                    fontSize: "11.5px",
                     fontWeight: "800",
                     color: "#334155",
-                    marginBottom: "6px",
+                    marginBottom: "5px",
                   }}
                 >
                   Primary Club / Team Name{" "}
@@ -450,12 +454,12 @@ export default function Signin1() {
                   <span
                     style={{
                       position: "absolute",
-                      left: "14px",
+                      left: "12px",
                       color: "#94a3b8",
                       display: "flex",
                     }}
                   >
-                    <SportsTennisOutlined style={{ fontSize: "20px" }} />
+                    <SportsTennisOutlined style={{ fontSize: "18px" }} />
                   </span>
                   <input
                     type="text"
@@ -466,11 +470,11 @@ export default function Signin1() {
                     onChange={handleInputChange}
                     style={{
                       width: "100%",
-                      padding: "12px 14px 12px 42px",
+                      padding: "11px 12px 11px 38px",
                       backgroundColor: "#f8fafc",
                       border: "1px solid #cbd5e1",
                       borderRadius: "10px",
-                      fontSize: "14px",
+                      fontSize: "13.5px",
                       color: "#0f172a",
                       outline: "none",
                       boxSizing: "border-box",
@@ -481,14 +485,14 @@ export default function Signin1() {
             </div>
 
             {/* Full Address */}
-            <div style={{ marginTop: "18px" }}>
+            <div style={{ marginTop: "14px" }}>
               <label
                 style={{
                   display: "block",
-                  fontSize: "12.5px",
+                  fontSize: "11.5px",
                   fontWeight: "800",
                   color: "#334155",
-                  marginBottom: "6px",
+                  marginBottom: "5px",
                 }}
               >
                 Full Address <span style={{ color: "#ef4444" }}>*</span>
@@ -503,27 +507,27 @@ export default function Signin1() {
                 <span
                   style={{
                     position: "absolute",
-                    left: "14px",
+                    left: "12px",
                     color: "#94a3b8",
                     display: "flex",
                   }}
                 >
-                  <LocationOnOutlined style={{ fontSize: "20px" }} />
+                  <LocationOnOutlined style={{ fontSize: "18px" }} />
                 </span>
                 <input
                   type="text"
                   name="address"
                   required
-                  placeholder="Street, Township, Region (e.g., No. 45, Pyay Road, Mayangone, Yangon)"
+                  placeholder="Street, Township, Region"
                   value={formData.address}
                   onChange={handleInputChange}
                   style={{
                     width: "100%",
-                    padding: "12px 14px 12px 42px",
+                    padding: "11px 12px 11px 38px",
                     backgroundColor: "#f8fafc",
                     border: "1px solid #cbd5e1",
                     borderRadius: "10px",
-                    fontSize: "14px",
+                    fontSize: "13.5px",
                     color: "#0f172a",
                     outline: "none",
                     boxSizing: "border-box",
@@ -539,27 +543,28 @@ export default function Signin1() {
               background: "#fff",
               border: "1px solid #eef0f3",
               borderRadius: "16px",
-              padding: "26px",
+              padding: "20px 16px",
               boxShadow: "0 4px 16px rgba(20, 30, 50, 0.03)",
+              boxSizing: "border-box",
             }}
           >
             <div
               style={{
                 display: "flex",
                 justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "18px",
+                alignItems: "flex-start",
+                marginBottom: "14px",
                 flexWrap: "wrap",
-                gap: "10px",
+                gap: "8px",
               }}
             >
               <div>
                 <h3
                   style={{
-                    fontSize: "17px",
+                    fontSize: "16px",
                     fontWeight: "900",
                     color: "#172033",
-                    margin: "0 0 6px",
+                    margin: "0 0 4px",
                     display: "flex",
                     alignItems: "center",
                     gap: "8px",
@@ -569,8 +574,8 @@ export default function Signin1() {
                     style={{
                       background: "#ae1236",
                       color: "#fff",
-                      width: "6px",
-                      height: "18px",
+                      width: "5px",
+                      height: "16px",
                       borderRadius: "3px",
                       display: "inline-block",
                     }}
@@ -579,7 +584,7 @@ export default function Signin1() {
                 </h3>
                 <p
                   style={{
-                    fontSize: "13px",
+                    fontSize: "12px",
                     color: "#727987",
                     margin: 0,
                     fontWeight: "600",
@@ -596,13 +601,13 @@ export default function Signin1() {
                     selectedCategories.length === 3 ? "#fee2e2" : "#f1f5f9",
                   color:
                     selectedCategories.length === 3 ? "#991b1b" : "#475569",
-                  fontSize: "12.5px",
+                  fontSize: "11.5px",
                   fontWeight: "800",
-                  padding: "6px 14px",
+                  padding: "5px 10px",
                   borderRadius: "8px",
                 }}
               >
-                Selected: {selectedCategories.length}/3 Maximum Allowed
+                Selected: {selectedCategories.length}/3 Max
               </span>
             </div>
 
@@ -610,8 +615,9 @@ export default function Signin1() {
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                gap: "12px",
+                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+                gap: "10px",
+                boxSizing: "border-box",
               }}
             >
               {availableCategories.map((cat) => {
@@ -633,37 +639,47 @@ export default function Signin1() {
                           ? "#f1f5f9"
                           : "#f8f9fa",
                       borderRadius: "12px",
-                      padding: "14px 16px",
+                      padding: "12px 14px",
                       cursor: isDisabled ? "not-allowed" : "pointer",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "space-between",
                       opacity: isDisabled ? 0.6 : 1,
                       transition: "all 0.2s",
+                      boxSizing: "border-box",
                     }}
                   >
                     <span
                       style={{
                         fontWeight: "800",
-                        fontSize: "13.5px",
+                        fontSize: "13px",
                         color: "#172033",
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        marginRight: "6px",
                       }}
                     >
                       {cat}
                     </span>
                     {isSelected ? (
                       <CheckCircleRounded
-                        style={{ fontSize: 20, color: "#ae1236" }}
+                        style={{
+                          fontSize: 18,
+                          color: "#ae1236",
+                          flexShrink: 0,
+                        }}
                       />
                     ) : (
                       <span
                         style={{
-                          fontSize: "11px",
+                          fontSize: "10.5px",
                           fontWeight: "900",
                           color: "#94a3b8",
                           background: "#e2e8f0",
-                          padding: "3px 8px",
+                          padding: "2px 6px",
                           borderRadius: "6px",
+                          flexShrink: 0,
                         }}
                       >
                         SELECT
@@ -684,8 +700,8 @@ export default function Signin1() {
               color: "#fff",
               border: "none",
               borderRadius: "12px",
-              minHeight: "56px",
-              fontSize: "15px",
+              minHeight: "50px",
+              fontSize: "13.5px",
               fontWeight: "900",
               cursor: isFormValid ? "pointer" : "not-allowed",
               boxShadow: isFormValid
@@ -696,17 +712,19 @@ export default function Signin1() {
               justifyContent: "center",
               gap: "8px",
               transition: "background 0.2s",
+              boxSizing: "border-box",
+              padding: "0 16px",
             }}
           >
-            CONTINUE TO STEP 2: ID VERIFICATION & SECURITY{" "}
-            <ArrowForwardRounded style={{ fontSize: 20 }} />
+            CONTINUE TO STEP 2: ID VERIFICATION{" "}
+            <ArrowForwardRounded style={{ fontSize: 18 }} />
           </button>
 
           {/* Already have an account */}
           <div
             style={{
               textAlign: "center",
-              fontSize: "13.5px",
+              fontSize: "13px",
               color: "#64748b",
               fontWeight: "600",
             }}

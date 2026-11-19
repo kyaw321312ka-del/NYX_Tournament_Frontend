@@ -65,23 +65,33 @@ export default function Topbar() {
     <>
       <style>{`
         @media (max-width: 640px) {
-          .nyx-nav-icon {
-            display: none !important;
-          }
           .nyx-topbar-container {
-            padding: 0 8px !important;
-            height: 56px !important;
+            padding: 0 6px !important;
+            height: 54px !important;
+            gap: 4px !important;
           }
           .nyx-nav-links {
             padding: 2px !important;
-            gap: 1px !important;
+            gap: 2px !important;
           }
           .nyx-nav-link {
-            padding: 5px 8px !important;
+            padding: 6px 8px !important;
             font-size: 11px !important;
           }
+          /* မနှိပ်ထားသော (inactive) tab များတွင် icon ကိုသာပြပြီး စာသားကို ဖုံးမည် */
+          .nyx-nav-link:not(.nyx-tab-active) .nyx-nav-text {
+            display: none !important;
+          }
+          /* နှိပ်ထားသော (active) tab တွင် icon ကိုဖုံးပြီး စာသားကိုသာပြမည် */
+          .nyx-nav-link.nyx-tab-active .nyx-nav-icon {
+            display: none !important;
+          }
           .nyx-logo-img {
-            height: 30px !important;
+            height: 28px !important;
+          }
+          .nyx-profile-avatar {
+            width: 28px !important;
+            height: 28px !important;
           }
         }
       `}</style>
@@ -101,7 +111,7 @@ export default function Topbar() {
           style={{
             maxWidth: "100%",
             margin: "0 auto",
-            padding: "0 16px",
+            padding: "0 14px",
             height: "60px",
             display: "flex",
             alignItems: "center",
@@ -109,7 +119,14 @@ export default function Topbar() {
           }}
         >
           {/* ဘယ်ဘက်ခြမ်း: Back Icon နှင့် Logo */}
-          <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "4px",
+              flexShrink: 0,
+            }}
+          >
             {showBackIcon && (
               <button
                 onClick={() => navigate(-1)}
@@ -121,14 +138,14 @@ export default function Topbar() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  width: "32px",
-                  height: "32px",
+                  width: "30px",
+                  height: "30px",
                   borderRadius: "8px",
                   transition: "background 0.2s",
                 }}
                 title="Go Back"
               >
-                <ChevronLeftRoundedIcon style={{ fontSize: 22 }} />
+                <ChevronLeftRoundedIcon style={{ fontSize: 20 }} />
               </button>
             )}
 
@@ -146,7 +163,7 @@ export default function Topbar() {
                 alt="NYX Logo"
                 className="nyx-logo-img"
                 style={{
-                  height: "36px",
+                  height: "34px",
                   width: "auto",
                   objectFit: "contain",
                   borderRadius: "6px",
@@ -176,7 +193,7 @@ export default function Topbar() {
                   <Link
                     key={link.name}
                     to={link.path}
-                    className="nyx-nav-link"
+                    className={`nyx-nav-link ${isActive ? "nyx-tab-active" : ""}`}
                     style={{
                       display: "flex",
                       alignItems: "center",
@@ -198,7 +215,7 @@ export default function Topbar() {
                     >
                       {link.icon}
                     </span>
-                    <span>{link.name}</span>
+                    <span className="nyx-nav-text">{link.name}</span>
                   </Link>
                 );
               })}
@@ -260,17 +277,19 @@ export default function Topbar() {
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: "8px",
+                gap: "6px",
                 cursor: "pointer",
-                padding: "3px 8px 3px 3px",
+                padding: "2px 6px 2px 2px",
                 borderRadius: "20px",
                 background: "rgba(255, 255, 255, 0.05)",
                 border: "1px solid rgba(255, 255, 255, 0.1)",
                 transition: "all 0.2s",
+                flexShrink: 0,
               }}
               title="View Profile"
             >
               <div
+                className="nyx-profile-avatar"
                 style={{
                   width: "32px",
                   height: "32px",
@@ -303,7 +322,7 @@ export default function Topbar() {
               {showName && (
                 <span
                   style={{
-                    fontSize: "12.5px",
+                    fontSize: "12px",
                     fontWeight: "800",
                     color: "#ffffff",
                     paddingRight: "4px",

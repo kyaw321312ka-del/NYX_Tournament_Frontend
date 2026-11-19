@@ -194,7 +194,7 @@ export default function Home() {
 
             <h1 className="nyx-hero-title">
               Elevate Your Badminton Game with{" "}
-              <span style={{ fontSize: "60px" }}>nyx</span>
+              <span className="nyx-brand-name">nyx</span>
             </h1>
 
             <p className="nyx-hero-description">
@@ -216,7 +216,7 @@ export default function Home() {
 
               <button
                 className="nyx-button nyx-button-light"
-                onClick={() => navigate("/register")}
+                onClick={() => navigate("/login")}
               >
                 Register Player
               </button>
@@ -251,7 +251,6 @@ export default function Home() {
 
             <div className="nyx-image-overlay" />
 
-            {/* Replaced category with tournament date as requested */}
             <span className="nyx-image-category">{tournament.date}</span>
 
             <button
@@ -288,14 +287,7 @@ export default function Home() {
 
             <div className="nyx-feature-actions">
               <button
-                style={{ fontSize: "20px" }}
-                className="nyx-button nyx-button-red"
-                onClick={() => navigate("/enroll")}
-              >
-                <Bolt /> Enroll Now
-              </button>
-              <button
-                className="nyx-button nyx-button-light"
+                className="nyx-button nyx-button-red nyx-enroll-btn"
                 onClick={() => navigate("/tournaments")}
               >
                 <Visibility /> View Details
@@ -310,7 +302,7 @@ export default function Home() {
             <div className="nyx-heading-left">
               <h2>
                 <span className="nyx-heading-dot" />
-                Today&apos;s Matches
+                Today's Matches
               </h2>
 
               <span className="nyx-section-count">
@@ -467,12 +459,12 @@ const inlineStyles = `
   --nyx-success: #16a875;
   --nyx-shadow: 0 12px 36px rgba(25, 33, 45, 0.055);
   min-height: 100vh;
-  padding: 24px 20px 44px;
+  padding: 20px 14px 45px;
   overflow-x: hidden;
   background: var(--nyx-background);
   color: var(--nyx-text);
   font-family: "DM Sans", sans-serif;
-  font-size: 15px;
+  font-size: 14.5px;
   -webkit-font-smoothing: antialiased;
   box-sizing: border-box;
 }
@@ -490,12 +482,12 @@ const inlineStyles = `
 .nyx-page .nyx-hero {
   position: relative;
   display: flex;
-  min-height: 370px;
-  margin-bottom: 32px;
+  min-height: 350px;
+  margin-bottom: 24px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.95);
   border-left: 5px solid #a83b4d;
-  border-radius: 19px;
+  border-radius: 16px;
   background: #ffffff;
   box-shadow: var(--nyx-shadow);
   isolation: isolate;
@@ -510,20 +502,20 @@ const inlineStyles = `
   align-items: flex-start;
   justify-content: center;
   width: 65%;
-  padding: 40px 38px;
+  padding: 28px 24px;
 }
 
 .nyx-page .nyx-eyebrow {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  padding: 8px 14px;
-  margin-bottom: 20px;
+  padding: 6px 12px;
+  margin-bottom: 14px;
   border: 1px solid #f8e1e5;
   border-radius: 30px;
   background: #fff0f2;
   color: #a72b40;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 800;
   letter-spacing: 0.8px;
 }
@@ -552,30 +544,31 @@ const inlineStyles = `
   margin: 0;
   color: var(--nyx-text);
   font-family: "Outfit", sans-serif;
-  font-size: clamp(32px, 4.2vw, 50px);
+  font-size: clamp(26px, 4vw, 46px);
   font-weight: 800;
-  line-height: 1.18;
-  letter-spacing: -1.7px;
+  line-height: 1.2;
+  letter-spacing: -1.2px;
 }
 
-.nyx-page .nyx-hero-title span {
+.nyx-page .nyx-brand-name {
   display: inline-block;
   color: var(--nyx-primary);
+  font-size: clamp(34px, 5vw, 56px);
   animation: nyxBrandGlow 4s ease-in-out infinite;
 }
 
 .nyx-page .nyx-hero-description {
   max-width: 510px;
-  margin: 18px 0 28px;
+  margin: 14px 0 20px;
   color: #646d7b;
-  font-size: 15px;
-  line-height: 1.85;
+  font-size: 14px;
+  line-height: 1.7;
 }
 
 .nyx-page .nyx-hero-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 14px;
+  gap: 12px;
 }
 
 .nyx-page .nyx-button {
@@ -583,12 +576,12 @@ const inlineStyles = `
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 9px;
-  min-height: 46px;
-  padding: 0 22px;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 18px;
   overflow: hidden;
   border: 1px solid transparent;
-  border-radius: 11px;
+  border-radius: 10px;
   cursor: pointer;
   font-family: inherit;
   font-size: 13px;
@@ -599,19 +592,19 @@ const inlineStyles = `
 }
 
 .nyx-page .nyx-button:hover {
-  transform: translateY(-3px);
+  transform: translateY(-2px);
 }
 
 .nyx-page .nyx-button svg {
-  width: 18px;
-  height: 18px;
+  width: 17px;
+  height: 17px;
 }
 
 .nyx-page .nyx-button-dark {
   border-color: var(--nyx-navy);
   background: var(--nyx-navy);
   color: #ffffff;
-  box-shadow: 0 7px 18px rgba(20, 32, 46, 0.13);
+  box-shadow: 0 6px 16px rgba(20, 32, 46, 0.13);
 }
 
 .nyx-page .nyx-button-dark:hover {
@@ -667,8 +660,8 @@ const inlineStyles = `
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 84px;
-  height: 84px;
+  width: 76px;
+  height: 76px;
   border: 1px solid rgba(230, 57, 80, 0.12);
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.9);
@@ -678,8 +671,8 @@ const inlineStyles = `
 }
 
 .nyx-page .nyx-floating-ball svg {
-  width: 43px;
-  height: 43px;
+  width: 38px;
+  height: 38px;
   transform: rotate(-35deg);
 }
 
@@ -695,12 +688,12 @@ const inlineStyles = `
 }
 
 .nyx-page .nyx-feature-card {
-  padding: 18px;
-  margin-bottom: 48px;
+  padding: 16px;
+  margin-bottom: 36px;
   overflow: hidden;
   border: 1px solid #ffffff;
   border-left: 5px solid #a83b4d;
-  border-radius: 19px;
+  border-radius: 16px;
   background: #ffffff;
   box-shadow: var(--nyx-shadow);
 }
@@ -709,16 +702,16 @@ const inlineStyles = `
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
+  gap: 10px;
+  margin-bottom: 12px;
 }
 
 .nyx-page .nyx-label {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 12px;
-  border-radius: 7px;
+  padding: 6px 10px;
+  border-radius: 6px;
   background: #f1f3f6;
   color: #5d6572;
   font-size: 10px;
@@ -729,27 +722,27 @@ const inlineStyles = `
 .nyx-page .nyx-prize {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
+  gap: 5px;
+  padding: 6px 10px;
   border: 1px solid #e6ecf6;
-  border-radius: 8px;
+  border-radius: 7px;
   background: #f1f6ff;
   color: #2b4b7c;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 800;
   white-space: nowrap;
 }
 
 .nyx-page .nyx-prize svg {
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
 }
 
 .nyx-page .nyx-feature-image-wrap {
   position: relative;
-  height: clamp(210px, 31vw, 360px);
+  height: clamp(200px, 30vw, 340px);
   overflow: hidden;
-  border-radius: 12px;
+  border-radius: 10px;
   background: #e8ebf0;
 }
 
@@ -770,14 +763,14 @@ const inlineStyles = `
 
 .nyx-page .nyx-image-category {
   position: absolute;
-  top: 16px;
-  left: 16px;
-  padding: 8px 13px;
+  top: 12px;
+  left: 12px;
+  padding: 6px 10px;
   border: 1px solid rgba(255, 255, 255, 0.25);
-  border-radius: 7px;
+  border-radius: 6px;
   background: rgba(168, 35, 54, 0.93);
   color: #ffffff;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 800;
   letter-spacing: 0.6px;
   backdrop-filter: blur(8px);
@@ -789,14 +782,14 @@ const inlineStyles = `
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  width: 36px;
+  height: 36px;
   border: 1px solid rgba(255, 255, 255, 0.7);
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.92);
   color: var(--nyx-navy);
   cursor: pointer;
-  box-shadow: 0 5px 16px rgba(0, 0, 0, 0.13);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.13);
   transform: translateY(-50%);
   transition: background 0.25s ease, color 0.25s ease, transform 0.25s ease;
 }
@@ -808,121 +801,124 @@ const inlineStyles = `
 }
 
 .nyx-page .nyx-carousel-button svg {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
 }
 
 .nyx-page .nyx-carousel-left {
-  left: 16px;
+  left: 12px;
 }
 
 .nyx-page .nyx-carousel-right {
-  right: 16px;
+  right: 12px;
 }
 
 .nyx-page .nyx-feature-info {
-  padding: 19px 18px 8px;
+  padding: 16px 12px 4px;
 }
 
 .nyx-page .nyx-feature-info h2 {
   margin: 0;
   color: var(--nyx-text);
   font-family: "Outfit", sans-serif;
-  font-size: 25px;
+  font-size: 22px;
   font-weight: 800;
-  letter-spacing: -0.5px;
+  letter-spacing: -0.4px;
 }
 
 .nyx-page .nyx-feature-description {
   max-width: 780px;
-  margin: 10px 0 14px;
+  margin: 8px 0 12px;
   color: #636d7d;
-  font-size: 13.5px;
-  line-height: 1.8;
+  font-size: 13px;
+  line-height: 1.7;
 }
 
 .nyx-page .nyx-feature-meta {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px 24px;
-  margin-top: 10px;
+  gap: 8px 20px;
+  margin-top: 8px;
 }
 
 .nyx-page .nyx-feature-meta span {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
   color: #727a87;
-  font-size: 12px;
+  font-size: 11.5px;
   font-weight: 600;
 }
 
 .nyx-page .nyx-feature-meta svg {
-  width: 16px;
-  height: 16px;
+  width: 15px;
+  height: 15px;
   color: #d56b79;
 }
 
 .nyx-page .nyx-feature-actions {
   display: flex;
-  gap: 14px;
-  margin-top: 21px;
+  gap: 10px;
+  margin-top: 16px;
 }
 
-.nyx-page .nyx-feature-actions .nyx-button-red {
+.nyx-page .nyx-feature-actions .nyx-button {
   flex: 1;
+  font-size: 12px;
+  padding: 0 12px;
+  white-space: nowrap;
 }
 
 .nyx-page .nyx-section {
-  margin-bottom: 52px;
+  margin-bottom: 40px;
 }
 
 .nyx-page .nyx-section-heading {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 15px;
-  margin-bottom: 21px;
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
 .nyx-page .nyx-heading-left {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 14px;
+  gap: 10px;
 }
 
 .nyx-page .nyx-section-heading h2,
 .nyx-page .nyx-leaderboard-title {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
   margin: 0;
   color: var(--nyx-text);
   font-family: "Outfit", sans-serif;
-  font-size: 25px;
+  font-size: 22px;
   font-weight: 800;
-  letter-spacing: -0.55px;
+  letter-spacing: -0.5px;
 }
 
 .nyx-page .nyx-heading-dot {
-  width: 11px;
-  height: 11px;
+  width: 10px;
+  height: 10px;
   flex-shrink: 0;
   border-radius: 50%;
   background: var(--nyx-primary);
-  box-shadow: 0 0 0 5px rgba(230, 57, 80, 0.09);
+  box-shadow: 0 0 0 4px rgba(230, 57, 80, 0.09);
 }
 
 .nyx-page .nyx-section-count {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 7px 12px;
+  gap: 5px;
+  padding: 5px 10px;
   border-radius: 20px;
   background: #edf0f4;
   color: #586374;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
 }
 
@@ -930,43 +926,43 @@ const inlineStyles = `
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 8px 0 8px 8px;
+  gap: 5px;
+  padding: 6px 0;
   border: 0;
   background: transparent;
   color: #a73c4e;
   cursor: pointer;
   font-family: inherit;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 800;
   white-space: nowrap;
   transition: color 0.25s ease, gap 0.25s ease;
 }
 
 .nyx-page .nyx-text-link:hover {
-  gap: 10px;
+  gap: 8px;
   color: var(--nyx-primary);
 }
 
 .nyx-page .nyx-text-link svg {
-  width: 17px;
-  height: 17px;
+  width: 16px;
+  height: 16px;
 }
 
 .nyx-page .nyx-match-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
+  gap: 14px;
 }
 
 .nyx-page .nyx-match-card {
   position: relative;
   min-width: 0;
-  padding: 18px 18px 14px;
+  padding: 15px;
   overflow: hidden;
   border: 1px solid #ffffff;
   border-left: 4px solid transparent;
-  border-radius: 15px;
+  border-radius: 14px;
   background: #ffffff;
   box-shadow: 0 5px 20px rgba(25, 33, 45, 0.025);
   transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
@@ -975,8 +971,8 @@ const inlineStyles = `
 .nyx-page .nyx-match-card:hover {
   border-color: #f3dfe3;
   border-left-color: var(--nyx-primary);
-  box-shadow: 0 12px 27px rgba(25, 33, 45, 0.07);
-  transform: translateY(-4px);
+  box-shadow: 0 10px 24px rgba(25, 33, 45, 0.07);
+  transform: translateY(-3px);
 }
 
 .nyx-page .nyx-match-card.nyx-match-live {
@@ -987,26 +983,26 @@ const inlineStyles = `
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 18px;
+  gap: 8px;
+  margin-bottom: 14px;
 }
 
 .nyx-page .nyx-match-type {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
   color: #767e8c;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
 }
 
 .nyx-page .nyx-court-badge {
-  padding: 6px 9px;
+  padding: 5px 8px;
   border-radius: 6px;
   background: var(--nyx-navy);
   color: #ffffff;
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 800;
   letter-spacing: 0.3px;
 }
@@ -1015,12 +1011,12 @@ const inlineStyles = `
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  padding: 6px 10px;
+  gap: 5px;
+  padding: 5px 8px;
   border-radius: 6px;
   background: #f0f2f5;
   color: #6f7885;
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 800;
   white-space: nowrap;
 }
@@ -1031,23 +1027,25 @@ const inlineStyles = `
 }
 
 .nyx-page .nyx-match-status .nyx-live-dot {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 
 .nyx-page .nyx-match-player {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  min-height: 34px;
+  gap: 10px;
+  min-height: 30px;
 }
 
 .nyx-page .nyx-player-name {
   min-width: 0;
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   color: #262e3a;
-  font-size: 13.5px;
+  font-size: 13px;
   font-weight: 700;
 }
 
@@ -1060,7 +1058,7 @@ const inlineStyles = `
   flex-shrink: 0;
   color: var(--nyx-text);
   font-family: "Outfit", sans-serif;
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 800;
 }
 
@@ -1068,62 +1066,61 @@ const inlineStyles = `
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 10px;
-  margin-top: 11px;
-  padding-top: 12px;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
   border-top: 1px solid #f0f2f5;
 }
 
 .nyx-page .nyx-match-footer span {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  gap: 4px;
   color: #6e7684;
-  font-size: 11px;
+  font-size: 10.5px;
 }
 
 .nyx-page .nyx-match-footer span svg {
-  width: 14px;
-  height: 14px;
+  width: 13px;
+  height: 13px;
 }
 
 .nyx-page .nyx-match-footer strong {
   color: #5a6372;
-  font-size: 11px;
+  font-size: 10.5px;
   font-weight: 700;
   text-align: right;
 }
 
 .nyx-page .nyx-leaderboard-title > svg {
-  width: 27px;
-  height: 27px;
+  width: 24px;
+  height: 24px;
   color: #c58a35;
 }
 
 .nyx-page .nyx-section-subtitle {
-  margin: 7px 0 0;
+  margin: 5px 0 0;
   color: #7c8593;
-  font-size: 12px;
+  font-size: 11.5px;
 }
 
 .nyx-page .nyx-player-list {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 10px;
 }
 
 .nyx-page .nyx-player-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 20px;
-  min-height: 112px;
-  padding: 19px 22px;
+  gap: 12px;
+  padding: 14px 16px;
   border: 1px solid #ffffff;
   border-left: 4px solid transparent;
-  border-radius: 15px;
+  border-radius: 14px;
   background: #ffffff;
-  box-shadow: 0 5px 22px rgba(25, 33, 45, 0.025);
+  box-shadow: 0 5px 20px rgba(25, 33, 45, 0.025);
   transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
 }
 
@@ -1133,30 +1130,31 @@ const inlineStyles = `
 
 .nyx-page .nyx-player-card:hover {
   border-left-color: var(--nyx-primary);
-  box-shadow: 0 12px 28px rgba(25, 33, 45, 0.07);
-  transform: translateX(3px);
+  box-shadow: 0 10px 24px rgba(25, 33, 45, 0.07);
+  transform: translateX(2px);
 }
 
 .nyx-page .nyx-player-main {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
   min-width: 0;
+  flex: 1;
 }
 
 .nyx-page .nyx-rank {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 38px;
-  height: 38px;
+  width: 34px;
+  height: 34px;
   flex-shrink: 0;
   border: 1px solid #eceef2;
   border-radius: 50%;
   background: #f2f4f7;
   color: #4e5765;
   font-family: "Outfit", sans-serif;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 800;
 }
 
@@ -1169,10 +1167,10 @@ const inlineStyles = `
 
 .nyx-page .nyx-player-avatar {
   display: block;
-  width: 52px;
-  height: 52px;
+  width: 44px;
+  height: 44px;
   flex-shrink: 0;
-  border: 3px solid #f2f3f6;
+  border: 2px solid #f2f3f6;
   border-radius: 50%;
   background: #e9edf2;
   object-fit: cover;
@@ -1180,39 +1178,46 @@ const inlineStyles = `
 
 .nyx-page .nyx-player-info {
   min-width: 0;
+  flex: 1;
 }
 
 .nyx-page .nyx-player-name-line {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 6px;
 }
 
 .nyx-page .nyx-player-info h3 {
   margin: 0;
   color: var(--nyx-text);
   font-family: "Outfit", sans-serif;
-  font-size: 16.5px;
+  font-size: 15px;
   font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .nyx-page .nyx-seed-badge {
   display: inline-flex;
   align-items: center;
-  padding: 4px 8px;
-  border-radius: 6px;
+  padding: 3px 6px;
+  border-radius: 5px;
   background: #edf0f5;
   color: #3f4957;
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 800;
+  flex-shrink: 0;
 }
 
 .nyx-page .nyx-player-info p {
-  margin: 5px 0 0;
+  margin: 3px 0 0;
   color: #7d8592;
-  font-size: 12px;
-  line-height: 1.6;
+  font-size: 11.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .nyx-page .nyx-player-stats {
@@ -1220,32 +1225,32 @@ const inlineStyles = `
   flex-shrink: 0;
   flex-direction: column;
   align-items: flex-end;
-  gap: 5px;
+  gap: 3px;
 }
 
 .nyx-page .nyx-points-label {
   color: #9299a3;
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 600;
 }
 
 .nyx-page .nyx-player-stats > strong {
   color: var(--nyx-text);
   font-family: "Outfit", sans-serif;
-  font-size: 20px;
+  font-size: 17px;
   font-weight: 800;
-  letter-spacing: -0.5px;
+  letter-spacing: -0.4px;
 }
 
 .nyx-page .nyx-player-stats > strong span {
-  font-size: 13px;
+  font-size: 11.5px;
   letter-spacing: 0;
 }
 
 .nyx-page .nyx-form-label {
-  margin-top: 4px;
+  margin-top: 2px;
   color: #9198a2;
-  font-size: 10px;
+  font-size: 9.5px;
   font-weight: 600;
 }
 
@@ -1253,17 +1258,17 @@ const inlineStyles = `
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 5px;
+  gap: 4px;
 }
 
 .nyx-page .nyx-form-badge {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 25px;
-  height: 25px;
-  border-radius: 6px;
-  font-size: 10px;
+  width: 22px;
+  height: 22px;
+  border-radius: 5px;
+  font-size: 9.5px;
   font-weight: 800;
 }
 
@@ -1279,7 +1284,7 @@ const inlineStyles = `
 
 @keyframes nyxFloat {
   0%, 100% { transform: translateY(0) rotate(-5deg); }
-  50% { transform: translateY(-16px) rotate(7deg); }
+  50% { transform: translateY(-14px) rotate(7deg); }
 }
 
 @keyframes nyxRotate {
@@ -1294,16 +1299,16 @@ const inlineStyles = `
 
 @keyframes nyxBrandGlow {
   0%, 100% { text-shadow: 0 0 0 rgba(230, 57, 80, 0); }
-  50% { text-shadow: 0 5px 25px rgba(230, 57, 80, 0.18); }
+  50% { text-shadow: 0 5px 20px rgba(230, 57, 80, 0.18); }
 }
 
 @media (max-width: 900px) {
   .nyx-page .nyx-hero {
-    min-height: 335px;
+    min-height: 320px;
   }
   .nyx-page .nyx-hero-content {
     width: 100%;
-    padding: 30px 26px;
+    padding: 24px 20px;
   }
   .nyx-page .nyx-hero-decoration {
     display: none;
@@ -1312,10 +1317,16 @@ const inlineStyles = `
 
 @media (max-width: 600px) {
   .nyx-page {
-    padding: 14px 12px 28px;
+    padding: 12px 5px 30px;
   }
   .nyx-page .nyx-match-grid {
     grid-template-columns: 1fr;
+  }
+  .nyx-page .nyx-feature-actions {
+    flex-direction: column;
+  }
+  .nyx-page .nyx-feature-actions .nyx-button {
+    width: 100%;
   }
 }
 `;
