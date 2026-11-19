@@ -29,6 +29,11 @@ export function AuthProvider({ children }) {
     return nextSession;
   }, []);
 
+  const establishSession = useCallback((nextSession) => {
+    saveSession(nextSession);
+    setSession(nextSession);
+  }, []);
+
   const signOut = useCallback(async () => {
     try {
       await logoutRequest();
@@ -52,8 +57,8 @@ export function AuthProvider({ children }) {
   }, [accessToken]);
 
   const value = useMemo(
-    () => ({ session, signIn, signOut, refreshUser }),
-    [session, signIn, signOut, refreshUser],
+    () => ({ session, signIn, signOut, refreshUser, establishSession }),
+    [session, signIn, signOut, refreshUser, establishSession],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

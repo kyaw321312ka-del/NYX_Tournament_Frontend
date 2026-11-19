@@ -1,8 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useLocation, useNavigate, Link } from "react-router-dom";
 import {
   PersonOutlined,
-  PhoneOutlined,
   EmailOutlined,
   SportsTennisOutlined,
   LocationOnOutlined,
@@ -13,18 +12,24 @@ import { getTournamentCategories } from "../../tournaments/api/tournamentApi";
 
 export default function Register() {
   const navigate = useNavigate();
+  const location = useLocation();
 
   // Personal Info State
-  const [formData, setFormData] = useState({
-    fullName: "",
-    phone: "",
-    email: "",
-    club: "",
-    address: "",
-  });
+  const [formData, setFormData] = useState(
+    location.state?.registrationData || {
+      fullName: "",
+      email: "",
+      gender: "",
+      birthday: "",
+      club: "",
+      address: "",
+    },
+  );
 
   // Categories State (Max 3 allowed)
-  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [selectedCategories, setSelectedCategories] = useState(
+    location.state?.categoryIds || [],
+  );
   const [availableCategories, setAvailableCategories] = useState([]);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [categoriesError, setCategoriesError] = useState("");
@@ -82,8 +87,9 @@ export default function Register() {
   // Validation: All personal info filled & at least 1 category selected
   const isFormValid =
     formData.fullName.trim() !== "" &&
-    formData.phone.trim() !== "" &&
     formData.email.trim() !== "" &&
+    formData.gender !== "" &&
+    formData.birthday !== "" &&
     formData.club.trim() !== "" &&
     formData.address.trim() !== "" &&
     selectedCategories.length > 0;
@@ -91,7 +97,9 @@ export default function Register() {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (isFormValid) {
-      navigate("/register/account");
+      navigate("/register/account", {
+        state: { registrationData: formData, categoryIds: selectedCategories },
+      });
     }
   };
 
@@ -352,7 +360,7 @@ export default function Register() {
                 </div>
               </div>
 
-              {/* Phone Number */}
+              {/* Gender */}
               <div>
                 <label
                   style={{
@@ -363,45 +371,29 @@ export default function Register() {
                     marginBottom: "5px",
                   }}
                 >
-                  Phone Number <span style={{ color: "#ef4444" }}>*</span>
+                  Gender <span style={{ color: "#ef4444" }}>*</span>
                 </label>
-                <div
+                <select
+                  name="gender"
+                  required
+                  value={formData.gender}
+                  onChange={handleInputChange}
                   style={{
-                    position: "relative",
-                    display: "flex",
-                    alignItems: "center",
+                    width: "100%",
+                    padding: "11px 12px",
+                    backgroundColor: "#f8fafc",
+                    border: "1px solid #cbd5e1",
+                    borderRadius: "10px",
+                    fontSize: "13.5px",
+                    color: "#0f172a",
+                    outline: "none",
+                    boxSizing: "border-box",
                   }}
                 >
-                  <span
-                    style={{
-                      position: "absolute",
-                      left: "12px",
-                      color: "#94a3b8",
-                      display: "flex",
-                    }}
-                  >
-                    <PhoneOutlined style={{ fontSize: "18px" }} />
-                  </span>
-                  <input
-                    type="tel"
-                    name="phone"
-                    required
-                    placeholder="e.g., +95 9 450 123 789"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    style={{
-                      width: "100%",
-                      padding: "11px 12px 11px 38px",
-                      backgroundColor: "#f8fafc",
-                      border: "1px solid #cbd5e1",
-                      borderRadius: "10px",
-                      fontSize: "13.5px",
-                      color: "#0f172a",
-                      outline: "none",
-                      boxSizing: "border-box",
-                    }}
-                  />
-                </div>
+                  <option value="">Select gender</option>
+                  <option value="male">Male</option>
+                  <option value="female">Female</option>
+                </select>
               </div>
 
               {/* Email Address */}
@@ -454,6 +446,39 @@ export default function Register() {
                     }}
                   />
                 </div>
+              </div>
+
+              {/* Birthday */}
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "11.5px",
+                    fontWeight: "800",
+                    color: "#334155",
+                    marginBottom: "5px",
+                  }}
+                >
+                  Birthday <span style={{ color: "#ef4444" }}>*</span>
+                </label>
+                <input
+                  type="date"
+                  name="birthday"
+                  required
+                  value={formData.birthday}
+                  onChange={handleInputChange}
+                  style={{
+                    width: "100%",
+                    padding: "11px 12px",
+                    backgroundColor: "#f8fafc",
+                    border: "1px solid #cbd5e1",
+                    borderRadius: "10px",
+                    fontSize: "13.5px",
+                    color: "#0f172a",
+                    outline: "none",
+                    boxSizing: "border-box",
+                  }}
+                />
               </div>
 
               {/* Primary Club / Team Name */}

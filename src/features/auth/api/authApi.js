@@ -1,5 +1,71 @@
 import { apiRequest } from "../../../core/api/apiClient";
 
+export async function registerAccount({
+  registrationData,
+  categoryIds,
+  password,
+  frontIdImg,
+  backIdImg,
+  profileImage,
+}) {
+  const formData = new FormData();
+  formData.append("name", registrationData.fullName);
+  formData.append("email", registrationData.email);
+  formData.append("password", password);
+  formData.append("gender", registrationData.gender);
+  formData.append("birthday", registrationData.birthday);
+  formData.append("address", registrationData.address);
+  formData.append("clubName", registrationData.club);
+  categoryIds.forEach((categoryId) =>
+    formData.append("categoryIds", String(categoryId)),
+  );
+  formData.append("frontIdImg", frontIdImg, frontIdImg.name);
+  formData.append("backIdImg", backIdImg, backIdImg.name);
+  if (profileImage) {
+    formData.append("profileImage", profileImage, profileImage.name);
+  }
+
+  const response = await apiRequest("/auth/register", {
+    method: "POST",
+    authenticated: false,
+    body: formData,
+  });
+
+  if (response?.success !== true) {
+    throw new Error(
+      (typeof response?.message === "string" && response.message) ||
+        "The server did not confirm account registration.",
+    );
+  }
+
+  return response;
+}
+
+export async function verifyEmail({ email, otp }) {
+  const response = await apiRequest("/auth/verify-email", {
+    method: "POST",
+    authenticated: false,
+    body: JSON.stringify({ email, otp }),
+  });
+
+  if (
+    response?.success !== true ||
+    typeof response.data?.token !== "string" ||
+    !response.data.user ||
+    typeof response.data.user.role !== "string"
+  ) {
+    throw new Error(
+      (typeof response?.message === "string" && response.message) ||
+        "The email verification response did not contain a valid session.",
+    );
+  }
+
+  return {
+    token: response.data.token,
+    user: response.data.user,
+  };
+}
+
 export async function login(credentials) {
   const response = await apiRequest("/auth/login", {
     method: "POST",

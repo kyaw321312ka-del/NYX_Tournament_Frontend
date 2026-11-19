@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   CloudUploadRounded,
   LockOutlined,
@@ -9,9 +9,13 @@ import {
   ArrowBackRounded,
   WarningRounded,
 } from "@mui/icons-material";
+import { registerAccount as registerAccountRequest } from "../api/authApi";
 
 export default function RegisterAccount() {
   const navigate = useNavigate();
+  const location = useLocation();
+  const registrationData = location.state?.registrationData;
+  const categoryIds = location.state?.categoryIds || [];
 
   // ID Photos & Preview States
   const [frontFile, setFrontFile] = useState(null);
@@ -19,6 +23,7 @@ export default function RegisterAccount() {
 
   const [backFile, setBackFile] = useState(null);
   const [backPreview, setBackPreview] = useState(null);
+  const [profileImage, setProfileImage] = useState(null);
 
   // Password State
   const [newPassword, setNewPassword] = useState("");
@@ -28,12 +33,20 @@ export default function RegisterAccount() {
 
   // Terms Agreement State
   const [agreed, setAgreed] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+
+  useEffect(() => {
+    if (!registrationData || categoryIds.length === 0) {
+      navigate("/register", { replace: true });
+    }
+  }, [categoryIds.length, navigate, registrationData]);
 
   // Handlers for File Uploads & Previews
   const handleFrontUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setFrontFile(file.name);
+      setFrontFile(file);
       setFrontPreview(URL.createObjectURL(file));
     }
   };
@@ -41,7 +54,7 @@ export default function RegisterAccount() {
   const handleBackUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setBackFile(file.name);
+      setBackFile(file);
       setBackPreview(URL.createObjectURL(file));
     }
   };
@@ -55,10 +68,32 @@ export default function RegisterAccount() {
   const isFormValid =
     frontFile !== null && backFile !== null && isPasswordValid && agreed;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isFormValid) {
-      navigate("/register/verify");
+    if (!isFormValid || isSubmitting) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmitError("");
+    try {
+      const response = await registerAccountRequest({
+        registrationData,
+        categoryIds,
+        password: newPassword,
+        frontIdImg: frontFile,
+        backIdImg: backFile,
+        profileImage,
+      });
+      navigate("/register/verify", {
+        state: { email: registrationData.email, registration: response.data },
+      });
+    } catch (error) {
+      setSubmitError(
+        error?.message || "Unable to register your account. Please try again.",
+      );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -213,6 +248,7 @@ export default function RegisterAccount() {
               </span>
             </div>
           </div>
+
         </div>
 
         <form
@@ -251,7 +287,7 @@ export default function RegisterAccount() {
                   display: "inline-block",
                 }}
               ></span>
-              3. Birth Date / National ID Photo Verification
+              3. National ID Photo Verification
             </h3>
             <p
               style={{
@@ -333,7 +369,7 @@ export default function RegisterAccount() {
                           color: "#21865b",
                         }}
                       >
-                        ✔ {frontFile} (Click to change)
+                        ✔ {frontFile.name} (Click to change)
                       </span>
                     </div>
                   ) : (
@@ -433,7 +469,7 @@ export default function RegisterAccount() {
                           color: "#21865b",
                         }}
                       >
-                        ✔ {backFile} (Click to change)
+                        ✔ {backFile.name} (Click to change)
                       </span>
                     </div>
                   ) : (
@@ -500,6 +536,42 @@ export default function RegisterAccount() {
                 name, date of birth, and issuing authority seal must be legible.
               </div>
             </div>
+            <label
+              style={{
+                display: "block",
+                marginTop: "14px",
+                fontSize: "11.5px",
+                fontWeight: "800",
+                color: "#334155",
+              }}
+            >
+              Profile Image (Optional)
+              <input
+                type="file"
+                accept="image/png, image/jpeg, image/webp"
+                onChange={(event) =>
+                  setProfileImage(event.target.files?.[0] || null)
+                }
+                style={{
+                  display: "block",
+                  width: "100%",
+                  marginTop: "6px",
+                  fontSize: "12px",
+                }}
+              />
+              {profileImage && (
+                <span
+                  style={{
+                    display: "block",
+                    marginTop: "4px",
+                    fontSize: "11px",
+                    color: "#21865b",
+                  }}
+                >
+                  {profileImage.name}
+                </span>
+              )}
+            </label>
           </div>
 
           {/* 4. Create Account Security Password */}
@@ -806,7 +878,11 @@ export default function RegisterAccount() {
           >
             <button
               type="button"
-              onClick={() => navigate("/register")}
+              onClick={() =>
+                navigate("/register", {
+                  state: { registrationData, categoryIds },
+                })
+              }
               style={{
                 background: "#f1f5f9",
                 color: "#334155",
@@ -829,17 +905,19 @@ export default function RegisterAccount() {
 
             <button
               type="submit"
-              disabled={!isFormValid}
+              disabled={!isFormValid || isSubmitting}
               style={{
-                background: isFormValid ? "#ae1236" : "#cbd5e1",
+                background:
+                  isFormValid && !isSubmitting ? "#ae1236" : "#cbd5e1",
                 color: "#fff",
                 border: "none",
                 borderRadius: "12px",
                 minHeight: "50px",
                 fontSize: "13px",
                 fontWeight: "900",
-                cursor: isFormValid ? "pointer" : "not-allowed",
-                boxShadow: isFormValid
+                cursor:
+                  isFormValid && !isSubmitting ? "pointer" : "not-allowed",
+                boxShadow: isFormValid && !isSubmitting
                   ? "0 4px 16px rgba(174, 18, 54, 0.3)"
                   : "none",
                 display: "flex",
@@ -852,10 +930,27 @@ export default function RegisterAccount() {
                 boxSizing: "border-box",
               }}
             >
-              STAGE 3: EMAIL VERIFICATION{" "}
-              <ArrowForwardRounded style={{ fontSize: 18 }} />
+              {isSubmitting
+                ? "CREATING ACCOUNT..."
+                : "STAGE 3: EMAIL VERIFICATION"}
+              {!isSubmitting && (
+                <ArrowForwardRounded style={{ fontSize: 18 }} />
+              )}
             </button>
           </div>
+          {submitError && (
+            <p
+              role="alert"
+              style={{
+                margin: 0,
+                color: "#b91c1c",
+                fontSize: "13px",
+                fontWeight: "700",
+              }}
+            >
+              {submitError}
+            </p>
+          )}
         </form>
       </div>
     </main>

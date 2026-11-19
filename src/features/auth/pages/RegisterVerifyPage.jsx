@@ -1,52 +1,34 @@
 import React, { useState, useRef, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import {
   MarkEmailReadOutlined,
   ArrowForwardRounded,
-  ArrowBackRounded,
   CheckCircleRounded,
 } from "@mui/icons-material";
+import { verifyEmail as verifyEmailRequest } from "../api/authApi";
+import { useAuth } from "../hooks/useAuth";
 
 export default function RegisterVerifyPage() {
   const navigate = useNavigate();
+  const { state } = useLocation();
+  const email = state?.email;
+  const { establishSession } = useAuth();
 
   // 6-Digit OTP State
   const [otp, setOtp] = useState(["", "", "", "", "", ""]);
   const inputRefs = useRef([]);
-
-  // 3 Minutes Countdown Timer State (180 seconds)
-  const [timeLeft, setTimeLeft] = useState(180);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
 
   useEffect(() => {
-    if (timeLeft <= 0) return;
-
-    const timer = setInterval(() => {
-      setTimeLeft((prev) => prev - 1);
-    }, 1000);
-
-    return () => clearInterval(timer);
-  }, [timeLeft]);
-
-  // Format seconds to MM:SS
-  const formatTime = (seconds) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}`;
-  };
-
-  // Handle Resend OTP
-  const handleResend = () => {
-    setTimeLeft(180);
-    setOtp(["", "", "", "", "", ""]);
-    alert("New verification code has been sent to your email!");
-    if (inputRefs.current[0]) {
-      inputRefs.current[0].focus();
+    if (!email) {
+      navigate("/register", { replace: true });
     }
-  };
+  }, [email, navigate]);
 
   // Handle Input Change for each OTP digit
   const handleChange = (index, value) => {
-    if (isNaN(value)) return;
+    if (!/^\d?$/.test(value)) return;
 
     const newOtp = [...otp];
     newOtp[index] = value;
@@ -66,10 +48,24 @@ export default function RegisterVerifyPage() {
 
   const isOtpComplete = otp.every((digit) => digit !== "");
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isOtpComplete) {
-      navigate("/");
+    if (!isOtpComplete || isSubmitting || !email) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    setSubmitError("");
+    try {
+      const session = await verifyEmailRequest({ email, otp: otp.join("") });
+      establishSession(session);
+      navigate("/", { replace: true });
+    } catch (error) {
+      setSubmitError(
+        error?.message || "Unable to verify your email. Please try again.",
+      );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -322,7 +318,14 @@ export default function RegisterVerifyPage() {
               }}
             >
               We have sent a 6-digit one-time verification passcode (OTP) to
-              your registered athlete email address.
+              {state?.email ? (
+                <>
+                  {" "}
+                  <strong>{state.email}</strong>.
+                </>
+              ) : (
+                " your registered athlete email address."
+              )}
             </p>
 
             {/* 6-Digit OTP Inputs */}
@@ -341,7 +344,10 @@ export default function RegisterVerifyPage() {
                 <input
                   key={index}
                   type="text"
+                  inputMode="numeric"
                   maxLength={1}
+                  aria-label={`Verification digit ${index + 1}`}
+                  disabled={isSubmitting}
                   value={digit}
                   ref={(el) => (inputRefs.current[index] = el)}
                   onChange={(e) => handleChange(index, e.target.value)}
@@ -363,28 +369,6 @@ export default function RegisterVerifyPage() {
               ))}
             </div>
 
-            {/* Live Countdown Timer */}
-            <div
-              style={{
-                fontSize: "13px",
-                color: "#64748b",
-                fontWeight: "700",
-                marginBottom: "8px",
-              }}
-            >
-              ⏳ Code expires in:{" "}
-              <span
-                style={{
-                  color: timeLeft > 0 ? "#ae1236" : "#dc2626",
-                  fontWeight: "900",
-                }}
-              >
-                {timeLeft > 0
-                  ? formatTime(timeLeft)
-                  : "Expired! Please resend code."}
-              </span>
-            </div>
-
             <div
               style={{
                 fontSize: "12.5px",
@@ -392,23 +376,7 @@ export default function RegisterVerifyPage() {
                 fontWeight: "600",
               }}
             >
-              Didn't receive the code? Check spam or{" "}
-              <button
-                type="button"
-                onClick={handleResend}
-                style={{
-                  background: "none",
-                  border: "none",
-                  color: "#ae1236",
-                  fontWeight: "900",
-                  cursor: "pointer",
-                  padding: 0,
-                  fontSize: "12.5px",
-                  textDecoration: "underline",
-                }}
-              >
-                Resend OTP Code
-              </button>
+              Didn't receive the code? Check your spam folder.
             </div>
           </div>
 
@@ -422,42 +390,20 @@ export default function RegisterVerifyPage() {
             }}
           >
             <button
-              type="button"
-              onClick={() => navigate("/register/account")}
-              style={{
-                background: "#f1f5f9",
-                color: "#334155",
-                border: "1px solid #cbd5e1",
-                borderRadius: "12px",
-                padding: "0 18px",
-                minHeight: "50px",
-                fontSize: "13px",
-                fontWeight: "900",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: "6px",
-                flex: "1 1 120px",
-                justifyContent: "center",
-                boxSizing: "border-box",
-              }}
-            >
-              <ArrowBackRounded style={{ fontSize: 16 }} /> Back to Step 2
-            </button>
-
-            <button
               type="submit"
-              disabled={!isOtpComplete}
+              disabled={!isOtpComplete || isSubmitting}
               style={{
-                background: isOtpComplete ? "#ae1236" : "#cbd5e1",
+                background:
+                  isOtpComplete && !isSubmitting ? "#ae1236" : "#cbd5e1",
                 color: "#fff",
                 border: "none",
                 borderRadius: "12px",
                 minHeight: "50px",
                 fontSize: "13px",
                 fontWeight: "900",
-                cursor: isOtpComplete ? "pointer" : "not-allowed",
-                boxShadow: isOtpComplete
+                cursor:
+                  isOtpComplete && !isSubmitting ? "pointer" : "not-allowed",
+                boxShadow: isOtpComplete && !isSubmitting
                   ? "0 4px 16px rgba(174, 18, 54, 0.3)"
                   : "none",
                 display: "flex",
@@ -470,10 +416,26 @@ export default function RegisterVerifyPage() {
                 boxSizing: "border-box",
               }}
             >
-              <CheckCircleRounded style={{ fontSize: 16 }} /> VERIFY & COMPLETE{" "}
-              <ArrowForwardRounded style={{ fontSize: 16 }} />
+              <CheckCircleRounded style={{ fontSize: 16 }} />
+              {isSubmitting ? " VERIFYING..." : " VERIFY & COMPLETE"}
+              {!isSubmitting && (
+                <ArrowForwardRounded style={{ fontSize: 16 }} />
+              )}
             </button>
           </div>
+          {submitError && (
+            <p
+              role="alert"
+              style={{
+                margin: 0,
+                color: "#b91c1c",
+                fontSize: "13px",
+                fontWeight: "700",
+              }}
+            >
+              {submitError}
+            </p>
+          )}
         </form>
       </div>
     </main>
