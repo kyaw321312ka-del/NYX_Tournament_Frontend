@@ -4,7 +4,7 @@ import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
 import VpnKeyOutlinedIcon from "@mui/icons-material/VpnKeyOutlined";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import SecurityIcon from "@mui/icons-material/Security";
-import BackgroundImg from "../assets/Background.png";
+import BackgroundImg from "../../../assets/Background.png";
 
 export default function Login({ onLogin, onForgotPassword }) {
   const [email, setEmail] = useState("");

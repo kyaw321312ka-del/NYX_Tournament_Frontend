@@ -11,8 +11,8 @@ import PublishOutlinedIcon from "@mui/icons-material/PublishOutlined";
 import {
   getTournaments,
   publishTournament,
-} from "../features/tournaments/api/tournamentApi";
-import { resolveApiAssetUrl } from "../core/api/apiClient";
+} from "../api/tournamentApi";
+import { resolveApiAssetUrl } from "../../../core/api/apiClient";
 
 const PAGE_SIZE = 20;
 

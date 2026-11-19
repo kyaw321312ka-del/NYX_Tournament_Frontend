@@ -6,7 +6,7 @@ import ScoreboardIcon from "@mui/icons-material/Scoreboard";
 import LeaderboardIcon from "@mui/icons-material/Leaderboard";
 import ChevronLeftRoundedIcon from "@mui/icons-material/ChevronLeftRounded";
 import LogoImg from "../assets/hero.png";
-import { useAuth } from "../features/auth/useAuth";
+import { useAuth } from "../features/auth/hooks/useAuth";
 import { resolveApiAssetUrl } from "../core/api/apiClient";
 
 export default function Topbar() {
@@ -30,11 +30,10 @@ export default function Topbar() {
   const isEnrollPage = location.pathname === "/enroll";
   const isProfilePage = location.pathname === "/profile";
   const isAuthPage = [
-    "/signin-1",
-    "/signin-2",
+    "/register",
+    "/register/account",
     "/signin-3",
     "/login",
-    "/register",
   ].includes(location.pathname);
   const isAdminPage = location.pathname.startsWith("/admin");
 
@@ -252,7 +251,7 @@ export default function Topbar() {
                 Login
               </Link>
               <Link
-                to="/signin-1"
+                to="/register"
                 style={{
                   backgroundColor: "#ff3366",
                   borderRadius: "7px",

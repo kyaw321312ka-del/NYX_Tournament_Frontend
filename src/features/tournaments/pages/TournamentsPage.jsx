@@ -13,8 +13,8 @@ import {
   SportsTennis,
   PaymentsOutlined,
 } from "@mui/icons-material";
-import { getTournaments } from "../features/tournaments/api/tournamentApi";
-import { resolveApiAssetUrl } from "../core/api/apiClient";
+import { getTournaments } from "../api/tournamentApi";
+import { resolveApiAssetUrl } from "../../../core/api/apiClient";
 
 const PAGE_SIZE = 20;
 

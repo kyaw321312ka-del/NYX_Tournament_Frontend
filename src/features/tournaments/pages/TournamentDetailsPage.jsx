@@ -6,8 +6,8 @@ import AddIcon from "@mui/icons-material/Add";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutlined";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import EditModeIcon from "@mui/icons-material/Edit";
-import { getTournament } from "../features/tournaments/api/tournamentApi";
-import { resolveApiAssetUrl } from "../core/api/apiClient";
+import { getTournament } from "../api/tournamentApi";
+import { resolveApiAssetUrl } from "../../../core/api/apiClient";
 
 export default function TournamentDetailsPage() {
   const navigate = useNavigate();
@@ -1467,22 +1467,6 @@ export default function TournamentDetailsPage() {
           </p>
 
           {categories.map((cat, idx) => {
-            const seedOptions = [
-              "Single Elimination",
-              "Double Elimination",
-              "Round Robin",
-              "8 Seeded Positions",
-              "16 Seeded Positions",
-            ];
-            const isCustomSeed = !seedOptions.includes(cat.seeds);
-
-            const formatOptions = [
-              "Best of 3 Sets to 21",
-              "Best of 5 Sets to 11",
-              "Single Set to 30 Points",
-            ];
-            const isCustomFormat = !formatOptions.includes(cat.format);
-
             return (
               <div
                 key={idx}
@@ -1958,7 +1942,8 @@ export default function TournamentDetailsPage() {
               </div>
               {renderCategoryLeaderboard(cat, idx)}
             </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Bottom Actions */}

@@ -17,8 +17,8 @@ import DeleteOutlineRoundedIcon from "@mui/icons-material/DeleteOutlineRounded";
 import ImageRoundedIcon from "@mui/icons-material/ImageRounded";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined";
-import { useAuth } from "../features/auth/useAuth";
-import { resolveApiAssetUrl } from "../core/api/apiClient";
+import { useAuth } from "../../auth/hooks/useAuth";
+import { resolveApiAssetUrl } from "../../../core/api/apiClient";
 
 const initialCategories = ["U-13 Singles", "U-13 Doubles", "U-15 Singles"];
 

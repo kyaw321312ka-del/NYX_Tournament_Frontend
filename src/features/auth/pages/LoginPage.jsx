@@ -5,8 +5,8 @@ import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined";
 import VpnKeyOutlinedIcon from "@mui/icons-material/VpnKeyOutlined";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import SecurityIcon from "@mui/icons-material/Security";
-import BackgroundImg from "../assets/Background.png";
-import { useAuth } from "../features/auth/useAuth";
+import BackgroundImg from "../../../assets/Background.png";
+import { useAuth } from "../hooks/useAuth";
 
 export default function Login({ onForgotPassword }) {
   const navigate = useNavigate();
@@ -365,7 +365,7 @@ export default function Login({ onForgotPassword }) {
               Don't have an account yet?{" "}
               <button
                 type="button"
-                onClick={() => navigate("/signin-1")}
+                onClick={() => navigate("/register")}
                 style={{
                   color: "#be123c",
                   background: "none",

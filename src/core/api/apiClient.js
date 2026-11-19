@@ -2,7 +2,7 @@ import {
   clearSession,
   getAccessToken,
   SESSION_EXPIRED_EVENT,
-} from "../../features/auth/session";
+} from "../../features/auth/utils/session";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL?.replace(/\/+$/, "");
 

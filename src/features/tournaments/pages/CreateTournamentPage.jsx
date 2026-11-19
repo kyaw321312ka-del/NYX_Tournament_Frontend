@@ -8,7 +8,7 @@ import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import {
   createTournament,
   getTournamentCategories,
-} from "../features/tournaments/api/tournamentApi";
+} from "../api/tournamentApi";
 
 function parseNumericField(value) {
   const normalized = String(value)
@@ -1358,7 +1358,25 @@ export default function CreateTournamentPage() {
             </p>
           )}
 
-          {categories.map((cat, idx) => (
+          {categories.map((cat, idx) => {
+            const seedOptions = [
+              "Single Elimination",
+              "Double Elimination",
+              "Round Robin",
+              "8 Seeded Positions",
+              "16 Seeded Positions",
+              "Unseeded Knockout",
+            ];
+            const isCustomSeed = !seedOptions.includes(cat.seeds);
+            const formatOptions = [
+              "Best of 3 Sets to 21 Points",
+              "Best of 5 Sets to 11 Points",
+              "Single Set to 30 Points",
+              "Best of 3 Sets to 11 Points",
+            ];
+            const isCustomFormat = !formatOptions.includes(cat.format);
+
+            return (
             <div
               key={idx}
               style={{
@@ -2069,7 +2087,8 @@ export default function CreateTournamentPage() {
                   )}
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Bottom Actions */}

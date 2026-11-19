@@ -1,33 +1,22 @@
-import { Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
+import { Routes, Route, useNavigate } from "react-router-dom";
 
 // Pages Import (သသင့်ရဲ့ folder structure အတိုင်း path များကို စစ်ပါ)
-import ForgotPassword from "./ForgotPassword";
-import OverviewPage from "./OverviewPage";
-import TournamentPage from "./TournamentPage";
-import CreateTournamentPage from "./CreateTournamentPage";
-import TournamentDetailsPage from "./TournamentDetailsPage";
-import EnrollmentsPage from "./EnrollmentsPage";
-import MatchesPage from "./MatchesPage";
-import PlayersPage from "./PlayersPage";
-import PlayerDetailsPage from "./PlayerDetailsPage";
-import RankingPage from "./RankingPage";
-import SettingsPage from "./SettingsPage";
+import ForgotPassword from "../features/auth/pages/ForgotPassword";
+import OverviewPage from "../features/tournaments/pages/OverviewPage";
+import TournamentPage from "../features/tournaments/pages/TournamentPage";
+import CreateTournamentPage from "../features/tournaments/pages/CreateTournamentPage";
+import TournamentDetailsPage from "../features/tournaments/pages/TournamentDetailsPage";
+import EnrollmentsPage from "../features/registrations/pages/EnrollmentsPage";
+import MatchesPage from "../features/matches/pages/MatchesPage";
+import PlayersPage from "../features/players/pages/PlayersPage";
+import PlayerDetailsPage from "../features/players/pages/PlayerDetailsPage";
+import RankingPage from "../features/rankings/pages/RankingPage";
+import SettingsPage from "../features/payments/pages/SettingsPage";
 
 // Sidebar Component
 import Sidebar from "./AdminSidebar";
-import { useAuth } from "../features/auth/useAuth";
-
-// Protected Route Validation Component
-function ProtectedRoute({ session, children }) {
-  const location = useLocation();
-  if (!session) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
-  }
-  if (session.user.role.toLowerCase() !== "admin") {
-    return <Navigate to="/" replace />;
-  }
-  return children;
-}
+import { useAuth } from "../features/auth/hooks/useAuth";
+import ProtectedRoute from "../features/auth/components/ProtectedRoute";
 
 // Dashboard Layout Component with conditional Top Header rendering
 function DashboardLayout({

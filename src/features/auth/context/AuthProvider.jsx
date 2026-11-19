@@ -4,13 +4,13 @@ import {
   getCurrentUser as getCurrentUserRequest,
   login as loginRequest,
   logout as logoutRequest,
-} from "./api/authApi";
+} from "../api/authApi";
 import {
   clearSession,
   readSession,
   saveSession,
   SESSION_EXPIRED_EVENT,
-} from "./session";
+} from "../utils/session";
 
 export function AuthProvider({ children }) {
   const [session, setSession] = useState(readSession);

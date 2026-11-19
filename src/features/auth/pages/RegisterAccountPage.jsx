@@ -10,7 +10,7 @@ import {
   WarningRounded,
 } from "@mui/icons-material";
 
-export default function Signin2() {
+export default function RegisterAccount() {
   const navigate = useNavigate();
 
   // ID Photos & Preview States
@@ -806,7 +806,7 @@ export default function Signin2() {
           >
             <button
               type="button"
-              onClick={() => navigate("/signin-1")}
+              onClick={() => navigate("/register")}
               style={{
                 background: "#f1f5f9",
                 color: "#334155",

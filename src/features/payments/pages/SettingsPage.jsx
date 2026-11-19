@@ -16,7 +16,7 @@ import {
   createPaymentMethod,
   getPaymentMethods,
   updatePaymentMethodStatus,
-} from "../features/payments/api/paymentApi";
+} from "../api/paymentApi";
 
 export default function SettingsPage() {
   const outletContext = useOutletContext() || {};

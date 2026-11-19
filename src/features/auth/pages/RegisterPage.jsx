@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import {
   PersonOutlined,
@@ -9,8 +9,9 @@ import {
   ArrowForwardRounded,
   CheckCircleRounded,
 } from "@mui/icons-material";
+import { getTournamentCategories } from "../../tournaments/api/tournamentApi";
 
-export default function Signin1() {
+export default function Register() {
   const navigate = useNavigate();
 
   // Personal Info State
@@ -24,31 +25,56 @@ export default function Signin1() {
 
   // Categories State (Max 3 allowed)
   const [selectedCategories, setSelectedCategories] = useState([]);
+  const [availableCategories, setAvailableCategories] = useState([]);
+  const [categoriesLoading, setCategoriesLoading] = useState(true);
+  const [categoriesError, setCategoriesError] = useState("");
 
-  const availableCategories = [
-    "U-13 Singles",
-    "U-13 Doubles",
-    "U-15 Singles",
-    "U-17 Doubles",
-    "U-17 Singles",
-    "Men's Open Singles",
-    "Men's Open Doubles",
-    "U-15 Doubles",
-    "Mixed Doubles",
-    "Women's Open Singles",
-    "Women's Open Doubles",
-  ];
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadCategories() {
+      setCategoriesLoading(true);
+      setCategoriesError("");
+
+      try {
+        const categories = await getTournamentCategories({
+          authenticated: false,
+        });
+        if (!cancelled) {
+          setAvailableCategories(categories);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setAvailableCategories([]);
+          setCategoriesError(
+            error?.message || "Unable to load playing categories.",
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setCategoriesLoading(false);
+        }
+      }
+    }
+
+    loadCategories();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const handleInputChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const toggleCategory = (category) => {
-    if (selectedCategories.includes(category)) {
-      setSelectedCategories(selectedCategories.filter((c) => c !== category));
+  const toggleCategory = (categoryId) => {
+    if (selectedCategories.includes(categoryId)) {
+      setSelectedCategories(
+        selectedCategories.filter((id) => id !== categoryId),
+      );
     } else {
       if (selectedCategories.length < 3) {
-        setSelectedCategories([...selectedCategories, category]);
+        setSelectedCategories([...selectedCategories, categoryId]);
       }
     }
   };
@@ -65,7 +91,7 @@ export default function Signin1() {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (isFormValid) {
-      navigate("/signin-2");
+      navigate("/register/account");
     }
   };
 
@@ -620,15 +646,50 @@ export default function Signin1() {
                 boxSizing: "border-box",
               }}
             >
-              {availableCategories.map((cat) => {
-                const isSelected = selectedCategories.includes(cat);
+              {categoriesLoading && (
+                <div
+                  style={{
+                    gridColumn: "1 / -1",
+                    color: "#64748b",
+                    fontSize: "12px",
+                    textAlign: "center",
+                    padding: "16px",
+                  }}
+                >
+                  Loading playing categories...
+                </div>
+              )}
+
+              {!categoriesLoading && categoriesError && (
+                <div
+                  role="alert"
+                  style={{
+                    gridColumn: "1 / -1",
+                    color: "#991b1b",
+                    background: "#fef2f2",
+                    border: "1px solid #fecaca",
+                    borderRadius: "10px",
+                    fontSize: "12px",
+                    padding: "12px",
+                  }}
+                >
+                  {categoriesError}
+                </div>
+              )}
+
+              {!categoriesLoading &&
+                !categoriesError &&
+                availableCategories.map((category) => {
+                const isSelected = selectedCategories.includes(category.id);
                 const isDisabled =
                   !isSelected && selectedCategories.length >= 3;
 
                 return (
                   <div
-                    key={cat}
-                    onClick={() => !isDisabled && toggleCategory(cat)}
+                    key={category.id}
+                    onClick={() =>
+                      !isDisabled && toggleCategory(category.id)
+                    }
                     style={{
                       border: isSelected
                         ? "2px solid #ae1236"
@@ -660,7 +721,7 @@ export default function Signin1() {
                         marginRight: "6px",
                       }}
                     >
-                      {cat}
+                      {category.name}
                     </span>
                     {isSelected ? (
                       <CheckCircleRounded

@@ -1,6 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { FormatListNumberedOutlined } from "@mui/icons-material";
-import { useAuth } from "../features/auth/useAuth";
+import { useAuth } from "../../auth/hooks/useAuth";
 
 export default function Events({ tournament }) {
   const navigate = useNavigate();

@@ -7,8 +7,8 @@ import PersonOutlineIcon from "@mui/icons-material/PersonOutlined";
 import LeaderboardIcon from "@mui/icons-material/Leaderboard";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
-import LogoImg from "../assets/hero.png"; // သင်၏ project folder structure အတိုင်း path ကို ချိန်ပါ
-import { useAuth } from "../features/auth/useAuth";
+import LogoImg from "../assets/hero.png";
+import { useAuth } from "../features/auth/hooks/useAuth";
 
 export default function AdminSidebar({ onLogout }) {
   const navigate = useNavigate();

@@ -423,7 +423,7 @@ export default function Signin3() {
           >
             <button
               type="button"
-              onClick={() => navigate("/signin-2")}
+              onClick={() => navigate("/register/account")}
               style={{
                 background: "#f1f5f9",
                 color: "#334155",

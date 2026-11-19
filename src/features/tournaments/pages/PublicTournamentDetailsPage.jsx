@@ -5,12 +5,12 @@ import {
   LocationOnOutlined,
   EmojiEventsOutlined,
 } from "@mui/icons-material";
-import Overview from "./overview";
-import Events from "./events";
-import BracketsSchedule from "./brackets";
-import RegisteredPlayers, { approvedPlayersDatabase } from "./players"; // approvedPlayersDatabase ကို import လုပ်ခြင်း
-import { getTournament } from "../features/tournaments/api/tournamentApi";
-import { resolveApiAssetUrl } from "../core/api/apiClient";
+import Overview from "./PublicOverviewPage";
+import Events from "./EventsPage";
+import BracketsSchedule from "../../draws/pages/BracketsPage";
+import RegisteredPlayers, { approvedPlayersDatabase } from "../../players/pages/PlayersDirectoryPage";
+import { getTournament } from "../api/tournamentApi";
+import { resolveApiAssetUrl } from "../../../core/api/apiClient";
 
 function formatTournamentDate(date) {
   if (!date) return "Date not set";

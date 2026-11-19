@@ -1,7 +1,7 @@
 import { apiRequest } from "../../../core/api/apiClient";
 
-export async function getTournamentCategories() {
-  const response = await apiRequest("/auth/categories");
+export async function getTournamentCategories({ authenticated = true } = {}) {
+  const response = await apiRequest("/auth/categories", { authenticated });
 
   if (
     response?.success !== true ||
