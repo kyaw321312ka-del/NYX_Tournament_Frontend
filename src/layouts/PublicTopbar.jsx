@@ -29,17 +29,10 @@ export default function Topbar() {
   );
   const isEnrollPage = location.pathname === "/enroll";
   const isProfilePage = location.pathname === "/profile";
-  const isAuthPage = [
-    "/register",
-    "/register/account",
-    "/register/verify",
-    "/login",
-  ].includes(location.pathname);
   const isAdminPage = location.pathname.startsWith("/admin");
 
   const showBackIcon = isTournamentDetails || isEnrollPage;
-  const hideNavTabs =
-    isEnrollPage || isTournamentDetails || isAuthPage || isAdminPage;
+  const hideNavTabs = isEnrollPage || isTournamentDetails || isAdminPage;
 
   const navLinks = [
     { name: "Home", path: "/", icon: <HomeIcon style={{ fontSize: 18 }} /> },
@@ -234,8 +227,7 @@ export default function Topbar() {
             </div>
           )}
 
-          {/* ညာဘက်ခြမ်း: Profile Picture (Admin မျက်နှာပြင်နှင့် Auth မျက်နှာပြင်များတွင် မပေါ်စေရန် ပြင်ဆင်ထားသည်) */}
-          {!isAdminPage && !isAuthPage && !session && (
+          {!isAdminPage && !session && (
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <Link
                 to="/login"
@@ -268,7 +260,7 @@ export default function Topbar() {
             </div>
           )}
 
-          {!isAdminPage && !isAuthPage && session && (
+          {!isAdminPage && session && (
             <div
               onClick={() => navigate("/profile")}
               onMouseEnter={() => setShowName(true)}

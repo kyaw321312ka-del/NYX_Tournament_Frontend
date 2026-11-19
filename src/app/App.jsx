@@ -1,29 +1,24 @@
 import { BrowserRouter as Router, useLocation } from "react-router-dom";
-import Topbar from "../layouts/PublicTopbar";
-import Footer from "../layouts/PublicFooter";
+import PublicTopbar from "../layouts/PublicTopbar";
+import PublicFooter from "../layouts/PublicFooter";
 import AppRoutes from "./routes";
 import AppProviders from "./providers/AppProviders";
 
-// Main layout component to conditionally hide Topbar & Footer
+// Public pages, including authentication, share the public header and footer.
 function Layout() {
   const location = useLocation();
-
-  // Topbar နှင့် Footer
-  const hideLayoutPaths = [];
-  const shouldHideLayout =
-    hideLayoutPaths.includes(location.pathname) ||
-    location.pathname.startsWith("/admin");
+  const isAdminRoute = location.pathname.startsWith("/admin");
 
   return (
     <div className="min-h-screen bg-gray-950 flex justify-center">
       <div className="w-full bg-[#f8f9fa] min-h-screen flex flex-col shadow-2xl relative">
-        {!shouldHideLayout && <Topbar />}
+        {!isAdminRoute && <PublicTopbar />}
         <main
-          className={`flex-1 ${location.pathname.startsWith("/admin") ? "p-0" : "p-3 md:p-4"}`}
+          className={`flex-1 ${isAdminRoute ? "p-0" : "p-3 md:p-4"}`}
         >
           <AppRoutes />
         </main>
-        {!shouldHideLayout && <Footer />}
+        {!isAdminRoute && <PublicFooter />}
       </div>
     </div>
   );
