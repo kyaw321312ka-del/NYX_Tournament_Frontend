@@ -27,7 +27,7 @@ export default function AppRoutes() {
       <Route path="/profile" element={<Profile />} />
       <Route path="/register" element={<Register />} />
       <Route path="/register/account" element={<RegisterAccount />} />
-      <Route path="/signin-3" element={<RegisterVerify />} />
+      <Route path="/register/verify" element={<RegisterVerify />} />
       <Route path="/login" element={<Login />} />
       <Route path="/admin/*" element={<AdminDashboard />} />
     </Routes>

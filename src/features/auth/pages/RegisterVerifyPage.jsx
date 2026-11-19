@@ -7,7 +7,7 @@ import {
   CheckCircleRounded,
 } from "@mui/icons-material";
 
-export default function Signin3() {
+export default function RegisterVerifyPage() {
   const navigate = useNavigate();
 
   // 6-Digit OTP State

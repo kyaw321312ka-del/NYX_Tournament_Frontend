@@ -58,7 +58,7 @@ export default function RegisterAccount() {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (isFormValid) {
-      navigate("/signin-3");
+      navigate("/register/verify");
     }
   };
 

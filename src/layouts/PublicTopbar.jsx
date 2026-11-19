@@ -32,7 +32,7 @@ export default function Topbar() {
   const isAuthPage = [
     "/register",
     "/register/account",
-    "/signin-3",
+    "/register/verify",
     "/login",
   ].includes(location.pathname);
   const isAdminPage = location.pathname.startsWith("/admin");
