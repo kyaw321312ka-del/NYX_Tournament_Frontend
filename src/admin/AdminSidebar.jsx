@@ -1,4 +1,3 @@
-import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
@@ -9,10 +8,22 @@ import LeaderboardIcon from "@mui/icons-material/Leaderboard";
 import SettingsOutlinedIcon from "@mui/icons-material/SettingsOutlined";
 import LogoutOutlinedIcon from "@mui/icons-material/LogoutOutlined";
 import LogoImg from "../assets/hero.png"; // သင်၏ project folder structure အတိုင်း path ကို ချိန်ပါ
+import { useAuth } from "../features/auth/useAuth";
 
 export default function AdminSidebar({ onLogout }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { session } = useAuth();
+  const adminUser = session?.user;
+  const displayName = adminUser?.name || "Admin";
+  const initials =
+    displayName
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((part) => part[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() || "A";
 
   const menuItems = [
     {
@@ -215,7 +226,7 @@ export default function AdminSidebar({ onLogout }) {
               boxShadow: "0 2px 6px rgba(220,38,38,0.4)",
             }}
           >
-            H
+            {initials}
           </div>
           <div style={{ overflow: "hidden" }}>
             <div
@@ -229,7 +240,7 @@ export default function AdminSidebar({ onLogout }) {
                 letterSpacing: "0.02em",
               }}
             >
-              Hein Min Aung
+              {displayName}
             </div>
             <div
               style={{
@@ -241,7 +252,7 @@ export default function AdminSidebar({ onLogout }) {
                 textOverflow: "ellipsis",
               }}
             >
-              nyx@gmail.com
+              {adminUser?.email || ""}
             </div>
           </div>
         </div>

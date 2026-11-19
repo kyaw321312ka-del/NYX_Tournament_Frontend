@@ -1,5 +1,28 @@
 import { apiRequest } from "../../../core/api/apiClient";
 
+export async function getTournamentCategories() {
+  const response = await apiRequest("/auth/categories");
+
+  if (
+    response?.success !== true ||
+    !Array.isArray(response.data) ||
+    response.data.some(
+      (category) =>
+        category.id == null ||
+        typeof category.categoryCode !== "string" ||
+        typeof category.name !== "string" ||
+        typeof category.pairingType !== "string",
+    )
+  ) {
+    throw new Error(
+      (typeof response?.message === "string" && response.message) ||
+        "The server returned an invalid category list.",
+    );
+  }
+
+  return response.data;
+}
+
 export async function getTournaments({ page = 1, pageSize = 20 } = {}) {
   const query = new URLSearchParams({
     page: String(page),

@@ -37,6 +37,18 @@ function DashboardLayout({
   onLogout,
   showHeader = true,
 }) {
+  const { session } = useAuth();
+  const adminUser = session?.user;
+  const displayName = adminUser?.name || "Admin";
+  const initials =
+    displayName
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((part) => part[0])
+      .join("")
+      .slice(0, 2)
+      .toUpperCase() || "A";
+
   return (
     <div
       style={{
@@ -116,7 +128,7 @@ function DashboardLayout({
                   fontSize: "12px",
                 }}
               >
-                👤
+                {initials}
               </div>
               <div style={{ textAlign: "left" }}>
                 <div
@@ -126,10 +138,10 @@ function DashboardLayout({
                     color: "#0f172a",
                   }}
                 >
-                  System Manager
+                  Administrator
                 </div>
                 <div style={{ fontSize: "9px", color: "#64748b" }}>
-                  HEIN MIN AUNG
+                  {displayName}
                 </div>
               </div>
             </div>

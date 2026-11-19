@@ -5,7 +5,10 @@ import CloudUploadOutlinedIcon from "@mui/icons-material/CloudUploadOutlined";
 import AddIcon from "@mui/icons-material/Add";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutlined";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import { createTournament } from "../features/tournaments/api/tournamentApi";
+import {
+  createTournament,
+  getTournamentCategories,
+} from "../features/tournaments/api/tournamentApi";
 
 function parseNumericField(value) {
   const normalized = String(value)
@@ -52,6 +55,7 @@ export default function CreateTournamentPage() {
     {
       code: "",
       name: "",
+      pairingType: "",
       seeds: "8 Seeded Positions",
       format: "Best of 3 Sets to 21 Points",
       status: "Open (Fast Closing)",
@@ -70,9 +74,40 @@ export default function CreateTournamentPage() {
   const [attemptedSubmit, setAttemptedSubmit] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submissionError, setSubmissionError] = useState("");
+  const [availableCategories, setAvailableCategories] = useState([]);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(true);
+  const [categoryLoadError, setCategoryLoadError] = useState("");
 
   // Success Modal State
   const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadCategories() {
+      setIsLoadingCategories(true);
+      setCategoryLoadError("");
+      try {
+        const categoryOptions = await getTournamentCategories();
+        if (!cancelled) setAvailableCategories(categoryOptions);
+      } catch (error) {
+        if (!cancelled) {
+          setCategoryLoadError(
+            error instanceof Error
+              ? error.message
+              : "Unable to load tournament categories.",
+          );
+        }
+      } finally {
+        if (!cancelled) setIsLoadingCategories(false);
+      }
+    }
+
+    loadCategories();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(
     () => () => {
@@ -106,6 +141,7 @@ export default function CreateTournamentPage() {
       {
         code: "",
         name: "",
+        pairingType: "",
         seeds: "8 Seeded Positions",
         format: "Best of 3 Sets to 21 Points",
         status: "Open (Fast Closing)",
@@ -165,6 +201,14 @@ export default function CreateTournamentPage() {
     if (isSubmitting) return;
     setAttemptedSubmit(true);
     setSubmissionError("");
+
+    if (isLoadingCategories || categoryLoadError) {
+      setSubmissionError(
+        categoryLoadError ||
+          "Wait for the category options to finish loading before submitting.",
+      );
+      return;
+    }
 
     // 1. Validate Banner Image
     if (!bannerFile) return;
@@ -241,7 +285,7 @@ export default function CreateTournamentPage() {
         return {
           categoryCode: category.code.trim().toUpperCase(),
           categoryName: category.name.trim(),
-          pairingType: getPairingType(category),
+          pairingType: category.pairingType || getPairingType(category),
           seedCount,
           matchFormat: category.format,
           entryFee,
@@ -1303,6 +1347,16 @@ export default function CreateTournamentPage() {
             Configure age groups, draws, seed allocations, shuttlecock specs and
             match structures.
           </p>
+          {isLoadingCategories && (
+            <p role="status" style={{ color: "#64748b", fontSize: "12px" }}>
+              Loading category options...
+            </p>
+          )}
+          {categoryLoadError && (
+            <p role="alert" style={{ color: "#b91c1c", fontSize: "12px" }}>
+              Unable to load category options: {categoryLoadError}
+            </p>
+          )}
 
           {categories.map((cat, idx) => (
             <div
@@ -1389,15 +1443,22 @@ export default function CreateTournamentPage() {
                   >
                     Category Code *
                   </label>
-                  <input
-                    type="text"
+                  <select
                     value={cat.code}
                     onChange={(e) => {
+                      const selectedCategory = availableCategories.find(
+                        (option) => option.categoryCode === e.target.value,
+                      );
                       const c = [...categories];
-                      c[idx].code = e.target.value;
+                      c[idx] = {
+                        ...c[idx],
+                        code: selectedCategory?.categoryCode || "",
+                        name: selectedCategory?.name || "",
+                        pairingType: selectedCategory?.pairingType || "",
+                      };
                       setCategories(c);
                     }}
-                    placeholder="e.g., MS, WD, XD"
+                    disabled={isLoadingCategories || Boolean(categoryLoadError)}
                     style={{
                       width: "100%",
                       padding: "12px 16px",
@@ -1410,7 +1471,18 @@ export default function CreateTournamentPage() {
                       outline: "none",
                       boxSizing: "border-box",
                     }}
-                  />
+                  >
+                    <option value="">
+                      {isLoadingCategories
+                        ? "Loading categories..."
+                        : "Select a category"}
+                    </option>
+                    {availableCategories.map((option) => (
+                      <option key={option.id} value={option.categoryCode}>
+                        {option.categoryCode}
+                      </option>
+                    ))}
+                  </select>
                   {attemptedSubmit && !cat.code && (
                     <span
                       style={{
@@ -1439,12 +1511,8 @@ export default function CreateTournamentPage() {
                   <input
                     type="text"
                     value={cat.name}
-                    onChange={(e) => {
-                      const c = [...categories];
-                      c[idx].name = e.target.value;
-                      setCategories(c);
-                    }}
-                    placeholder="e.g., Men's Singles (Open Division)"
+                    readOnly
+                    placeholder="Select a category code first"
                     style={{
                       width: "100%",
                       padding: "12px 16px",
