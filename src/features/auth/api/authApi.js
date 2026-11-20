@@ -121,3 +121,44 @@ export async function getCurrentUser() {
 
   return response.data.user;
 }
+
+export async function updateCurrentUser(updates, files = {}) {
+  const hasFiles = Boolean(
+    files.profileImage || files.frontIdImg || files.backIdImg,
+  );
+  let body;
+
+  if (hasFiles) {
+    body = new FormData();
+    Object.entries(updates).forEach(([field, value]) => {
+      body.append(
+        field,
+        field === "categoryIds"
+          ? JSON.stringify(value)
+          : value == null
+            ? ""
+            : String(value),
+      );
+    });
+    ["profileImage", "frontIdImg", "backIdImg"].forEach((field) => {
+      const file = files[field];
+      if (file) body.append(field, file, file.name);
+    });
+  } else {
+    body = JSON.stringify(updates);
+  }
+
+  const response = await apiRequest("/users/me", {
+    method: "PATCH",
+    body,
+  });
+
+  if (response?.success !== true) {
+    throw new Error(
+      (typeof response?.message === "string" && response.message) ||
+        "The server did not confirm profile updates.",
+    );
+  }
+
+  return response.data?.user || response.data || null;
+}

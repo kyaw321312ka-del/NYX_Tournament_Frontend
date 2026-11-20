@@ -129,6 +129,30 @@ export async function getMyRegistrations({ page = 1, pageSize = 20 } = {}) {
   return response.data;
 }
 
+export async function getMyPayments({ page = 1, pageSize = 20 } = {}) {
+  const query = new URLSearchParams({
+    page: String(page),
+    pageSize: String(pageSize),
+  });
+  const response = await apiRequest(`/payments/my?${query}`);
+
+  if (response?.success !== true || !Array.isArray(response.data)) {
+    throw new Error(
+      getErrorMessage(response, "The server returned an invalid payment list."),
+    );
+  }
+
+  return {
+    payments: response.data,
+    pagination: response.pagination || {
+      page,
+      pageSize,
+      total: response.data.length,
+      pageCount: 1,
+    },
+  };
+}
+
 export async function submitRegistrationPayment({
   registrationId,
   paymentMethodId,

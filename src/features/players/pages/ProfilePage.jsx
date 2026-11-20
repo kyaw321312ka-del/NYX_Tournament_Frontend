@@ -19,23 +19,55 @@ import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
 import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined";
 import { useAuth } from "../../auth/hooks/useAuth";
 import { resolveApiAssetUrl } from "../../../core/api/apiClient";
+import { getTournamentCategories } from "../../tournaments/api/tournamentApi";
+import { updateCurrentUser } from "../../auth/api/authApi";
 import {
+  getMyPayments,
   getPartnerInvitations,
   respondToPartnerInvitation,
 } from "../../registrations/api/registrationApi";
 
-const initialCategories = ["U-13 Singles", "U-13 Doubles", "U-15 Singles"];
+function getUserCategories(userCategories) {
+  if (!Array.isArray(userCategories)) return [];
 
-const availableCategories = [
-  "U-11 Singles",
-  "U-11 Doubles",
-  "U-13 Singles",
-  "U-13 Doubles",
-  "U-15 Singles",
-  "U-15 Doubles",
-  "U-17 Singles",
-  "U-17 Doubles",
-];
+  return userCategories
+    .map((category) => {
+      if (typeof category === "string") {
+        return { id: null, label: category };
+      }
+      if (!category || typeof category !== "object") return null;
+      const nestedCategory = category.category || {};
+      const id =
+        category.categoryId ?? nestedCategory.id ?? category.id ?? null;
+      const label =
+        category.categoryName ||
+        category.name ||
+        nestedCategory.categoryName ||
+        nestedCategory.name ||
+        category.categoryCode ||
+        nestedCategory.categoryCode ||
+        "";
+      return label || id != null ? { id, label } : null;
+    })
+    .filter(Boolean);
+}
+
+function mapUserCategories(userCategories, options) {
+  return getUserCategories(userCategories).map((selected) => {
+    const option = options.find(
+      (category) =>
+        (selected.id != null &&
+          String(category.id) === String(selected.id)) ||
+        (selected.label &&
+          (category.name.toLowerCase() === selected.label.toLowerCase() ||
+            category.categoryCode.toLowerCase() ===
+              selected.label.toLowerCase())),
+    );
+    return option
+      ? { id: option.id, label: option.name || option.categoryCode }
+      : selected;
+  });
+}
 
 const tournaments = [
   {
@@ -64,29 +96,6 @@ const tournaments = [
   },
 ];
 
-const paymentSlipsHistory = [
-  {
-    id: "slip-1",
-    tournament: "Mandalay Open Championship 2026",
-    gateway: "KBZ Pay",
-    amount: "25,000 MMK",
-    enrollId: "#YGN-8842",
-    date: "Nov 12, 2026",
-    status: "Paid & Verified",
-    file: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=600&q=80",
-  },
-  {
-    id: "slip-2",
-    tournament: "Yangon Summer Cup 2026",
-    gateway: "Wave Pay",
-    amount: "25,000 MMK",
-    enrollId: "#YGN-8105",
-    date: "Aug 15, 2026",
-    status: "Paid & Verified",
-    file: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=600&q=80",
-  },
-];
-
 function formatInvitationExpiry(value) {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? "Unknown" : date.toLocaleString();
@@ -104,25 +113,61 @@ export default function Profile() {
     phone: user?.phno || "",
     email: user?.email || "",
     gender: user?.gender || "",
-    club: "",
-    address: "",
+    club: user?.clubName || "",
+    address: user?.address || "",
   };
   const [player, setPlayer] = useState(initialPlayer);
-  const [categories, setCategories] = useState(initialCategories);
+  const [categories, setCategories] = useState(() =>
+    getUserCategories(user?.categories),
+  );
+  const [categoryOptions, setCategoryOptions] = useState([]);
+  const [categoriesError, setCategoriesError] = useState("");
+  const [identityDocuments, setIdentityDocuments] = useState(
+    user?.identityDocuments || {
+      frontUploaded: false,
+      backUploaded: false,
+      verificationStatus: null,
+    },
+  );
+  const rawVerificationStatus = identityDocuments.verificationStatus;
+  const normalizedVerificationStatus = String(rawVerificationStatus || "")
+    .trim()
+    .toLowerCase();
+  const isIdentityVerified = ["verified", "approved"].includes(
+    normalizedVerificationStatus,
+  );
+  const isIdentityRejected = ["rejected", "declined"].includes(
+    normalizedVerificationStatus,
+  );
+  const verificationStatusLabel = rawVerificationStatus
+    ? String(rawVerificationStatus)
+        .replace(/[_-]+/g, " ")
+        .replace(/\b\w/g, (letter) => letter.toUpperCase())
+    : identityDocuments.frontUploaded || identityDocuments.backUploaded
+      ? "Pending Review"
+      : "Not Submitted";
 
   const [profileImage, setProfileImage] = useState(() =>
     resolveApiAssetUrl(user?.profileImageUrl),
   );
+  const [profileImageFile, setProfileImageFile] = useState(null);
+  const [frontIdFile, setFrontIdFile] = useState(null);
+  const [backIdFile, setBackIdFile] = useState(null);
+  const [birthday, setBirthday] = useState(user?.birthday?.slice(0, 10) || "");
 
   const [showImageMenu, setShowImageMenu] = useState(false);
   const [message, setMessage] = useState("");
   const [saved, setSaved] = useState(false);
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [profileBaseline, setProfileBaseline] = useState(user || {});
 
   // Modals States
   const [showPasswordModal, setShowPasswordModal] = useState(false);
   const [currentPass, setCurrentPass] = useState("");
   const [newPass, setNewPass] = useState("");
   const [confirmPass, setConfirmPass] = useState("");
+  const [isChangingPassword, setIsChangingPassword] = useState(false);
+  const [passwordChangeError, setPasswordChangeError] = useState("");
   const [showPass1, setShowPass1] = useState(false);
   const [showPass2, setShowPass2] = useState(false);
   const [showPass3, setShowPass3] = useState(false);
@@ -141,6 +186,11 @@ export default function Profile() {
   const [sentInvitationPageCount, setSentInvitationPageCount] = useState(1);
   const [receivedInvitationPageCount, setReceivedInvitationPageCount] =
     useState(1);
+  const [paymentSlips, setPaymentSlips] = useState([]);
+  const [paymentPage, setPaymentPage] = useState(1);
+  const [paymentPageCount, setPaymentPageCount] = useState(1);
+  const [paymentsLoading, setPaymentsLoading] = useState(true);
+  const [paymentsError, setPaymentsError] = useState("");
   const [invitationsLoading, setInvitationsLoading] = useState(true);
   const [invitationRefresh, setInvitationRefresh] = useState(0);
   const [invitationsError, setInvitationsError] = useState("");
@@ -160,8 +210,24 @@ export default function Profile() {
 
       setLoading(true);
       try {
-        const currentUser = await refreshUser();
+        const [profileResult, categoryResult] = await Promise.allSettled([
+          refreshUser(),
+          getTournamentCategories(),
+        ]);
         if (cancelled) return;
+        if (categoryResult.status === "fulfilled") {
+          setCategoryOptions(categoryResult.value);
+          setCategoriesError("");
+        } else {
+          setCategoryOptions([]);
+          setCategoriesError(
+            categoryResult.reason instanceof Error
+              ? categoryResult.reason.message
+              : "Unable to load playing categories.",
+          );
+        }
+        if (profileResult.status === "rejected") throw profileResult.reason;
+        const currentUser = profileResult.value;
 
         setPlayer((previous) => ({
           ...previous,
@@ -169,8 +235,28 @@ export default function Profile() {
           phone: currentUser.phno || "",
           email: currentUser.email || "",
           gender: currentUser.gender || "",
+          club: currentUser.clubName || "",
+          address: currentUser.address || "",
         }));
+        setCategories(
+          mapUserCategories(
+            currentUser.categories,
+            categoryResult.status === "fulfilled" ? categoryResult.value : [],
+          ),
+        );
+        setBirthday(currentUser.birthday?.slice(0, 10) || "");
+        setIdentityDocuments(
+          currentUser.identityDocuments || {
+            frontUploaded: false,
+            backUploaded: false,
+            verificationStatus: null,
+          },
+        );
         setProfileImage(resolveApiAssetUrl(currentUser.profileImageUrl));
+        setProfileImageFile(null);
+        setFrontIdFile(null);
+        setBackIdFile(null);
+        setProfileBaseline(currentUser);
       } catch (error) {
         if (!cancelled) {
           setMessage(
@@ -247,6 +333,43 @@ export default function Profile() {
     receivedInvitationPage,
   ]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadPayments() {
+      if (!isAuthenticated) return;
+
+      setPaymentsLoading(true);
+      setPaymentsError("");
+      try {
+        const result = await getMyPayments({
+          page: paymentPage,
+          pageSize: 20,
+        });
+        if (cancelled) return;
+
+        setPaymentSlips(result.payments);
+        setPaymentPageCount(result.pagination.pageCount || 1);
+      } catch (error) {
+        if (cancelled) return;
+        setPaymentSlips([]);
+        setPaymentPageCount(1);
+        setPaymentsError(
+          error instanceof Error
+            ? error.message
+            : "Unable to load payment history.",
+        );
+      } finally {
+        if (!cancelled) setPaymentsLoading(false);
+      }
+    }
+
+    loadPayments();
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, paymentPage]);
+
   const handleInvitationAction = async (invitation, action) => {
     setInvitationActionId(invitation.id);
     setInvitationMessage("");
@@ -297,57 +420,254 @@ export default function Profile() {
     const reader = new FileReader();
     reader.onload = () => {
       setProfileImage(reader.result);
+      setProfileImageFile(file);
       setShowImageMenu(false);
-      setMessage("Profile photo updated successfully.");
+      setSaved(false);
+      setMessage("Profile photo selected. Save changes to upload it.");
     };
     reader.readAsDataURL(file);
   };
 
-  const addCategory = (category) => {
-    if (!category || categories.includes(category)) return;
+  const addCategory = (categoryId) => {
+    const category = categoryOptions.find(
+      (option) => String(option.id) === categoryId,
+    );
+    if (
+      !category ||
+      categories.some((selected) => String(selected.id) === categoryId)
+    ) {
+      return;
+    }
     if (categories.length >= 3) {
       setMessage("Maximum 3 competition categories are allowed.");
       return;
     }
-    setCategories((prev) => [...prev, category]);
+    setCategories((prev) => [
+      ...prev,
+      { id: category.id, label: category.name || category.categoryCode },
+    ]);
     setSaved(false);
   };
 
-  const removeCategory = (category) => {
-    setCategories((prev) => prev.filter((item) => item !== category));
+  const removeCategory = (selectedCategory) => {
+    setCategories((prev) =>
+      prev.filter((item) =>
+        selectedCategory.id != null && item.id != null
+          ? String(item.id) !== String(selectedCategory.id)
+          : item.label !== selectedCategory.label,
+      ),
+    );
     setSaved(false);
+  };
+
+  const saveProfile = async (currentPassword) => {
+    setIsSavingProfile(true);
+    setMessage("");
+    const updates = {};
+    const currentEmail = player.email.trim();
+    const emailChanged = currentEmail !== (profileBaseline.email || "");
+    const optionalValue = (value) => value.trim() || null;
+    const sameOptionalValue = (value, original) =>
+      (value.trim() || "") === (original || "");
+
+    if (player.fullName.trim() !== (profileBaseline.name || "")) {
+      updates.name = player.fullName.trim();
+    }
+    if (player.gender !== (profileBaseline.gender || "")) {
+      updates.gender = player.gender;
+    }
+    if (birthday && birthday !== (profileBaseline.birthday || "").slice(0, 10)) {
+      updates.birthday = birthday;
+    }
+    if (!sameOptionalValue(player.phone, profileBaseline.phno)) {
+      updates.phno = optionalValue(player.phone);
+    }
+    if (!sameOptionalValue(player.club, profileBaseline.clubName)) {
+      updates.clubName = optionalValue(player.club);
+    }
+    if (!sameOptionalValue(player.address, profileBaseline.address)) {
+      updates.address = optionalValue(player.address);
+    }
+    if (emailChanged) {
+      updates.email = currentEmail;
+      updates.currentPassword = currentPassword;
+    }
+
+    const baselineCategories = mapUserCategories(
+      profileBaseline.categories,
+      categoryOptions,
+    );
+    const categoryKeys = (items) =>
+      items
+        .map((category) =>
+          category.id != null
+            ? `id:${category.id}`
+            : `label:${category.label.toLowerCase()}`,
+        )
+        .sort();
+    const originalCategoryKeys = categoryKeys(baselineCategories);
+    const nextCategoryKeys = categoryKeys(categories);
+    const categoriesChanged =
+      originalCategoryKeys.length !== nextCategoryKeys.length ||
+      originalCategoryKeys.some(
+        (categoryKey, index) => categoryKey !== nextCategoryKeys[index],
+      );
+
+    if (categoriesChanged) {
+      const selectedCategoryIds = categories.map((selected) => {
+        const option = categoryOptions.find(
+          (category) =>
+            (selected.id != null &&
+              String(category.id) === String(selected.id)) ||
+            (selected.label &&
+              (category.name.toLowerCase() ===
+                selected.label.toLowerCase() ||
+                category.categoryCode.toLowerCase() ===
+                  selected.label.toLowerCase())),
+        );
+        return option?.id ?? selected.id;
+      });
+      if (selectedCategoryIds.some((categoryId) => categoryId == null)) {
+        setMessage(
+          categoriesError ||
+            "Some selected categories could not be matched to valid category IDs.",
+        );
+        setIsSavingProfile(false);
+        return;
+      }
+      updates.categoryIds = selectedCategoryIds;
+    }
+
+    const files = {
+      profileImage: profileImageFile,
+      frontIdImg: frontIdFile,
+      backIdImg: backIdFile,
+    };
+    const hasFiles = Object.values(files).some(Boolean);
+    if (hasFiles && Object.keys(updates).length === 0) {
+      if (!profileBaseline.name) {
+        setMessage(
+          "Add a profile detail before uploading identity or profile images.",
+        );
+        setIsSavingProfile(false);
+        return;
+      }
+      updates.name = profileBaseline.name;
+    }
+    if (Object.keys(updates).length === 0 && !hasFiles) {
+      setSaved(true);
+      setMessage("There are no profile changes to save.");
+      setIsSavingProfile(false);
+      return;
+    }
+
+    let updateSucceeded = false;
+    try {
+      await updateCurrentUser(updates, files);
+      updateSucceeded = true;
+      const currentUser = await refreshUser();
+      setProfileBaseline(currentUser);
+      setPlayer({
+        fullName: currentUser.name || "",
+        phone: currentUser.phno || "",
+        email: currentUser.email || "",
+        gender: currentUser.gender || "",
+        club: currentUser.clubName || "",
+        address: currentUser.address || "",
+      });
+      setBirthday(currentUser.birthday?.slice(0, 10) || "");
+      setCategories(
+        mapUserCategories(currentUser.categories, categoryOptions),
+      );
+      setIdentityDocuments(
+        currentUser.identityDocuments || {
+          frontUploaded: false,
+          backUploaded: false,
+          verificationStatus: null,
+        },
+      );
+      setProfileImage(resolveApiAssetUrl(currentUser.profileImageUrl));
+      setProfileImageFile(null);
+      setFrontIdFile(null);
+      setBackIdFile(null);
+      setSaved(true);
+      setShowSavePasswordModal(false);
+      setConfirmPasswordInput("");
+      setMessage(
+        emailChanged
+          ? "Profile updated. Verify your new email with the OTP to complete the email change."
+          : "Profile updated successfully.",
+      );
+    } catch (error) {
+      setSaved(updateSucceeded);
+      setMessage(
+        error instanceof Error
+          ? updateSucceeded
+            ? `Profile was updated, but the latest details could not be reloaded: ${error.message}`
+            : `Unable to update profile: ${error.message}`
+          : updateSucceeded
+            ? "Profile was updated, but the latest details could not be reloaded."
+            : "Unable to update profile.",
+      );
+    } finally {
+      setIsSavingProfile(false);
+    }
   };
 
   const handleSaveClick = () => {
-    if (
-      !player.fullName.trim() ||
-      !player.phone.trim() ||
-      !player.email.trim() ||
-      !player.club.trim() ||
-      !player.address.trim()
-    ) {
-      setMessage("Please fill in all personal information fields.");
+    if (!player.fullName.trim() || !player.email.trim()) {
+      setMessage("Name and email are required.");
       return;
     }
-    if (categories.length === 0) {
-      setMessage("Please select at least one competition category.");
+    if (player.email.trim() !== (profileBaseline.email || "")) {
+      setShowSavePasswordModal(true);
       return;
     }
-    setShowSavePasswordModal(true);
+    saveProfile();
   };
 
-  const verifyAndSave = (e) => {
+  const verifyAndSave = async (e) => {
     e.preventDefault();
     if (!confirmPasswordInput) {
-      alert("Please enter your account password to confirm changes.");
+      setMessage("Enter your current password to change your email.");
       return;
     }
-    setShowSavePasswordModal(false);
-    setConfirmPasswordInput("");
-    setSaved(true);
-    setMessage(
-      "Profile changes saved successfully with password verification.",
-    );
+    await saveProfile(confirmPasswordInput);
+  };
+
+  const changePassword = async (e) => {
+    e.preventDefault();
+    setPasswordChangeError("");
+    if (newPass.length < 8) {
+      setPasswordChangeError("The new password must be at least 8 characters.");
+      return;
+    }
+    if (newPass !== confirmPass) {
+      setPasswordChangeError("The new passwords do not match.");
+      return;
+    }
+
+    setIsChangingPassword(true);
+    try {
+      await updateCurrentUser({
+        currentPassword: currentPass,
+        password: newPass,
+      });
+      setShowPasswordModal(false);
+      setCurrentPass("");
+      setNewPass("");
+      setConfirmPass("");
+      setMessage("Password updated successfully. Use it at your next login.");
+      setSaved(true);
+    } catch (error) {
+      setPasswordChangeError(
+        error instanceof Error
+          ? error.message
+          : "Unable to update password.",
+      );
+    } finally {
+      setIsChangingPassword(false);
+    }
   };
 
   if (loading) {
@@ -501,8 +821,12 @@ export default function Profile() {
                 <button
                   type="button"
                   onClick={() => {
-                    setProfileImage("");
+                    setProfileImage(
+                      resolveApiAssetUrl(profileBaseline.profileImageUrl),
+                    );
+                    setProfileImageFile(null);
                     setShowImageMenu(false);
+                    setSaved(false);
                   }}
                   style={{
                     width: "100%",
@@ -512,7 +836,7 @@ export default function Profile() {
                     padding: "8px",
                     fontSize: "12px",
                     fontWeight: "700",
-                    color: "#dc2626",
+                    color: "#64748b",
                     cursor: "pointer",
                     display: "flex",
                     alignItems: "center",
@@ -520,7 +844,7 @@ export default function Profile() {
                   }}
                 >
                   <DeleteOutlineRoundedIcon style={{ fontSize: "16px" }} />{" "}
-                  Remove Photo
+                  Cancel Photo Change
                 </button>
               </div>
             )}
@@ -578,9 +902,17 @@ export default function Profile() {
             </div>
             <div
               style={{
-                background: "#f8f9fa",
-                color: "#334155",
-                border: "1px solid #cbd5e1",
+                background: isIdentityVerified
+                  ? "#e7f7ee"
+                  : isIdentityRejected
+                    ? "#fef2f2"
+                    : "#fef3c7",
+                color: isIdentityVerified
+                  ? "#21865b"
+                  : isIdentityRejected
+                    ? "#b91c1c"
+                    : "#92400e",
+                border: `1px solid ${isIdentityVerified ? "#bbf7d0" : isIdentityRejected ? "#fecaca" : "#fde68a"}`,
                 padding: "5px 12px",
                 borderRadius: "8px",
                 fontSize: "11.5px",
@@ -590,10 +922,12 @@ export default function Profile() {
                 gap: "5px",
               }}
             >
-              <VerifiedRoundedIcon
-                style={{ fontSize: "15px", color: "#21865b" }}
-              />{" "}
-              Official Athlete
+              {isIdentityVerified ? (
+                <VerifiedRoundedIcon style={{ fontSize: "15px" }} />
+              ) : (
+                <ShieldRoundedIcon style={{ fontSize: "15px" }} />
+              )}
+              Identity: {verificationStatusLabel}
             </div>
           </div>
         </div>
@@ -631,58 +965,6 @@ export default function Profile() {
               }}
             >
               TOTAL RANKING POINTS
-            </div>
-          </div>
-          <div
-            style={{
-              background: "#fff",
-              border: "1px solid #eef0f3",
-              borderRadius: "14px",
-              padding: "16px",
-              textAlign: "center",
-              boxShadow: "0 4px 16px rgba(20, 30, 50, 0.03)",
-            }}
-          >
-            <div
-              style={{ fontSize: "20px", fontWeight: "900", color: "#21865b" }}
-            >
-              16W - 1L
-            </div>
-            <div
-              style={{
-                fontSize: "10.5px",
-                fontWeight: "800",
-                color: "#64748b",
-                marginTop: "4px",
-              }}
-            >
-              CAREER RECORD
-            </div>
-          </div>
-          <div
-            style={{
-              background: "#fff",
-              border: "1px solid #eef0f3",
-              borderRadius: "14px",
-              padding: "16px",
-              textAlign: "center",
-              boxShadow: "0 4px 16px rgba(20, 30, 50, 0.03)",
-            }}
-          >
-            <div
-              style={{ fontSize: "20px", fontWeight: "900", color: "#ae1236" }}
-            >
-              94.1%
-            </div>
-            <div
-              style={{
-                fontSize: "10.5px",
-                fontWeight: "800",
-                color: "#64748b",
-                marginTop: "4px",
-              }}
-            >
-              WIN RATE
             </div>
           </div>
         </div>
@@ -732,19 +1014,6 @@ export default function Profile() {
                 Update your certified athlete details and competition divisions.
               </p>
             </div>
-            <span
-              style={{
-                background: "#f8f9fa",
-                border: "1px solid #cbd5e1",
-                padding: "5px 10px",
-                borderRadius: "8px",
-                fontSize: "11px",
-                fontWeight: "800",
-                color: "#334155",
-              }}
-            >
-              NYX ID: #YGN-8842
-            </span>
           </div>
 
           <div
@@ -815,24 +1084,27 @@ export default function Profile() {
               <label
                 style={{
                   display: "block",
-                  fontSize: "12px",
+                  fontSize: "11.5px",
                   fontWeight: "800",
                   color: "#334155",
-                  marginBottom: "6px",
+                  marginBottom: "5px",
                 }}
               >
-                Gender
+                Birthday
               </label>
               <input
-                type="text"
-                value={player.gender}
-                onChange={(e) => updateField("gender", e.target.value)}
+                type="date"
+                value={birthday}
+                onChange={(e) => {
+                  setBirthday(e.target.value);
+                  setSaved(false);
+                }}
                 style={{
                   width: "100%",
-                  padding: "12px 14px",
+                  padding: "11px 12px",
                   borderRadius: "10px",
                   border: "1px solid #cbd5e1",
-                  fontSize: "14px",
+                  fontSize: "13.5px",
                   fontWeight: "700",
                   outline: "none",
                   boxSizing: "border-box",
@@ -989,9 +1261,9 @@ export default function Profile() {
                 marginBottom: "10px",
               }}
             >
-              {categories.map((cat) => (
+              {categories.map((category) => (
                 <div
-                  key={cat}
+                  key={category.id ?? category.label}
                   style={{
                     background: "#fff5f7",
                     border: "1px solid #f8d7da",
@@ -1005,10 +1277,11 @@ export default function Profile() {
                     gap: "6px",
                   }}
                 >
-                  <SportsTennisRoundedIcon style={{ fontSize: "15px" }} /> {cat}
+                  <SportsTennisRoundedIcon style={{ fontSize: "15px" }} />{" "}
+                  {category.label}
                   <button
                     type="button"
-                    onClick={() => removeCategory(cat)}
+                    onClick={() => removeCategory(category)}
                     style={{
                       background: "none",
                       border: "none",
@@ -1026,7 +1299,11 @@ export default function Profile() {
             {categories.length < 3 && (
               <select
                 value=""
-                onChange={(e) => addCategory(e.target.value)}
+                onChange={(e) => {
+                  addCategory(e.target.value);
+                  e.target.value = "";
+                }}
+                disabled={categoryOptions.length === 0}
                 style={{
                   width: "100%",
                   padding: "10px 12px",
@@ -1042,14 +1319,25 @@ export default function Profile() {
                 }}
               >
                 <option value="">+ Add Competition Category</option>
-                {availableCategories
-                  .filter((c) => !categories.includes(c))
-                  .map((c) => (
-                    <option key={c} value={c}>
-                      {c}
+                {categoryOptions
+                  .filter(
+                    (option) =>
+                      !categories.some(
+                        (selected) =>
+                          String(selected.id) === String(option.id),
+                      ),
+                  )
+                  .map((option) => (
+                    <option key={option.id} value={option.id}>
+                      {option.name || option.categoryCode}
                     </option>
                   ))}
               </select>
+            )}
+            {categoriesError && (
+              <p role="alert" style={{ color: "#b91c1c", fontSize: "12px" }}>
+                Unable to load categories: {categoriesError}
+              </p>
             )}
           </div>
         </div>
@@ -1086,6 +1374,44 @@ export default function Profile() {
             Official verified identification documents for BWF age group
             placement.
           </p>
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: "7px",
+              fontSize: "12px",
+              color: isIdentityVerified
+                ? "#21865b"
+                : isIdentityRejected
+                  ? "#b91c1c"
+                  : "#92400e",
+              background: isIdentityVerified
+                ? "#e7f7ee"
+                : isIdentityRejected
+                  ? "#fef2f2"
+                  : "#fef3c7",
+              borderRadius: "8px",
+              padding: "8px 10px",
+              margin: "0 0 16px",
+              fontWeight: "700",
+            }}
+          >
+            {isIdentityVerified && (
+              <VerifiedRoundedIcon style={{ fontSize: "16px" }} />
+            )}
+            Verification status: {verificationStatusLabel}
+          </div>
+          {(frontIdFile || backIdFile) && (
+            <p
+              style={{
+                fontSize: "12px",
+                color: "#64748b",
+                margin: "-8px 0 16px",
+              }}
+            >
+              Selected identity documents will be uploaded when you save.
+            </p>
+          )}
 
           <div
             style={{
@@ -1127,65 +1453,57 @@ export default function Profile() {
                 <span
                   style={{
                     fontSize: "10.5px",
-                    color: "#21865b",
+                    color: identityDocuments.frontUploaded ? "#21865b" : "#64748b",
                     fontWeight: "800",
-                    background: "#e7f7ee",
+                    background: identityDocuments.frontUploaded
+                      ? "#e7f7ee"
+                      : "#f1f5f9",
                     padding: "2px 6px",
                     borderRadius: "6px",
                   }}
                 >
-                  ✔ Verified
+                  {identityDocuments.frontUploaded ? "Uploaded" : "Not uploaded"}
                 </span>
               </div>
               <div
-                onClick={() =>
-                  setSelectedDocument({
-                    title: "Front Side Photo Preview",
-                    file: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80",
-                  })
-                }
                 style={{
                   width: "100%",
                   height: "130px",
                   borderRadius: "8px",
                   overflow: "hidden",
                   border: "1px solid #cbd5e1",
-                  cursor: "pointer",
                   position: "relative",
-                }}
-              >
-                <img
-                  src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80"
-                  alt="Front ID"
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                />
-              </div>
-              <button
-                type="button"
-                onClick={() =>
-                  setSelectedDocument({
-                    title: "Front Side Photo Preview",
-                    file: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80",
-                  })
-                }
-                style={{
-                  background: "#fff",
-                  border: "1px solid #cbd5e1",
-                  borderRadius: "8px",
-                  padding: "8px",
-                  fontSize: "11.5px",
-                  fontWeight: "900",
-                  color: "#ae1236",
-                  cursor: "pointer",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  gap: "6px",
+                  color: "#64748b",
+                  fontSize: "12px",
+                  fontWeight: "700",
                 }}
               >
-                <OpenInNewRoundedIcon style={{ fontSize: "15px" }} /> View Full
-                Document
-              </button>
+                {identityDocuments.frontUploaded
+                  ? "Front document uploaded"
+                  : "No front document uploaded"}
+              </div>
+              <label
+                style={{
+                  fontSize: "11.5px",
+                  fontWeight: "800",
+                  color: "#ae1236",
+                  cursor: "pointer",
+                }}
+              >
+                {frontIdFile?.name || "Upload front document"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(event) => {
+                    setFrontIdFile(event.target.files?.[0] || null);
+                    setSaved(false);
+                  }}
+                  style={{ display: "block", marginTop: "6px" }}
+                />
+              </label>
             </div>
 
             {/* Back Card Preview */}
@@ -1219,65 +1537,57 @@ export default function Profile() {
                 <span
                   style={{
                     fontSize: "10.5px",
-                    color: "#21865b",
+                    color: identityDocuments.backUploaded ? "#21865b" : "#64748b",
                     fontWeight: "800",
-                    background: "#e7f7ee",
+                    background: identityDocuments.backUploaded
+                      ? "#e7f7ee"
+                      : "#f1f5f9",
                     padding: "2px 6px",
                     borderRadius: "6px",
                   }}
                 >
-                  ✔ Verified
+                  {identityDocuments.backUploaded ? "Uploaded" : "Not uploaded"}
                 </span>
               </div>
               <div
-                onClick={() =>
-                  setSelectedDocument({
-                    title: "Back Side Photo Preview",
-                    file: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80",
-                  })
-                }
                 style={{
                   width: "100%",
                   height: "130px",
                   borderRadius: "8px",
                   overflow: "hidden",
                   border: "1px solid #cbd5e1",
-                  cursor: "pointer",
                   position: "relative",
-                }}
-              >
-                <img
-                  src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=400&q=80"
-                  alt="Back ID"
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                />
-              </div>
-              <button
-                type="button"
-                onClick={() =>
-                  setSelectedDocument({
-                    title: "Back Side Photo Preview",
-                    file: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&w=800&q=80",
-                  })
-                }
-                style={{
-                  background: "#fff",
-                  border: "1px solid #cbd5e1",
-                  borderRadius: "8px",
-                  padding: "8px",
-                  fontSize: "11.5px",
-                  fontWeight: "900",
-                  color: "#ae1236",
-                  cursor: "pointer",
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "center",
-                  gap: "6px",
+                  color: "#64748b",
+                  fontSize: "12px",
+                  fontWeight: "700",
                 }}
               >
-                <OpenInNewRoundedIcon style={{ fontSize: "15px" }} /> View Full
-                Document
-              </button>
+                {identityDocuments.backUploaded
+                  ? "Back document uploaded"
+                  : "No back document uploaded"}
+              </div>
+              <label
+                style={{
+                  fontSize: "11.5px",
+                  fontWeight: "800",
+                  color: "#ae1236",
+                  cursor: "pointer",
+                }}
+              >
+                {backIdFile?.name || "Upload back document"}
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(event) => {
+                    setBackIdFile(event.target.files?.[0] || null);
+                    setSaved(false);
+                  }}
+                  style={{ display: "block", marginTop: "6px" }}
+                />
+              </label>
             </div>
           </div>
 
@@ -1295,8 +1605,35 @@ export default function Profile() {
             <button
               type="button"
               onClick={() => {
-                setPlayer(initialPlayer);
-                setCategories(initialCategories);
+                setPlayer({
+                  fullName: profileBaseline.name || "",
+                  phone: profileBaseline.phno || "",
+                  email: profileBaseline.email || "",
+                  gender: profileBaseline.gender || "",
+                  club: profileBaseline.clubName || "",
+                  address: profileBaseline.address || "",
+                });
+                setBirthday(profileBaseline.birthday?.slice(0, 10) || "");
+                setCategories(
+                  mapUserCategories(
+                    profileBaseline.categories,
+                    categoryOptions,
+                  ),
+                );
+                setIdentityDocuments(
+                  profileBaseline.identityDocuments || {
+                    frontUploaded: false,
+                    backUploaded: false,
+                    verificationStatus: null,
+                  },
+                );
+                setProfileImage(
+                  resolveApiAssetUrl(profileBaseline.profileImageUrl),
+                );
+                setProfileImageFile(null);
+                setFrontIdFile(null);
+                setBackIdFile(null);
+                setSaved(false);
                 setMessage("Changes have been cancelled.");
               }}
               style={{
@@ -1316,6 +1653,7 @@ export default function Profile() {
             <button
               type="button"
               onClick={handleSaveClick}
+              disabled={isSavingProfile}
               style={{
                 background: "#ae1236",
                 color: "#fff",
@@ -1324,7 +1662,8 @@ export default function Profile() {
                 padding: "10px 22px",
                 fontSize: "13px",
                 fontWeight: "900",
-                cursor: "pointer",
+                cursor: isSavingProfile ? "wait" : "pointer",
+                opacity: isSavingProfile ? 0.7 : 1,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -1333,7 +1672,8 @@ export default function Profile() {
                 flex: "2 1 auto",
               }}
             >
-              <SaveRoundedIcon style={{ fontSize: "17px" }} /> Save Changes
+              <SaveRoundedIcon style={{ fontSize: "17px" }} />{" "}
+              {isSavingProfile ? "Saving..." : "Save Changes"}
             </button>
           </div>
 
@@ -1792,134 +2132,228 @@ export default function Profile() {
                 borderRadius: "6px",
               }}
             >
-              {paymentSlipsHistory.length} Verified
+              {
+                paymentSlips.filter((slip) =>
+                  ["paid", "verified", "approved"].includes(
+                    (slip.status || "").toLowerCase(),
+                  ),
+                ).length
+              }{" "}
+              Verified
             </span>
           </div>
 
           <div
             style={{ display: "flex", flexDirection: "column", gap: "10px" }}
           >
-            {paymentSlipsHistory.map((slip) => (
-              <div
-                key={slip.id}
+            {paymentsLoading ? (
+              <p role="status">Loading payment history...</p>
+            ) : paymentsError ? (
+              <p role="alert" style={{ color: "#b91c1c" }}>
+                Unable to load payment history: {paymentsError}
+              </p>
+            ) : paymentSlips.length === 0 ? (
+              <p>No tournament payment receipts yet.</p>
+            ) : (
+              paymentSlips.map((slip) => {
+                const status = (slip.status || "unknown").toLowerCase();
+                const isPaid = ["paid", "verified", "approved"].includes(
+                  status,
+                );
+                const statusLabel = isPaid
+                  ? "Verified"
+                  : status.charAt(0).toUpperCase() + status.slice(1);
+                const numericAmount = Number(slip.amount);
+                const amount = Number.isFinite(numericAmount)
+                  ? numericAmount.toLocaleString()
+                  : slip.amount;
+
+                return (
+                  <div
+                    key={slip.id}
+                    style={{
+                      background: "#f8f9fa",
+                      border: "1px solid #e2e8f0",
+                      borderRadius: "12px",
+                      padding: "14px",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      flexWrap: "wrap",
+                      gap: "10px",
+                      boxSizing: "border-box",
+                    }}
+                  >
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "12px",
+                        flex: "1 1 200px",
+                        minWidth: 0,
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: "38px",
+                          height: "38px",
+                          background: "#fff5f7",
+                          color: "#ae1236",
+                          borderRadius: "10px",
+                          display: "grid",
+                          placeItems: "center",
+                          border: "1px solid #f8d7da",
+                          flexShrink: 0,
+                        }}
+                      >
+                        <ReceiptLongRoundedIcon style={{ fontSize: "20px" }} />
+                      </div>
+                      <div style={{ minWidth: 0 }}>
+                        <div
+                          style={{
+                            fontSize: "13px",
+                            fontWeight: "900",
+                            color: "#172033",
+                            whiteSpace: "nowrap",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                          }}
+                        >
+                          {slip.registration?.category?.tournament?.title ||
+                            "Tournament"}
+                        </div>
+                        <div
+                          style={{
+                            fontSize: "11px",
+                            color: "#64748b",
+                            fontWeight: "700",
+                            marginTop: "2px",
+                          }}
+                        >
+                          {slip.paymentMethodName} •{" "}
+                          <span style={{ color: "#ae1236" }}>
+                            {amount} {slip.currency || ""}
+                          </span>{" "}
+                          • Registration #{slip.registrationId}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        flexShrink: 0,
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: "11px",
+                          fontWeight: "800",
+                          color: isPaid ? "#21865b" : "#92400e",
+                          background: isPaid ? "#e7f7ee" : "#fef3c7",
+                          padding: "4px 8px",
+                          borderRadius: "6px",
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "4px",
+                        }}
+                      >
+                        {isPaid && (
+                          <CheckCircleRoundedIcon
+                            style={{ fontSize: "13px" }}
+                          />
+                        )}
+                        {statusLabel}
+                      </span>
+                      {slip.proofImageUrl && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setSelectedDocument({
+                              title: `Payment Slip (${slip.paymentMethodName})`,
+                              file: resolveApiAssetUrl(slip.proofImageUrl),
+                            })
+                          }
+                          style={{
+                            background: "#172033",
+                            color: "#fff",
+                            border: "none",
+                            padding: "7px 12px",
+                            borderRadius: "8px",
+                            fontSize: "11.5px",
+                            fontWeight: "800",
+                            cursor: "pointer",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "4px",
+                          }}
+                        >
+                          View Slip{" "}
+                          <OpenInNewRoundedIcon
+                            style={{ fontSize: "13px" }}
+                          />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+          {!paymentsLoading && !paymentsError && paymentPageCount > 1 && (
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                alignItems: "center",
+                gap: "8px",
+                marginTop: "12px",
+              }}
+            >
+              <button
+                type="button"
+                disabled={paymentPage <= 1}
+                onClick={() => setPaymentPage((page) => page - 1)}
                 style={{
-                  background: "#f8f9fa",
-                  border: "1px solid #e2e8f0",
-                  borderRadius: "12px",
-                  padding: "14px",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  flexWrap: "wrap",
-                  gap: "10px",
-                  boxSizing: "border-box",
+                  border: "1px solid #cbd5e1",
+                  borderRadius: "7px",
+                  background: "#fff",
+                  color: "#334155",
+                  padding: "6px 9px",
+                  fontSize: "11px",
+                  fontWeight: "800",
+                  cursor: paymentPage <= 1 ? "not-allowed" : "pointer",
                 }}
               >
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "12px",
-                    flex: "1 1 200px",
-                    minWidth: 0,
-                  }}
-                >
-                  <div
-                    style={{
-                      width: "38px",
-                      height: "38px",
-                      background: "#fff5f7",
-                      color: "#ae1236",
-                      borderRadius: "10px",
-                      display: "grid",
-                      placeItems: "center",
-                      border: "1px solid #f8d7da",
-                      flexShrink: 0,
-                    }}
-                  >
-                    <ReceiptLongRoundedIcon style={{ fontSize: "20px" }} />
-                  </div>
-                  <div style={{ minWidth: 0 }}>
-                    <div
-                      style={{
-                        fontSize: "13px",
-                        fontWeight: "900",
-                        color: "#172033",
-                        whiteSpace: "nowrap",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                      }}
-                    >
-                      {slip.tournament}
-                    </div>
-                    <div
-                      style={{
-                        fontSize: "11px",
-                        color: "#64748b",
-                        fontWeight: "700",
-                        marginTop: "2px",
-                      }}
-                    >
-                      {slip.gateway} •{" "}
-                      <span style={{ color: "#ae1236" }}>{slip.amount}</span> •{" "}
-                      {slip.enrollId}
-                    </div>
-                  </div>
-                </div>
-
-                <div
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    flexShrink: 0,
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: "11px",
-                      fontWeight: "800",
-                      color: "#21865b",
-                      background: "#e7f7ee",
-                      padding: "4px 8px",
-                      borderRadius: "6px",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "4px",
-                    }}
-                  >
-                    <CheckCircleRoundedIcon style={{ fontSize: "13px" }} />{" "}
-                    Verified
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setSelectedDocument({
-                        title: `Payment Slip (${slip.gateway})`,
-                        file: slip.file,
-                      })
-                    }
-                    style={{
-                      background: "#172033",
-                      color: "#fff",
-                      border: "none",
-                      padding: "7px 12px",
-                      borderRadius: "8px",
-                      fontSize: "11.5px",
-                      fontWeight: "800",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "4px",
-                    }}
-                  >
-                    View Slip{" "}
-                    <OpenInNewRoundedIcon style={{ fontSize: "13px" }} />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
+                Previous
+              </button>
+              <span style={{ color: "#64748b", fontSize: "11px" }}>
+                Page {paymentPage} of {paymentPageCount}
+              </span>
+              <button
+                type="button"
+                disabled={paymentPage >= paymentPageCount}
+                onClick={() => setPaymentPage((page) => page + 1)}
+                style={{
+                  border: "1px solid #cbd5e1",
+                  borderRadius: "7px",
+                  background: "#fff",
+                  color: "#334155",
+                  padding: "6px 9px",
+                  fontSize: "11px",
+                  fontWeight: "800",
+                  cursor:
+                    paymentPage >= paymentPageCount
+                      ? "not-allowed"
+                      : "pointer",
+                }}
+              >
+                Next
+              </button>
+            </div>
+          )}
         </div>
 
         {/* SECTION E: Past Tournament History & Earned Points */}
@@ -2178,8 +2612,7 @@ export default function Profile() {
                 lineHeight: "1.4",
               }}
             >
-              To ensure account security, please enter your password to save
-              profile edits.
+              Enter your current password to confirm the email change.
             </p>
             <form
               onSubmit={verifyAndSave}
@@ -2228,10 +2661,27 @@ export default function Profile() {
                   )}
                 </button>
               </div>
+              {message && !saved && (
+                <p
+                  role="alert"
+                  style={{
+                    color: "#b91c1c",
+                    fontSize: "12px",
+                    fontWeight: "700",
+                    margin: 0,
+                  }}
+                >
+                  {message}
+                </p>
+              )}
               <div style={{ display: "flex", gap: "8px", marginTop: "4px" }}>
                 <button
                   type="button"
-                  onClick={() => setShowSavePasswordModal(false)}
+                  disabled={isSavingProfile}
+                  onClick={() => {
+                    setShowSavePasswordModal(false);
+                    setConfirmPasswordInput("");
+                  }}
                   style={{
                     flex: 1,
                     background: "#f1f5f9",
@@ -2247,6 +2697,7 @@ export default function Profile() {
                 </button>
                 <button
                   type="submit"
+                  disabled={isSavingProfile}
                   style={{
                     flex: 1,
                     background: "#ae1236",
@@ -2258,7 +2709,7 @@ export default function Profile() {
                     cursor: "pointer",
                   }}
                 >
-                  Confirm & Save
+                  {isSavingProfile ? "Updating..." : "Confirm & Save"}
                 </button>
               </div>
             </form>
@@ -2431,11 +2882,7 @@ export default function Profile() {
             </p>
 
             <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                setShowPasswordModal(false);
-                alert("Password updated successfully!");
-              }}
+              onSubmit={changePassword}
               style={{ display: "flex", flexDirection: "column", gap: "12px" }}
             >
               <div
@@ -2492,6 +2939,7 @@ export default function Profile() {
                 <input
                   type={showPass2 ? "text" : "password"}
                   required
+                  minLength={8}
                   placeholder="New Password"
                   value={newPass}
                   onChange={(e) => setNewPass(e.target.value)}
@@ -2570,10 +3018,28 @@ export default function Profile() {
                 </button>
               </div>
 
+              {passwordChangeError && (
+                <p
+                  role="alert"
+                  style={{
+                    color: "#b91c1c",
+                    fontSize: "12px",
+                    fontWeight: "700",
+                    margin: 0,
+                  }}
+                >
+                  {passwordChangeError}
+                </p>
+              )}
+
               <div style={{ display: "flex", gap: "8px", marginTop: "4px" }}>
                 <button
                   type="button"
-                  onClick={() => setShowPasswordModal(false)}
+                  disabled={isChangingPassword}
+                  onClick={() => {
+                    setShowPasswordModal(false);
+                    setPasswordChangeError("");
+                  }}
                   style={{
                     flex: 1,
                     background: "#f1f5f9",
@@ -2589,6 +3055,7 @@ export default function Profile() {
                 </button>
                 <button
                   type="submit"
+                  disabled={isChangingPassword}
                   style={{
                     flex: 1,
                     background: "#ae1236",
@@ -2600,7 +3067,7 @@ export default function Profile() {
                     cursor: "pointer",
                   }}
                 >
-                  Update Password
+                  {isChangingPassword ? "Updating..." : "Update Password"}
                 </button>
               </div>
             </form>
