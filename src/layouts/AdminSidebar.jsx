@@ -1,5 +1,4 @@
 import { useNavigate, useLocation } from "react-router-dom";
-import DashboardIcon from "@mui/icons-material/Dashboard";
 import EmojiEventsIcon from "@mui/icons-material/EmojiEvents";
 import GroupOutlinedIcon from "@mui/icons-material/GroupOutlined";
 import SportsTennisIcon from "@mui/icons-material/SportsTennis";
@@ -26,12 +25,6 @@ export default function AdminSidebar({ onLogout }) {
       .toUpperCase() || "A";
 
   const menuItems = [
-    {
-      id: "overview",
-      label: "Overview",
-      path: "/admin/overview",
-      icon: <DashboardIcon style={{ fontSize: "22px" }} />,
-    },
     {
       id: "tournament",
       label: "Tournament",

@@ -29,7 +29,7 @@ export default function Login({ onForgotPassword }) {
     try {
       const session = await signIn({ email: email.trim(), password });
       if (session.user.role.toLowerCase() === "admin") {
-        navigate(location.state?.from?.pathname || "/admin/overview", {
+        navigate(location.state?.from?.pathname || "/admin/tournament", {
           replace: true,
         });
       } else {

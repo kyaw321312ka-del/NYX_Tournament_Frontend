@@ -2,7 +2,6 @@ import { Routes, Route, Navigate, useNavigate } from "react-router-dom";
 
 // Pages Import (သသင့်ရဲ့ folder structure အတိုင်း path များကို စစ်ပါ)
 import ForgotPassword from "../features/auth/pages/ForgotPassword";
-import OverviewPage from "../features/tournaments/pages/OverviewPage";
 import TournamentPage from "../features/tournaments/pages/TournamentPage";
 import CreateTournamentPage from "../features/tournaments/pages/CreateTournamentPage";
 import TournamentDetailsPage from "../features/tournaments/pages/TournamentDetailsPage";
@@ -182,20 +181,9 @@ export default function AdminDashboard() {
 
       {/* ================= PROTECTED DASHBOARD ROUTES ================= */}
 
-      {/* 1. Overview */}
       <Route
         path="overview"
-        element={
-          <ProtectedRoute session={session}>
-            <DashboardLayout
-              activeTitle="Dashboard Overview"
-              activeSubtitle="Official Master Console • Live Match Window"
-              onLogout={handleLogout}
-            >
-              <OverviewPage />
-            </DashboardLayout>
-          </ProtectedRoute>
-        }
+        element={<Navigate to="/admin/tournament" replace />}
       />
 
       {/* 2. Tournament Management */}
@@ -330,8 +318,8 @@ export default function AdminDashboard() {
         }
       />
 
-      {/* Default Fallback Redirect to Overview */}
-      <Route path="*" element={<Navigate to="overview" replace />} />
+      {/* Default Fallback Redirect to Tournament Management */}
+      <Route path="*" element={<Navigate to="tournament" replace />} />
     </Routes>
   );
 }

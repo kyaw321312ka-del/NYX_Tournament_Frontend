@@ -16,6 +16,41 @@ export function resolveApiAssetUrl(assetPath) {
   return new URL(assetPath, `${API_BASE_URL}/`).toString();
 }
 
+export async function apiAssetRequest(assetPath) {
+  if (!API_BASE_URL) {
+    throw new Error("Set VITE_API_BASE_URL in the build environment.");
+  }
+  if (!assetPath) {
+    throw new Error("An asset path is required.");
+  }
+
+  const headers = new Headers();
+  const token = getAccessToken();
+  if (token) {
+    headers.set("Authorization", `Bearer ${token}`);
+  }
+
+  const assetUrl = new URL(
+    resolveApiAssetUrl(assetPath),
+    window.location.origin,
+  );
+  const apiOrigin = new URL(API_BASE_URL, window.location.origin).origin;
+  if (assetUrl.origin !== apiOrigin) {
+    throw new Error("Identity document URL must use the API host.");
+  }
+
+  const response = await fetch(assetUrl, { headers });
+  if (response.status === 401) {
+    clearSession();
+    window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));
+  }
+  if (!response.ok) {
+    throw new Error(`Unable to load identity document (${response.status}).`);
+  }
+
+  return response.blob();
+}
+
 export async function apiRequest(
   path,
   { authenticated = true, headers: requestHeaders, ...options } = {},
