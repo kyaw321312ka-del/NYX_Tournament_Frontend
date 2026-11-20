@@ -1,134 +1,89 @@
-import React, { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import SearchIcon from "@mui/icons-material/Search";
 import FileDownloadOutlinedIcon from "@mui/icons-material/FileDownloadOutlined";
 import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
+import { getAdminPlayers } from "../api/playerApi";
+
+const PAGE_SIZE = 20;
+
+function mapAdminPlayer(player) {
+  const points = Number(player.points);
+  const playerId = player.playerId || `#NYX-${player.id}`;
+
+  return {
+    id: playerId,
+    playerId,
+    userId: player.id,
+    name: player.athleteName,
+    team: player.teamClub || "—",
+    email: player.contactEmail,
+    phone: player.phoneNumber || "—",
+    stats: `${(Number.isFinite(points) ? points : 0).toLocaleString()} PTS`,
+    status: player.status || "Unknown",
+  };
+}
 
 export default function PlayersPage() {
   const navigate = useNavigate();
 
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All Players");
-
   const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 10;
+  const [reloadKey, setReloadKey] = useState(0);
+  const [players, setPlayers] = useState([]);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    pageSize: PAGE_SIZE,
+    total: 0,
+    pageCount: 1,
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
 
-  // 12 Mock Players with distinct info & statuses
-  const [players] = useState([
-    {
-      id: "#NYX-8842",
-      name: "Min Thant",
-      team: "Yangon Badminton Club",
-      email: "minthant@example.com",
-      phone: "09250123789",
-      stats: "0 PTS",
-      status: "Active",
-    },
-    {
-      id: "#NYX-8843",
-      name: "Aung Myo",
-      team: "Mandalay Heroes Club",
-      email: "aungmyo@example.com",
-      phone: "09252998877",
-      stats: "3,650 PTS",
-      status: "Active",
-    },
-    {
-      id: "#NYX-8844",
-      name: "Htet Aung",
-      team: "Mawlamyine Shuttlers",
-      email: "htetaung@example.com",
-      phone: "09250998888",
-      stats: "2,900 PTS",
-      status: "Active",
-    },
-    {
-      id: "#NYX-8845",
-      name: "Su Su",
-      team: "Yangon Club",
-      email: "susu@example.com",
-      phone: "0925011223",
-      stats: "1,500 PTS",
-      status: "Active",
-    },
-    {
-      id: "#NYX-8846",
-      name: "Zin Min",
-      team: "Taunggyi Club",
-      email: "zinmin@example.com",
-      phone: "09250112233",
-      stats: "950 PTS",
-      status: "Warning",
-    },
-    {
-      id: "#NYX-8847",
-      name: "Thet Htar",
-      team: "Naypyidaw Smashers",
-      email: "thethtar@example.com",
-      phone: "09250445566",
-      stats: "4,100 PTS",
-      status: "Active",
-    },
-    {
-      id: "#NYX-8848",
-      name: "May Oo",
-      team: "Bago United",
-      email: "mayoo@example.com",
-      phone: "09250778899",
-      stats: "1,200 PTS",
-      status: "Active",
-    },
-    {
-      id: "#NYX-8849",
-      name: "Zaw Lin",
-      team: "Pathein Racquet",
-      email: "zawlin@example.com",
-      phone: "09250332211",
-      stats: "800 PTS",
-      status: "Warning",
-    },
-    {
-      id: "#NYX-8850",
-      name: "Kyaw Swar",
-      team: "Mandalay Smash",
-      email: "kyawswar@example.com",
-      phone: "09250889900",
-      stats: "0 PTS",
-      status: "Banned",
-    },
-    {
-      id: "#NYX-8851",
-      name: "Thiri San",
-      team: "Yangon Elites",
-      email: "thirisan@example.com",
-      phone: "09250113344",
-      stats: "2,300 PTS",
-      status: "Active",
-    },
-    {
-      id: "#NYX-8852",
-      name: "Aung Ko",
-      team: "Bago Strikers",
-      email: "aungko@example.com",
-      phone: "09250224455",
-      stats: "450 PTS",
-      status: "Warning",
-    },
-    {
-      id: "#NYX-8853",
-      name: "Nilar Win",
-      team: "Taunggyi Eagles",
-      email: "nilarwin@example.com",
-      phone: "09250335566",
-      stats: "0 PTS",
-      status: "Banned",
-    },
-  ]);
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadPlayers() {
+      setIsLoading(true);
+      setLoadError("");
+      try {
+        const result = await getAdminPlayers({
+          page: currentPage,
+          pageSize: PAGE_SIZE,
+        });
+        if (cancelled) return;
+
+        setPlayers(result.players.map(mapAdminPlayer));
+        setPagination({
+          ...result.pagination,
+          pageCount: Number.isInteger(Number(result.pagination.pageCount))
+            ? Math.max(Number(result.pagination.pageCount), 1)
+            : 1,
+        });
+      } catch (error) {
+        if (!cancelled) {
+          setPlayers([]);
+          setPagination((current) => ({ ...current, total: 0 }));
+          setLoadError(
+            error instanceof Error ? error.message : "Unable to load players.",
+          );
+        }
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    }
+
+    loadPlayers();
+    return () => {
+      cancelled = true;
+    };
+  }, [currentPage, reloadKey]);
 
   const filteredPlayers = players.filter((p) => {
     const matchesSearch =
       p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      p.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      p.playerId.toLowerCase().includes(searchQuery.toLowerCase()) ||
       p.email.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesStatus =
@@ -138,26 +93,29 @@ export default function PlayersPage() {
     return matchesSearch && matchesStatus;
   });
 
-  const totalPages = Math.ceil(filteredPlayers.length / rowsPerPage) || 1;
-  const indexOfLastRow = currentPage * rowsPerPage;
-  const indexOfFirstRow = indexOfLastRow - rowsPerPage;
-  const currentRows = filteredPlayers.slice(indexOfFirstRow, indexOfLastRow);
-
-  const paddedRows = [...currentRows];
-  while (paddedRows.length < rowsPerPage) {
-    paddedRows.push(null);
-  }
+  const totalPages = pagination.pageCount;
 
   const handleExportCSV = () => {
-    const headers = [
-      "Player ID,Athlete Name,Team/Club,Contact Email,Phone Number,Stats & Points,Status\n",
-    ];
-    const rows = filteredPlayers.map(
-      (p) =>
-        `"${p.id}","${p.name}","${p.team}","${p.email}","${p.phone}","${p.stats}","${p.status}"\n`,
+    const csvValue = (value) =>
+      `"${String(value ?? "").replace(/"/g, '""')}"`;
+    const headers =
+      "Player ID,Athlete Name,Team/Club,Contact Email,Phone Number,Stats & Points,Status\n";
+    const rows = filteredPlayers.map((player) =>
+      [
+        player.playerId,
+        player.name,
+        player.team,
+        player.email,
+        player.phone,
+        player.stats,
+        player.status,
+      ]
+        .map(csvValue)
+        .join(","),
     );
     const csvContent =
-      "data:text/csv;charset=utf-8," + headers.concat(rows).join("");
+      "data:text/csv;charset=utf-8," +
+      encodeURIComponent([headers.trimEnd(), ...rows].join("\n"));
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement("a");
     link.setAttribute("href", encodedUri);
@@ -260,6 +218,7 @@ export default function PlayersPage() {
               }}
             >
               <option value="All Players">All Players</option>
+              <option value="Pending">Pending</option>
               <option value="Active">Active</option>
               <option value="Warning">Warning</option>
               <option value="Banned">Banned</option>
@@ -327,158 +286,162 @@ export default function PlayersPage() {
             </tr>
           </thead>
           <tbody>
-            {paddedRows.map((player, index) => {
-              if (!player) {
+            {isLoading ? (
+              <tr>
+                <td
+                  colSpan="8"
+                  role="status"
+                  style={{ padding: "24px", textAlign: "center" }}
+                >
+                  Loading players...
+                </td>
+              </tr>
+            ) : loadError ? (
+              <tr>
+                <td
+                  colSpan="8"
+                  role="alert"
+                  style={{
+                    padding: "24px",
+                    textAlign: "center",
+                    color: "#b91c1c",
+                  }}
+                >
+                  Unable to load players: {loadError}{" "}
+                  <button
+                    type="button"
+                    onClick={() => setReloadKey((key) => key + 1)}
+                  >
+                    Retry
+                  </button>
+                </td>
+              </tr>
+            ) : filteredPlayers.length === 0 ? (
+              <tr>
+                <td
+                  colSpan="8"
+                  style={{
+                    padding: "24px",
+                    textAlign: "center",
+                    color: "#64748b",
+                  }}
+                >
+                  No players match your search or status filter.
+                </td>
+              </tr>
+            ) : (
+              filteredPlayers.map((player) => {
+                const normalizedStatus = player.status.toLowerCase();
+                const statusColors =
+                  normalizedStatus === "active" ||
+                  normalizedStatus === "approved"
+                    ? { background: "#f0fdf4", color: "#16a34a" }
+                    : normalizedStatus === "banned" ||
+                        normalizedStatus === "rejected"
+                      ? { background: "#fef2f2", color: "#dc2626" }
+                      : normalizedStatus === "pending" ||
+                          normalizedStatus === "warning"
+                        ? { background: "#fefce8", color: "#ca8a04" }
+                        : { background: "#f1f5f9", color: "#475569" };
+
                 return (
                   <tr
-                    key={`empty-${index}`}
+                    key={player.playerId}
                     style={{
                       borderBottom: "1px solid #f1f5f9",
-                      height: "51px",
+                      color: "#334155",
                     }}
                   >
                     <td
-                      colSpan="8"
-                      style={{ padding: "14px 20px", color: "transparent" }}
-                    >
-                      -
-                    </td>
-                  </tr>
-                );
-              }
-
-              return (
-                <tr
-                  key={player.id}
-                  style={{
-                    borderBottom: "1px solid #f1f5f9",
-                    color: "#334155",
-                  }}
-                >
-                  <td
-                    style={{
-                      padding: "14px 20px",
-                      fontWeight: "bold",
-                      color: "#0f172a",
-                    }}
-                  >
-                    {player.id}
-                  </td>
-                  <td
-                    style={{
-                      padding: "14px 20px",
-                      fontWeight: "600",
-                      color: "#0f172a",
-                    }}
-                  >
-                    {player.name}
-                  </td>
-                  <td style={{ padding: "14px 20px", color: "#64748b" }}>
-                    {player.team}
-                  </td>
-                  <td style={{ padding: "14px 20px", color: "#334155" }}>
-                    {player.email}
-                  </td>
-                  <td style={{ padding: "14px 20px", color: "#334155" }}>
-                    {player.phone}
-                  </td>
-                  <td
-                    style={{
-                      padding: "14px 20px",
-                      fontWeight: "bold",
-                      color: "#0f172a",
-                    }}
-                  >
-                    {player.stats}
-                  </td>
-                  <td style={{ padding: "14px 20px", whiteSpace: "nowrap" }}>
-                    {player.status === "Active" && (
-                      <span
-                        style={{
-                          backgroundColor: "#f0fdf4",
-                          color: "#16a34a",
-                          padding: "4px 8px",
-                          borderRadius: "4px",
-                          fontSize: "11px",
-                          fontWeight: "bold",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "4px",
-                        }}
-                      >
-                        ● Active
-                      </span>
-                    )}
-                    {player.status === "Warning" && (
-                      <span
-                        style={{
-                          backgroundColor: "#fefce8",
-                          color: "#ca8a04",
-                          padding: "4px 8px",
-                          borderRadius: "4px",
-                          fontSize: "11px",
-                          fontWeight: "bold",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "4px",
-                        }}
-                      >
-                        ● Warning
-                      </span>
-                    )}
-                    {player.status === "Banned" && (
-                      <span
-                        style={{
-                          backgroundColor: "#fef2f2",
-                          color: "#dc2626",
-                          padding: "4px 8px",
-                          borderRadius: "4px",
-                          fontSize: "11px",
-                          fontWeight: "bold",
-                          display: "inline-flex",
-                          alignItems: "center",
-                          gap: "4px",
-                        }}
-                      >
-                        ● Banned
-                      </span>
-                    )}
-                  </td>
-                  <td
-                    style={{
-                      padding: "14px 20px",
-                      textAlign: "center",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    <button
-                      onClick={() =>
-                        navigate(
-                          `/admin/players/${player.id.replace("#", "")}`,
-                          { state: { player } },
-                        )
-                      }
                       style={{
-                        backgroundColor: "#f1f5f9",
-                        color: "#0f172a",
-                        border: "1px solid #cbd5e1",
-                        padding: "6px 12px",
-                        borderRadius: "6px",
-                        fontSize: "11px",
+                        padding: "14px 20px",
                         fontWeight: "bold",
-                        cursor: "pointer",
-                        display: "inline-flex",
-                        alignItems: "center",
-                        gap: "4px",
+                        color: "#0f172a",
                       }}
                     >
-                      <VisibilityOutlinedIcon style={{ fontSize: "14px" }} />{" "}
-                      View Details
-                    </button>
-                  </td>
-                </tr>
-              );
-            })}
+                      {player.playerId}
+                    </td>
+                    <td
+                      style={{
+                        padding: "14px 20px",
+                        fontWeight: "600",
+                        color: "#0f172a",
+                      }}
+                    >
+                      {player.name}
+                    </td>
+                    <td style={{ padding: "14px 20px", color: "#64748b" }}>
+                      {player.team}
+                    </td>
+                    <td style={{ padding: "14px 20px", color: "#334155" }}>
+                      {player.email}
+                    </td>
+                    <td style={{ padding: "14px 20px", color: "#334155" }}>
+                      {player.phone}
+                    </td>
+                    <td
+                      style={{
+                        padding: "14px 20px",
+                        fontWeight: "bold",
+                        color: "#0f172a",
+                      }}
+                    >
+                      {player.stats}
+                    </td>
+                    <td
+                      style={{ padding: "14px 20px", whiteSpace: "nowrap" }}
+                    >
+                      <span
+                        style={{
+                          backgroundColor: statusColors.background,
+                          color: statusColors.color,
+                          padding: "4px 8px",
+                          borderRadius: "4px",
+                          fontSize: "11px",
+                          fontWeight: "bold",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "4px",
+                        }}
+                      >
+                        ● {player.status}
+                      </span>
+                    </td>
+                    <td
+                      style={{
+                        padding: "14px 20px",
+                        textAlign: "center",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      <button
+                        onClick={() =>
+                          navigate(`/admin/players/${player.userId}`, {
+                            state: { player },
+                          })
+                        }
+                        style={{
+                          backgroundColor: "#f1f5f9",
+                          color: "#0f172a",
+                          border: "1px solid #cbd5e1",
+                          padding: "6px 12px",
+                          borderRadius: "6px",
+                          fontSize: "11px",
+                          fontWeight: "bold",
+                          cursor: "pointer",
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: "4px",
+                        }}
+                      >
+                        <VisibilityOutlinedIcon style={{ fontSize: "14px" }} />{" "}
+                        View Details
+                      </button>
+                    </td>
+                  </tr>
+                  );
+              })
+            )}
           </tbody>
         </table>
 
@@ -494,9 +457,8 @@ export default function PlayersPage() {
           }}
         >
           <div style={{ fontSize: "12px", color: "#64748b" }}>
-            Showing {filteredPlayers.length > 0 ? indexOfFirstRow + 1 : 0} to{" "}
-            {Math.min(indexOfLastRow, filteredPlayers.length)} of{" "}
-            {filteredPlayers.length} entries
+            {filteredPlayers.length} matching players on this page,{" "}
+            {pagination.total} total
           </div>
           <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
             <button
