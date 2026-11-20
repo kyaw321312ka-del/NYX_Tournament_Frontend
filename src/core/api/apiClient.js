@@ -26,6 +26,9 @@ export async function apiAssetRequest(assetPath) {
 
   const headers = new Headers();
   const token = getAccessToken();
+  if (!token) {
+    throw new Error("Admin authentication is required. Sign in again.");
+  }
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);
   }
@@ -66,6 +69,9 @@ export async function apiRequest(
   }
 
   const token = authenticated ? getAccessToken() : null;
+  if (authenticated && !token) {
+    throw new Error("Admin authentication is required. Sign in again.");
+  }
   if (token) {
     headers.set("Authorization", `Bearer ${token}`);
   }

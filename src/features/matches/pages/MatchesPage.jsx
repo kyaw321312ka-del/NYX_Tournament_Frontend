@@ -1,347 +1,773 @@
-import React, { useState } from "react";
-import AddIcon from "@mui/icons-material/Add";
-import VisibilityOutlinedIcon from "@mui/icons-material/VisibilityOutlined";
+import { useEffect, useMemo, useState } from "react";
 import RefreshIcon from "@mui/icons-material/Refresh";
-import CloseIcon from "@mui/icons-material/Close";
-import PlayArrowIcon from "@mui/icons-material/PlayArrow";
-import CheckCircleIcon from "@mui/icons-material/CheckCircle";
-import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutlined";
+import AddIcon from "@mui/icons-material/Add";
+import {
+  assignDrawPositions,
+  createCategoryDraw,
+  finalizeCategoryDraw,
+  getCategoryDraw,
+  getCategoryDraws,
+  getCategoryRankingPointAwards,
+  getEligibleRegistrations,
+  publishCategoryDraw,
+  updateMatchResult,
+} from "../api/matchesApi";
+import { getTournaments } from "../../tournaments/api/tournamentApi";
+
+const cardStyle = {
+  backgroundColor: "#ffffff",
+  border: "1px solid #e2e8f0",
+  borderRadius: "12px",
+  padding: "22px",
+  marginBottom: "10px",
+};
+
+const buttonStyle = {
+  border: "none",
+  borderRadius: "8px",
+  padding: "10px 14px",
+  backgroundColor: "#0f172a",
+  color: "#ffffff",
+  cursor: "pointer",
+  fontWeight: 700,
+  fontSize: "12px",
+};
+
+const inputStyle = {
+  width: "100%",
+  boxSizing: "border-box",
+  padding: "9px 10px",
+  border: "1px solid #cbd5e1",
+  borderRadius: "7px",
+  backgroundColor: "#ffffff",
+  fontSize: "13px",
+};
+
+const BRACKET_COLUMN_WIDTH = 210;
+const BRACKET_COLUMN_GAP = 32;
+const BRACKET_TRACK_WIDTH =
+  BRACKET_COLUMN_WIDTH + BRACKET_COLUMN_GAP;
+
+function messageFrom(error, fallback) {
+  return error instanceof Error ? error.message : fallback;
+}
+
+function unwrapDraw(data) {
+  return data?.draw || data;
+}
+
+function getDrawId(draw) {
+  return draw?.id ?? draw?.drawId ?? null;
+}
+
+function getRegistrationId(registration) {
+  return (
+    registration?.registrationId ??
+    registration?.id ??
+    registration?.registration?.id ??
+    null
+  );
+}
+
+function getMemberName(member) {
+  if (typeof member === "string") return member;
+  return (
+    member?.name ||
+    member?.athleteName ||
+    member?.playerName ||
+    member?.user?.name ||
+    ""
+  );
+}
+
+function getRegistrationName(registration) {
+  const source =
+    registration?.registration ||
+    registration?.creator ||
+    registration?.user ||
+    registration?.player ||
+    registration;
+  const members = Array.isArray(registration?.members)
+    ? registration.members
+    : Array.isArray(source?.members)
+      ? source.members
+      : [];
+  const names = members.map(getMemberName).filter(Boolean);
+  return (
+    registration?.athleteName ||
+    registration?.name ||
+    source?.athleteName ||
+    source?.name ||
+    (names.length ? names.join(" / ") : `Registration #${getRegistrationId(registration)}`)
+  );
+}
+
+function getRegistrationDetail(registration) {
+  const source = registration?.registration || registration;
+  return (
+    registration?.email ||
+    registration?.contactEmail ||
+    source?.email ||
+    source?.contactEmail ||
+    ""
+  );
+}
+
+function flattenMatches(draw) {
+  if (Array.isArray(draw?.matches)) return draw.matches;
+  if (!Array.isArray(draw?.rounds)) return [];
+  return draw.rounds.flatMap((round, roundIndex) =>
+    (Array.isArray(round.matches) ? round.matches : []).map((match) => ({
+      ...match,
+      roundName:
+        match.roundName ||
+        round.name ||
+        round.roundName ||
+        round.title ||
+        (round.roundNumber != null
+          ? `Round ${round.roundNumber}`
+          : `Round ${roundIndex + 1}`),
+    })),
+  );
+}
+
+function getRoundName(match) {
+  if (match.roundName || match.round?.name || match.roundTitle) {
+    return match.roundName || match.round?.name || match.roundTitle;
+  }
+  if (typeof match.round === "string") return match.round;
+  if (match.roundNumber != null) return `Round ${match.roundNumber}`;
+  return "Matches";
+}
+
+function getParticipant(match, side, registrationsById) {
+  const participantList = Array.isArray(match?.participants)
+    ? match.participants
+    : Array.isArray(match?.entries)
+      ? match.entries
+      : null;
+  const listParticipant = participantList?.[side - 1];
+  const direct =
+    listParticipant ??
+    match[`participant${side}`] ??
+    match[`participant${side}Registration`] ??
+    match[`player${side}`] ??
+    match[`registration${side}`] ??
+    match[`participant${side}Name`] ??
+    match[`player${side}Name`] ??
+    match[`athlete${side}`] ??
+    match[`athlete${side}Name`] ??
+    null;
+  if (direct && typeof direct === "object") {
+    return (
+      direct.name ||
+      direct.athleteName ||
+      direct.registrationName ||
+      direct.player?.name ||
+      direct.user?.name ||
+      direct.registration?.name ||
+      "Awaiting player"
+    );
+  }
+  const registrationId =
+    (direct && typeof direct === "object"
+      ? direct.registrationId ?? direct.registration?.id ?? direct.id
+      : null) ??
+    match[`participant${side}RegistrationId`] ??
+    match[`participant${side}?.registrationId`] ??
+    match[`participant${side}RegistrationId`] ??
+    match[`participant${side}`]?.registrationId ??
+    match[`player${side}`]?.registrationId ??
+    match[`participant${side}Id`] ??
+    match[`registration${side}Id`] ??
+    match[`participant${side}`]?.id ??
+    (typeof direct === "number" ? direct : null);
+  if (registrationId != null) {
+    return registrationsById.get(String(registrationId)) ||
+      (typeof direct === "string" ? direct : `Registration #${registrationId}`);
+  }
+  return typeof direct === "string" && direct.trim()
+    ? direct
+    : "Awaiting player";
+}
+
+function getMatchStatus(match) {
+  const status = String(
+    match.status || match.matchStatus || match.state || "pending",
+  ).toLowerCase();
+  if (status === "in_progress" || status === "live") return "in progress";
+  if (status === "finished" || status === "complete") return "completed";
+  if (status === "cancelled" || status === "canceled") return "walkover";
+  return status;
+}
+
+function getMatchGames(match) {
+  const games = Array.isArray(match.games)
+    ? match.games
+    : Array.isArray(match.results)
+      ? match.results
+      : [];
+  return games.map((game, index) => ({
+    gameNumber: Number(game.gameNumber ?? game.setNumber ?? index + 1),
+    participant1Score:
+      game.participant1Score ?? game.player1Score ?? game.score1 ?? "",
+    participant2Score:
+      game.participant2Score ?? game.player2Score ?? game.score2 ?? "",
+  }));
+}
+
+function isMatchComplete(match) {
+  const status = String(match.status || match.matchStatus || "").toLowerCase();
+  return (
+    ["completed", "complete", "finished", "final"].includes(status) ||
+    match.winner != null ||
+    match.winnerRegistrationId != null
+  );
+}
+
+function getLatestDraw(draws) {
+  if (!draws) return null;
+  if (!Array.isArray(draws)) return unwrapDraw(draws);
+  if (!draws.length) return null;
+  return [...draws].sort((a, b) => {
+    const aDate = new Date(a.updatedAt || a.createdAt || 0).getTime() || 0;
+    const bDate = new Date(b.updatedAt || b.createdAt || 0).getTime() || 0;
+    return aDate - bDate;
+  })[draws.length - 1];
+}
+
+function getParticipantRegistrationId(match, side) {
+  if (!match || typeof match !== "object") return null;
+  const participantList = Array.isArray(match.participants)
+    ? match.participants
+    : Array.isArray(match.entries)
+      ? match.entries
+      : null;
+  const listParticipant = participantList?.[side - 1];
+  const direct =
+    listParticipant ??
+    match[`participant${side}`] ??
+    match[`participant${side}Registration`] ??
+    match[`player${side}`] ??
+    match[`registration${side}`] ??
+    null;
+  return (
+    match[`participant${side}RegistrationId`] ??
+    match[`registration${side}Id`] ??
+    match[`participant${side}Id`] ??
+    (direct && typeof direct === "object"
+      ? direct.registrationId ??
+        direct.registration?.id ??
+        direct.id ??
+        null
+      : typeof direct === "number"
+        ? direct
+        : null)
+  );
+}
+
+function getWinnerSide(match) {
+  if (!match || typeof match !== "object") return null;
+  if (
+    match.winnerSide != null ||
+    match.winnerParticipant != null ||
+    match.winnerPosition != null
+  ) {
+    const value =
+      match.winnerSide ?? match.winnerParticipant ?? match.winnerPosition;
+    const normalized = String(value).toLowerCase();
+    if (["1", "participant1", "player1", "a"].includes(normalized)) return 1;
+    if (["2", "participant2", "player2", "b"].includes(normalized)) return 2;
+  }
+
+  const winner = match.winner;
+  const winnerId =
+    match.winnerRegistrationId ??
+    (winner && typeof winner === "object"
+      ? winner.registrationId ?? winner.id
+      : winner) ??
+    match.winnerId ??
+    null;
+  if (winnerId != null) {
+    const participant1Id = getParticipantRegistrationId(match, 1);
+    const participant2Id = getParticipantRegistrationId(match, 2);
+    if (participant1Id != null &&
+      String(participant1Id) === String(winnerId)) return 1;
+    if (participant2Id != null &&
+      String(participant2Id) === String(winnerId)) return 2;
+  }
+  return null;
+}
+
+function formatTournamentDate(tournament) {
+  const value =
+    tournament?.startDate ||
+    tournament?.startAt ||
+    tournament?.date ||
+    tournament?.createdAt;
+  if (!value) return "Date not set";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "Date not set";
+  return date.toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function getChampion(draw) {
+  if (!draw) return null;
+  return (
+    draw.champion ||
+    draw.winner ||
+    draw.tournamentChampion ||
+    draw.finalMatch?.winner ||
+    null
+  );
+}
 
 export default function MatchesManagementPage() {
-  const [selectedTournament, setSelectedTournament] = useState(
-    "Yangon Masters 2026",
-  );
-  const [selectedCategory, setSelectedCategory] = useState(
-    "U-13 Boys Singles (MS)",
-  );
+  const [tournaments, setTournaments] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [selectedTournamentId, setSelectedTournamentId] = useState("");
+  const [selectedCategoryId, setSelectedCategoryId] = useState("");
+  const [eligibleRegistrations, setEligibleRegistrations] = useState([]);
+  const [draw, setDraw] = useState(null);
+  const [assignments, setAssignments] = useState({});
+  const [awards, setAwards] = useState([]);
+  const [scoreMatch, setScoreMatch] = useState(null);
+  const [scoreGames, setScoreGames] = useState([]);
+  const [loadingLists, setLoadingLists] = useState(true);
+  const [loadingCategory, setLoadingCategory] = useState(false);
+  const [busyAction, setBusyAction] = useState("");
+  const [error, setError] = useState("");
+  const [actionError, setActionError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
+  const [listReloadKey, setListReloadKey] = useState(0);
+  const [selectedBracketRound, setSelectedBracketRound] = useState("All");
+  const [bracketZoom, setBracketZoom] = useState(1);
+  const [participantSearch, setParticipantSearch] = useState("");
 
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [editingMatchId, setEditingMatchId] = useState(null);
+  useEffect(() => {
+    let cancelled = false;
 
-  const [showUpdateScoreModal, setShowUpdateScoreModal] = useState(false);
-  const [showResultModal, setShowResultModal] = useState(false);
-  const [activeMatch, setActiveMatch] = useState(null);
-
-  const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 5;
-
-  const [isRefreshingBracket, setIsRefreshingBracket] = useState(false);
-  const [isRefreshingTable, setIsRefreshingTable] = useState(false);
-
-  const approvedPlayersPool = [
-    "Min Thant",
-    "Kyaw Swar",
-    "Zarni Tun",
-    "Aung Myo",
-    "Zaw Lin",
-    "Su Su",
-    "Thiri San",
-    "Thet Htar",
-    "May Oo",
-    "Htet Aung",
-    "Su Lwin",
-  ];
-
-  const [stage, setStage] = useState("");
-  const predefinedStages = [
-    "Round of 64",
-    "Round of 32",
-    "Round of 16",
-    "Round 1",
-    "Round 2",
-    "Round 3",
-    "Quarter-Finals",
-    "Semi-Finals",
-    "Championship Final",
-  ];
-  const isCustomStage = stage !== "" && !predefinedStages.includes(stage);
-
-  const [court, setCourt] = useState("");
-  const [athlete1, setAthlete1] = useState("");
-  const [athlete2, setAthlete2] = useState("");
-  const [matchDate, setMatchDate] = useState("");
-  const [matchTime, setMatchTime] = useState("");
-
-  const [matchSets, setMatchSets] = useState({
-    "#ID-2401": [
-      { setNum: 1, s1: "21", s2: "18" },
-      { setNum: 2, s1: "18", s2: "21" },
-      { setNum: 3, s1: "14", s2: "12" },
-    ],
-    "#ID-2403": [
-      { setNum: 1, s1: "21", s2: "16" },
-      { setNum: 2, s1: "21", s2: "14" },
-    ],
-    "#ID-2404": [
-      { setNum: 1, s1: "21", s2: "12" },
-      { setNum: 2, s1: "21", s2: "19" },
-    ],
-  });
-
-  const [completedSetsInModal, setCompletedSetsInModal] = useState([]);
-  const [activeSetInput, setActiveSetInput] = useState(null);
-
-  // Exactly 7 Mock Matches distributed across stages
-  const [matches, setMatches] = useState([
-    {
-      id: "#ID-2401",
-      tournament: "Yangon Masters 2026",
-      category: "U-13 Boys Singles (MS)",
-      stage: "Quarter-Finals\nCourt 01",
-      courtName: "Court 01",
-      roundName: "Quarter-Finals",
-      athlete1: "Min Thant",
-      athlete2: "Zarni Tun",
-      time: "Today, 02:30 PM",
-      status: "LIVE IN-PLAY",
-    },
-    {
-      id: "#ID-2402",
-      tournament: "Yangon Masters 2026",
-      category: "U-13 Boys Singles (MS)",
-      stage: "Semi-Finals\nCourt 02",
-      courtName: "Court 02",
-      roundName: "Semi-Finals",
-      athlete1: "Kyaw Swar",
-      athlete2: "Htet Aung",
-      time: "Dec 06, 03:30 PM",
-      status: "SCHEDULED",
-    },
-    {
-      id: "#ID-2403",
-      tournament: "Yangon Masters 2026",
-      category: "U-13 Boys Singles (MS)",
-      stage: "Round of 16\nCourt 03",
-      courtName: "Court 03",
-      roundName: "Round of 16",
-      athlete1: "Aung Myo",
-      athlete2: "Zaw Lin",
-      time: "Completed (11:45 AM)",
-      status: "COMPLETED",
-    },
-    {
-      id: "#ID-2404",
-      tournament: "Yangon Masters 2026",
-      category: "U-13 Boys Singles (MS)",
-      stage: "Round of 16\nCourt 04",
-      courtName: "Court 04",
-      roundName: "Round of 16",
-      athlete1: "Su Su",
-      athlete2: "Thiri San",
-      time: "Completed (10:15 AM)",
-      status: "COMPLETED",
-    },
-    {
-      id: "#ID-2405",
-      tournament: "Yangon Masters 2026",
-      category: "U-13 Boys Singles (MS)",
-      stage: "Quarter-Finals\nCourt 02",
-      courtName: "Court 02",
-      roundName: "Quarter-Finals",
-      athlete1: "Thet Htar",
-      athlete2: "May Oo",
-      time: "Dec 07, 01:00 PM",
-      status: "SCHEDULED",
-    },
-    {
-      id: "#ID-2406",
-      tournament: "Yangon Masters 2026",
-      category: "U-13 Boys Singles (MS)",
-      stage: "Semi-Finals\nCourt 01",
-      courtName: "Court 01",
-      roundName: "Semi-Finals",
-      athlete1: "Aung Myo",
-      athlete2: "Su Su",
-      time: "Dec 07, 04:00 PM",
-      status: "SCHEDULED",
-    },
-    {
-      id: "#ID-2407",
-      tournament: "Yangon Masters 2026",
-      category: "U-13 Boys Singles (MS)",
-      stage: "Championship Final\nCourt 01",
-      courtName: "Court 01",
-      roundName: "Championship Final",
-      athlete1: "Min Thant",
-      athlete2: "Aung Myo",
-      time: "Dec 08, 02:00 PM",
-      status: "SCHEDULED",
-    },
-  ]);
-
-  const filteredMatches = matches.filter(
-    (m) =>
-      m.tournament === selectedTournament && m.category === selectedCategory,
-  );
-
-  // Dynamically extract all unique round names present in the filtered matches (or standard default list)
-  const defaultStagesList = [
-    "Round of 64",
-    "Round of 32",
-    "Round of 16",
-    "Round 1",
-    "Round 2",
-    "Round 3",
-    "Quarter-Finals",
-    "Semi-Finals",
-    "Championship Final",
-  ];
-  const dynamicRounds = Array.from(
-    new Set([
-      ...defaultStagesList,
-      ...filteredMatches.map((m) => m.roundName).filter(Boolean),
-    ]),
-  );
-
-  const totalPages = Math.ceil(filteredMatches.length / rowsPerPage) || 1;
-  const indexOfLastRow = currentPage * rowsPerPage;
-  const indexOfFirstRow = indexOfLastRow - rowsPerPage;
-  const currentRows = filteredMatches.slice(indexOfFirstRow, indexOfLastRow);
-
-  const handleOpenCreate = () => {
-    setIsEditMode(false);
-    setEditingMatchId(null);
-    setStage("");
-    setCourt("");
-    setAthlete1("");
-    setAthlete2("");
-    setMatchDate("");
-    setMatchTime("");
-    setShowCreateModal(true);
-  };
-
-  const handleOpenEdit = (match) => {
-    setIsEditMode(true);
-    setEditingMatchId(match.id);
-    setStage(match.roundName || "Quarter-Finals");
-    setCourt(match.courtName || "Court 01");
-    setAthlete1(match.athlete1);
-    setAthlete2(match.athlete2);
-    setMatchDate("2026-12-12");
-    setMatchTime("14:30");
-    setShowCreateModal(true);
-  };
-
-  const handleSaveMatchPairing = () => {
-    if (!stage || !court || !athlete1 || !athlete2) {
-      alert("Please complete all required fields!");
-      return;
-    }
-    if (athlete1 === athlete2) {
-      alert("Athlete 1 and Athlete 2 cannot be the same person!");
-      return;
+    async function loadLists() {
+      setLoadingLists(true);
+      setError("");
+      try {
+        const tournamentResult = await getTournaments({
+          page: 1,
+          pageSize: 100,
+        });
+        if (cancelled) return;
+        const tournamentList = tournamentResult.tournaments;
+        const firstTournament = tournamentList[0];
+        const firstTournamentCategories = Array.isArray(
+          firstTournament?.categories,
+        )
+          ? firstTournament.categories
+          : [];
+        setTournaments(tournamentList);
+        setCategories(firstTournamentCategories);
+        setSelectedTournamentId(String(firstTournament?.id ?? ""));
+        setSelectedCategoryId(
+          String(firstTournamentCategories[0]?.id ?? ""),
+        );
+      } catch (requestError) {
+        if (!cancelled) {
+          setError(messageFrom(requestError, "Unable to load tournaments and categories."));
+        }
+      } finally {
+        if (!cancelled) setLoadingLists(false);
+      }
     }
 
-    if (isEditMode && editingMatchId) {
-      setMatches(
-        matches.map((m) =>
-          m.id === editingMatchId
-            ? {
-                ...m,
-                stage: `${stage}\n${court}`,
-                courtName: court,
-                roundName: stage,
-                athlete1,
-                athlete2,
-              }
-            : m,
-        ),
-      );
-    } else {
-      const newMatch = {
-        id: `#ID-${Math.floor(1000 + Math.random() * 9000)}`,
-        tournament: selectedTournament,
-        category: selectedCategory,
-        stage: `${stage}\n${court}`,
-        courtName: court,
-        roundName: stage,
-        athlete1,
-        athlete2,
-        time:
-          matchDate && matchTime
-            ? `${matchDate}, ${matchTime}`
-            : "Today, Scheduled",
-        status: "SCHEDULED",
-      };
-      setMatches([newMatch, ...matches]);
-    }
-    setShowCreateModal(false);
-  };
+    loadLists();
+    return () => {
+      cancelled = true;
+    };
+  }, [listReloadKey]);
 
-  const handleStartLive = (matchId) => {
-    setMatches(
-      matches.map((m) =>
-        m.id === matchId ? { ...m, status: "LIVE IN-PLAY" } : m,
+  useEffect(() => {
+    if (!selectedCategoryId) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    async function loadCategoryData() {
+      setLoadingCategory(true);
+      setError("");
+      setActionError("");
+      setNotice("");
+      setAwards([]);
+      try {
+        const [registrations, draws] = await Promise.all([
+          getEligibleRegistrations(selectedCategoryId),
+          getCategoryDraws(selectedCategoryId),
+        ]);
+        if (cancelled) return;
+        setEligibleRegistrations(registrations);
+        const latestDraw = getLatestDraw(draws);
+        setDraw(latestDraw);
+        const initialAssignments = {};
+        (latestDraw?.assignments || []).forEach((assignment) => {
+          const registrationId =
+            assignment.registrationId ??
+            assignment.registration?.id ??
+            assignment.registration?.registrationId;
+          const position =
+            assignment.bracketPosition ?? assignment.position;
+          if (registrationId != null && position != null) {
+            initialAssignments[String(registrationId)] = String(position);
+          }
+        });
+        setAssignments(initialAssignments);
+      } catch (requestError) {
+        if (!cancelled) {
+          setError(messageFrom(requestError, "Unable to load draw data."));
+          setEligibleRegistrations([]);
+          setDraw(null);
+          setAssignments({});
+        }
+      } finally {
+        if (!cancelled) setLoadingCategory(false);
+      }
+    }
+
+    loadCategoryData();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedCategoryId, reloadKey]);
+
+  const selectedTournament = tournaments.find(
+    (tournament) => String(tournament.id) === selectedTournamentId,
+  );
+  const selectedCategory = categories.find(
+    (category) => String(category.id) === selectedCategoryId,
+  );
+  const matches = useMemo(() => flattenMatches(draw), [draw]);
+  const registrationsById = useMemo(
+    () =>
+      new Map(
+        eligibleRegistrations
+          .map((registration) => [
+            String(getRegistrationId(registration)),
+            getRegistrationName(registration),
+          ])
+          .filter(([id]) => id !== "null"),
       ),
-    );
-    setMatchSets({ ...matchSets, [matchId]: [] });
-  };
-
-  const handleFinalizeWinner = (matchId) => {
-    setMatches(
-      matches.map((m) =>
-        m.id === matchId ? { ...m, status: "COMPLETED" } : m,
-      ),
-    );
-  };
-
-  const handleOpenUpdateScore = (match) => {
-    setActiveMatch(match);
-    const existing = matchSets[match.id] || [];
-    setCompletedSetsInModal(existing);
-    setActiveSetInput(null);
-    setShowUpdateScoreModal(true);
-  };
-
-  const handleRefreshBracket = () => {
-    setIsRefreshingBracket(true);
-    setTimeout(() => setIsRefreshingBracket(false), 600);
-  };
-
-  const handleRefreshTable = () => {
-    setIsRefreshingTable(true);
-    setTimeout(() => setIsRefreshingTable(false), 600);
-  };
-
-  const determineWinner = (matchId, athlete1Name, athlete2Name) => {
-    const sets = matchSets[matchId] || [];
-    let p1Wins = 0;
-    let p2Wins = 0;
-    sets.forEach((s) => {
-      const score1 = parseInt(s.s1) || 0;
-      const score2 = parseInt(s.s2) || 0;
-      if (score1 > score2) p1Wins++;
-      else if (score2 > score1) p2Wins++;
+    [eligibleRegistrations],
+  );
+  const visibleEligibleRegistrations = useMemo(() => {
+    const query = participantSearch.trim().toLowerCase();
+    if (!query) return eligibleRegistrations;
+    return eligibleRegistrations.filter((registration) => {
+      const name = getRegistrationName(registration).toLowerCase();
+      const registrationId = String(getRegistrationId(registration));
+      return name.includes(query) || registrationId.includes(query);
     });
-    if (p1Wins > p2Wins) return { winner: athlete1Name, loser: athlete2Name };
-    if (p2Wins > p1Wins) return { winner: athlete2Name, loser: athlete1Name };
-    return { winner: athlete1Name, loser: athlete2Name };
-  };
+  }, [eligibleRegistrations, participantSearch]);
+  const rounds = useMemo(() => {
+    const grouped = new Map();
+    matches.forEach((match) => {
+      const name = getRoundName(match);
+      if (!grouped.has(name)) grouped.set(name, []);
+      grouped.get(name).push(match);
+    });
+    return [...grouped.entries()];
+  }, [matches]);
+
+  const drawId = getDrawId(draw);
+  const drawStatus = String(
+    draw?.status || draw?.drawStatus || (draw ? "DRAFT" : ""),
+  ).toLowerCase();
+  const isPublished =
+    Boolean(draw?.publishedAt) ||
+    draw?.published === true ||
+    ["published", "in_progress", "completed", "finalized"].includes(drawStatus);
+  const isFinalized =
+    draw?.finalized === true ||
+    Boolean(draw?.finalizedAt || draw?.resultsFinalizedAt) ||
+    ["finalized", "results_finalized"].includes(drawStatus);
+  const positionLimit = Math.max(
+    2,
+    2 ** Math.ceil(Math.log2(Math.max(eligibleRegistrations.length, 2))),
+  );
+  const assignedEntries = eligibleRegistrations
+    .map((registration) => ({
+      registrationId: getRegistrationId(registration),
+      bracketPosition: Number(
+        assignments[String(getRegistrationId(registration))],
+      ),
+    }))
+    .filter(
+      (assignment) =>
+        assignment.registrationId != null &&
+        Number.isInteger(assignment.bracketPosition) &&
+        assignment.bracketPosition > 0,
+    );
+  const allMatchesComplete =
+    matches.length > 0 && matches.every(isMatchComplete);
+
+  function handleCategoryChange(nextCategoryId) {
+    setSelectedCategoryId(nextCategoryId);
+    setEligibleRegistrations([]);
+    setDraw(null);
+    setAssignments({});
+    setAwards([]);
+    setError("");
+    setActionError("");
+    setNotice("");
+  }
+
+  function handleTournamentChange(nextTournamentId) {
+    setSelectedTournamentId(nextTournamentId);
+    const tournament = tournaments.find(
+      (item) => String(item.id) === String(nextTournamentId),
+    );
+    const tournamentCategories = Array.isArray(tournament?.categories)
+      ? tournament.categories
+      : [];
+    setCategories(tournamentCategories);
+    setSelectedCategoryId(
+      String(tournamentCategories[0]?.id ?? ""),
+    );
+    setEligibleRegistrations([]);
+    setDraw(null);
+    setAssignments({});
+    setAwards([]);
+    setError("");
+    setActionError("");
+    setNotice("");
+  }
+
+  async function refreshDraw(id = drawId) {
+    if (!id) {
+      setReloadKey((key) => key + 1);
+      return;
+    }
+    const freshDraw = unwrapDraw(
+      await getCategoryDraw(selectedCategoryId, id),
+    );
+    setDraw(freshDraw);
+    const freshAssignments = {};
+    (freshDraw.assignments || []).forEach((assignment) => {
+      const registrationId =
+        assignment.registrationId ?? assignment.registration?.id;
+      const position = assignment.bracketPosition ?? assignment.position;
+      if (registrationId != null && position != null) {
+        freshAssignments[String(registrationId)] = String(position);
+      }
+    });
+    setAssignments(freshAssignments);
+  }
+
+  async function handleCreateDraw() {
+    setBusyAction("create");
+    setActionError("");
+    setNotice("");
+    try {
+      const created = unwrapDraw(
+        await createCategoryDraw(selectedCategoryId),
+      );
+      const createdId = getDrawId(created);
+      if (createdId != null) {
+        await refreshDraw(createdId);
+      } else {
+        setReloadKey((key) => key + 1);
+      }
+      setNotice("Draft draw created.");
+    } catch (requestError) {
+      setActionError(messageFrom(requestError, "Unable to create the draw."));
+    } finally {
+      setBusyAction("");
+    }
+  }
+
+  async function handleSaveAssignments() {
+    if (!drawId) return;
+    const positions = assignedEntries.map((assignment) => assignment.bracketPosition);
+    if (assignedEntries.length !== eligibleRegistrations.length) {
+      setActionError(
+        "Assign every eligible registration before saving the complete assignment set.",
+      );
+      return;
+    }
+    if (new Set(positions).size !== positions.length) {
+      setActionError("Each registration must have a unique bracket position.");
+      return;
+    }
+
+    setBusyAction("assign");
+    setActionError("");
+    setNotice("");
+    try {
+      await assignDrawPositions(drawId, assignedEntries);
+      await refreshDraw();
+      setNotice("Bracket positions saved.");
+    } catch (requestError) {
+      setActionError(messageFrom(requestError, "Unable to save bracket positions."));
+    } finally {
+      setBusyAction("");
+    }
+  }
+
+  async function handlePublishDraw() {
+    if (!drawId) return;
+    setBusyAction("publish");
+    setActionError("");
+    setNotice("");
+    try {
+      await publishCategoryDraw(drawId);
+      await refreshDraw();
+      setNotice("Draw published.");
+    } catch (requestError) {
+      setActionError(messageFrom(requestError, "Unable to publish the draw."));
+    } finally {
+      setBusyAction("");
+    }
+  }
+
+  async function handleLoadAwards() {
+    setBusyAction("awards");
+    setActionError("");
+    try {
+      const result = await getCategoryRankingPointAwards(selectedCategoryId);
+      setAwards(result);
+      setNotice("Ranking-point awards loaded.");
+    } catch (requestError) {
+      setActionError(messageFrom(requestError, "Unable to load ranking-point awards."));
+    } finally {
+      setBusyAction("");
+    }
+  }
+
+  async function handleFinalize() {
+    if (!drawId) return;
+    setBusyAction("finalize");
+    setActionError("");
+    setNotice("");
+    try {
+      await finalizeCategoryDraw(drawId);
+      await refreshDraw();
+      const result = await getCategoryRankingPointAwards(selectedCategoryId);
+      setAwards(result);
+      setNotice("Results finalized and ranking-point awards loaded.");
+    } catch (requestError) {
+      setActionError(messageFrom(requestError, "Unable to finalize tournament results."));
+    } finally {
+      setBusyAction("");
+    }
+  }
+
+  function openScoreEditor(match) {
+    const existingGames = getMatchGames(match);
+    setScoreGames(
+      existingGames.length
+        ? existingGames
+        : [
+            { gameNumber: 1, participant1Score: "", participant2Score: "" },
+            { gameNumber: 2, participant1Score: "", participant2Score: "" },
+            { gameNumber: 3, participant1Score: "", participant2Score: "" },
+          ],
+    );
+    setScoreMatch(match);
+    setActionError("");
+  }
+
+  async function handleSaveMatchResult() {
+    if (!scoreMatch || !drawId) return;
+    const startedGames = scoreGames.filter(
+      (game) =>
+        game.participant1Score !== "" || game.participant2Score !== "",
+    );
+    if (
+      startedGames.some(
+        (game) =>
+          game.participant1Score === "" || game.participant2Score === "",
+      )
+    ) {
+      setActionError(
+        "Enter both participant scores for every game you have started.",
+      );
+      return;
+    }
+    const games = startedGames.map((game, index) => ({
+      gameNumber: index + 1,
+      participant1Score: Number(game.participant1Score),
+      participant2Score: Number(game.participant2Score),
+    }));
+
+    if (
+      games.length === 0 ||
+      games.some(
+        (game) =>
+          !Number.isInteger(game.participant1Score) ||
+          !Number.isInteger(game.participant2Score) ||
+          game.participant1Score < 0 ||
+          game.participant2Score < 0 ||
+          game.participant1Score === game.participant2Score,
+      )
+    ) {
+      setActionError("Enter a non-negative, non-tied score for each game.");
+      return;
+    }
+
+    const matchId = scoreMatch.id ?? scoreMatch.matchId;
+    if (matchId == null) {
+      setActionError("This match has no ID; the result cannot be saved.");
+      return;
+    }
+    setBusyAction("score");
+    setActionError("");
+    setNotice("");
+    try {
+      await updateMatchResult(drawId, matchId, games);
+      await refreshDraw();
+      setScoreMatch(null);
+      setNotice("Match result saved.");
+    } catch (requestError) {
+      setActionError(messageFrom(requestError, "Unable to save match result."));
+    } finally {
+      setBusyAction("");
+    }
+  }
+
+  const statusLabel = isFinalized
+    ? "Finalized"
+    : isPublished
+      ? "Published"
+      : draw
+        ? "Draft"
+        : "No draw";
 
   return (
-    <div
+    <main
       style={{
         padding: "24px",
         backgroundColor: "#f8fafc",
         minHeight: "calc(100vh - 75px)",
         boxSizing: "border-box",
+        color: "#0f172a",
         fontFamily: "sans-serif",
       }}
     >
-      {/* Header Filters */}
-      <div
+      <section
         style={{
+          marginBottom: "20px",
+          border: "1px solid #1e3a52",
+          borderRadius: "14px",
+          background:
+            "linear-gradient(135deg, #0D1B2A 0%, #12283a 68%, #172f45 100%)",
+          color: "#ffffff",
+          padding: "20px",
           display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: "24px",
-          backgroundColor: "#ffffff",
-          padding: "16px 24px",
-          borderRadius: "12px",
-          border: "1px solid #e2e8f0",
           flexWrap: "wrap",
-          gap: "12px",
+          alignItems: "center",
+          justifyContent: "space-between",
+          gap: "18px",
         }}
       >
         <div
@@ -349,1938 +775,1312 @@ export default function MatchesManagementPage() {
             display: "flex",
             alignItems: "center",
             gap: "14px",
-            flexWrap: "wrap",
+            minWidth: "260px",
+            flex: "1 1 420px",
           }}
         >
           <div
             style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              fontSize: "12px",
-              fontWeight: "bold",
-              color: "#334155",
+              width: "58px",
+              height: "58px",
+              borderRadius: "12px",
+              background: "#EF3340",
+              display: "grid",
+              placeItems: "center",
+              fontSize: "22px",
+              fontWeight: 900,
+              boxShadow: "0 10px 24px rgba(239,51,64,0.22)",
             }}
           >
-            Tournament:
-            <select
-              value={selectedTournament}
-              onChange={(e) => {
-                setSelectedTournament(e.target.value);
-                setCurrentPage(1);
-              }}
-              style={{
-                padding: "8px 12px",
-                borderRadius: "8px",
-                border: "1px solid #cbd5e1",
-                backgroundColor: "#fff",
-                fontSize: "12px",
-                fontWeight: "600",
-                outline: "none",
-                cursor: "pointer",
-              }}
-            >
-              <option value="Yangon Masters 2026">Yangon Masters 2026</option>
-              <option value="Mandalay Open Cup">Mandalay Open Cup</option>
-              <option value="Inya Lake Junior Smash">
-                Inya Lake Junior Smash
-              </option>
-            </select>
+            NYX
           </div>
-
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              fontSize: "12px",
-              fontWeight: "bold",
-              color: "#334155",
-            }}
-          >
-            Category:
-            <select
-              value={selectedCategory}
-              onChange={(e) => {
-                setSelectedCategory(e.target.value);
-                setCurrentPage(1);
-              }}
-              style={{
-                padding: "8px 12px",
-                borderRadius: "8px",
-                border: "1px solid #cbd5e1",
-                backgroundColor: "#fff",
-                fontSize: "12px",
-                fontWeight: "600",
-                outline: "none",
-                cursor: "pointer",
-              }}
-            >
-              <option value="U-13 Boys Singles (MS)">
-                U-13 Boys Singles (MS)
-              </option>
-              <option value="Men's Singles">Men's Singles</option>
-              <option value="Mixed Doubles">Mixed Doubles</option>
-            </select>
-          </div>
-        </div>
-
-        <button
-          onClick={handleOpenCreate}
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "6px",
-            backgroundColor: "#dc2626",
-            color: "#fff",
-            border: "none",
-            padding: "10px 18px",
-            borderRadius: "8px",
-            fontSize: "12px",
-            fontWeight: "bold",
-            cursor: "pointer",
-            boxShadow: "0 2px 8px rgba(220,38,38,0.3)",
-          }}
-        >
-          <AddIcon style={{ fontSize: "16px" }} /> Create New Match Pairing
-        </button>
-      </div>
-
-      {/* SECTION A: Knockout Bracket Tree Progression (Mapped by Stage with Horizontal Scroll) */}
-      <div
-        style={{
-          backgroundColor: "#ffffff",
-          borderRadius: "12px",
-          border: "1px solid #e2e8f0",
-          padding: "24px",
-          marginBottom: "32px",
-          opacity: isRefreshingBracket ? 0.6 : 1,
-          transition: "opacity 0.2s",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: "20px",
-            borderBottom: "1px solid #f1f5f9",
-            paddingBottom: "12px",
-          }}
-        >
-          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-            <span style={{ fontSize: "15px" }}>🔀</span>
-            <h2
-              style={{
-                fontSize: "17px",
-                fontWeight: "bold",
-                color: "#0f172a",
-                margin: "0",
-              }}
-            >
-              A. Knockout Bracket Tree Progression ({selectedTournament})
-            </h2>
-          </div>
-          <button
-            onClick={handleRefreshBracket}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              padding: "6px 12px",
-              backgroundColor: "#f1f5f9",
-              border: "1px solid #cbd5e1",
-              borderRadius: "6px",
-              fontSize: "11px",
-              fontWeight: "bold",
-              cursor: "pointer",
-              color: "#334155",
-            }}
-          >
-            <RefreshIcon
-              style={{
-                fontSize: "14px",
-                transform: isRefreshingBracket ? "rotate(180deg)" : "none",
-                transition: "transform 0.5s",
-              }}
-            />{" "}
-            Auto-Generate Brackets
-          </button>
-        </div>
-
-        {/* Horizontal Scrollable Container for Bracket Columns */}
-        <div
-          style={{
-            display: "flex",
-            gap: "16px",
-            overflowX: "auto",
-            paddingBottom: "10px",
-          }}
-        >
-          {dynamicRounds.map((roundTitle) => {
-            const stageMatches = filteredMatches.filter(
-              (m) => m.roundName?.toLowerCase() === roundTitle.toLowerCase(),
-            );
-
-            return (
-              <div
-                key={roundTitle}
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "12px",
-                  minWidth: "240px",
-                  flex: "0 0 240px",
-                }}
-              >
-                <div
-                  style={{
-                    fontSize: "11px",
-                    fontWeight: "bold",
-                    color: "#64748b",
-                    textTransform: "uppercase",
-                  }}
-                >
-                  {roundTitle}
-                </div>
-
-                {stageMatches.length > 0 ? (
-                  stageMatches.map((m) => {
-                    const isLive = m.status === "LIVE IN-PLAY";
-                    const isCompleted = m.status === "COMPLETED";
-                    const sets = matchSets[m.id] || [];
-                    return (
-                      <div
-                        key={m.id}
-                        style={{
-                          backgroundColor: isLive ? "#fdf2f2" : "#f8fafc",
-                          border: isLive
-                            ? "1px solid #fecaca"
-                            : "1px solid #e2e8f0",
-                          borderRadius: "8px",
-                          padding: "12px",
-                        }}
-                      >
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            fontSize: "10px",
-                            fontWeight: "bold",
-                            color: isLive ? "#dc2626" : "#64748b",
-                            marginBottom: "6px",
-                          }}
-                        >
-                          <span>
-                            {m.courtName} {isLive && "• LIVE"}{" "}
-                            {isCompleted && "• ✔ FINISHED"}
-                          </span>{" "}
-                          <span>{m.id}</span>
-                        </div>
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            fontSize: "11px",
-                            marginBottom: "4px",
-                          }}
-                        >
-                          <span>
-                            <span
-                              style={{
-                                height: "8px",
-                                width: "8px",
-                                backgroundColor: "#dc2626",
-                                borderRadius: "50%",
-                                display: "inline-block",
-                                marginRight: "4px",
-                              }}
-                            ></span>{" "}
-                            {m.athlete1}
-                          </span>{" "}
-                          <span style={{ fontWeight: "bold" }}>
-                            {sets.map((s) => s.s1).join("  ")}
-                          </span>
-                        </div>
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            fontSize: "11px",
-                            color: "#64748b",
-                            marginBottom: "8px",
-                          }}
-                        >
-                          <span>
-                            <span
-                              style={{
-                                height: "8px",
-                                width: "8px",
-                                backgroundColor: "#1e3a8a",
-                                borderRadius: "50%",
-                                display: "inline-block",
-                                marginRight: "4px",
-                              }}
-                            ></span>{" "}
-                            {m.athlete2}
-                          </span>{" "}
-                          <span>{sets.map((s) => s.s2).join("  ")}</span>
-                        </div>
-                        {!isLive && !isCompleted && (
-                          <button
-                            onClick={() => handleOpenEdit(m)}
-                            style={{
-                              width: "100%",
-                              padding: "5px",
-                              backgroundColor: "#f1f5f9",
-                              color: "#334155",
-                              border: "1px solid #cbd5e1",
-                              borderRadius: "4px",
-                              fontSize: "10px",
-                              fontWeight: "bold",
-                              cursor: "pointer",
-                            }}
-                          >
-                            ✏️ Edit Pairing / Court
-                          </button>
-                        )}
-                      </div>
-                    );
-                  })
-                ) : (
-                  <div
-                    style={{
-                      backgroundColor: "#f8fafc",
-                      border: "1px dashed #cbd5e1",
-                      borderRadius: "8px",
-                      padding: "16px",
-                      textAlign: "center",
-                    }}
-                  >
-                    <span
-                      style={{
-                        fontSize: "11px",
-                        color: "#64748b",
-                        display: "block",
-                        marginBottom: "4px",
-                      }}
-                    >
-                      Awaiting Pairing
-                    </span>
-                    <span
-                      style={{
-                        fontSize: "12px",
-                        fontWeight: "bold",
-                        color: "#0f172a",
-                      }}
-                    >
-                      No Match Assigned
-                    </span>
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* SECTION B: Active Match Schedule & Score Input Queue */}
-      <div
-        style={{
-          backgroundColor: "#ffffff",
-          borderRadius: "12px",
-          border: "1px solid #e2e8f0",
-          overflow: "hidden",
-          opacity: isRefreshingTable ? 0.6 : 1,
-          transition: "opacity 0.2s",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            padding: "20px 24px",
-            borderBottom: "1px solid #e2e8f0",
-          }}
-        >
           <div>
-            <h2
+            <div
               style={{
-                fontSize: "17px",
-                fontWeight: "bold",
-                color: "#0f172a",
-                margin: "0 0 2px 0",
+                display: "flex",
+                alignItems: "center",
+                flexWrap: "wrap",
+                gap: "8px",
               }}
             >
-              B. Active Match Schedule & Score Input Queue
-            </h2>
-            <p style={{ fontSize: "11px", color: "#64748b", margin: "0" }}>
-              Real-time court allocation and umpire scoreboard synchronization
-              for {selectedTournament}.
-            </p>
-          </div>
-          <button
-            onClick={handleRefreshTable}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "4px",
-              padding: "6px 12px",
-              backgroundColor: "#f1f5f9",
-              border: "1px solid #cbd5e1",
-              borderRadius: "6px",
-              fontSize: "11px",
-              fontWeight: "bold",
-              cursor: "pointer",
-              color: "#334155",
-            }}
-          >
-            <RefreshIcon
-              style={{
-                fontSize: "14px",
-                transform: isRefreshingTable ? "rotate(180deg)" : "none",
-                transition: "transform 0.5s",
-              }}
-            />{" "}
-            Refresh Feed
-          </button>
-        </div>
-
-        <table
-          style={{
-            width: "100%",
-            borderCollapse: "collapse",
-            textAlign: "left",
-            fontSize: "12px",
-          }}
-        >
-          <thead>
-            <tr
-              style={{
-                backgroundColor: "#f8fafc",
-                borderBottom: "1px solid #e2e8f0",
-                color: "#64748b",
-                fontSize: "11px",
-                fontWeight: "bold",
-                textTransform: "uppercase",
-              }}
-            >
-              <th style={{ padding: "14px 20px" }}>Match ID</th>
-              <th style={{ padding: "14px 20px" }}>Stage & Court</th>
-              <th style={{ padding: "14px 20px" }}>Athlete / Pairing</th>
-              <th style={{ padding: "14px 20px" }}>Scheduled Time</th>
-              <th style={{ padding: "14px 20px" }}>Live Status</th>
-              <th style={{ padding: "14px 20px" }}>Set Scores Input</th>
-              <th style={{ padding: "14px 20px", textAlign: "center" }}>
-                Action Controls
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {currentRows.length > 0 ? (
-              currentRows.map((match) => {
-                const sets = matchSets[match.id] || [];
-                const scoresString =
-                  sets.length > 0
-                    ? sets.map((s) => `${s.s1 || 0} - ${s.s2 || 0}`).join("   ")
-                    : "-- : --";
-                return (
-                  <tr
-                    key={match.id}
-                    style={{
-                      borderBottom: "1px solid #f1f5f9",
-                      color: "#334155",
-                    }}
-                  >
-                    <td style={{ padding: "14px 20px", fontWeight: "bold" }}>
-                      {match.id}
-                    </td>
-                    <td
-                      style={{
-                        padding: "14px 20px",
-                        whiteSpace: "pre-line",
-                        fontSize: "11px",
-                        color: "#64748b",
-                      }}
-                    >
-                      {match.stage}
-                    </td>
-                    <td style={{ padding: "14px 20px" }}>
-                      <div style={{ fontWeight: "600", color: "#0f172a" }}>
-                        <span
-                          style={{
-                            height: "8px",
-                            width: "8px",
-                            backgroundColor: "#dc2626",
-                            borderRadius: "50%",
-                            display: "inline-block",
-                            marginRight: "6px",
-                          }}
-                        ></span>{" "}
-                        {match.athlete1}
-                      </div>
-                      <div
-                        style={{
-                          color: "#64748b",
-                          fontSize: "11px",
-                          marginTop: "2px",
-                        }}
-                      >
-                        <span
-                          style={{
-                            height: "8px",
-                            width: "8px",
-                            backgroundColor: "#1e3a8a",
-                            borderRadius: "50%",
-                            display: "inline-block",
-                            marginRight: "6px",
-                          }}
-                        ></span>{" "}
-                        {match.athlete2}
-                      </div>
-                    </td>
-                    <td
-                      style={{
-                        padding: "14px 20px",
-                        whiteSpace: "pre-line",
-                        fontSize: "11px",
-                      }}
-                    >
-                      {match.time}
-                    </td>
-                    <td style={{ padding: "14px 20px" }}>
-                      {match.status === "LIVE IN-PLAY" && (
-                        <span
-                          style={{
-                            backgroundColor: "#fef2f2",
-                            color: "#dc2626",
-                            padding: "4px 8px",
-                            borderRadius: "4px",
-                            fontSize: "10px",
-                            fontWeight: "bold",
-                          }}
-                        >
-                          ● LIVE IN-PLAY
-                        </span>
-                      )}
-                      {match.status === "SCHEDULED" && (
-                        <span
-                          style={{
-                            backgroundColor: "#fefce8",
-                            color: "#ca8a04",
-                            padding: "4px 8px",
-                            borderRadius: "4px",
-                            fontSize: "10px",
-                            fontWeight: "bold",
-                          }}
-                        >
-                          🕒 SCHEDULED
-                        </span>
-                      )}
-                      {match.status === "COMPLETED" && (
-                        <span
-                          style={{
-                            backgroundColor: "#f0fdf4",
-                            color: "#16a34a",
-                            padding: "4px 8px",
-                            borderRadius: "4px",
-                            fontSize: "10px",
-                            fontWeight: "bold",
-                          }}
-                        >
-                          ✔ COMPLETED
-                        </span>
-                      )}
-                    </td>
-                    <td
-                      style={{
-                        padding: "14px 20px",
-                        fontWeight: "bold",
-                        fontFamily: "monospace",
-                      }}
-                    >
-                      {scoresString}
-                    </td>
-                    <td style={{ padding: "14px 20px", textAlign: "center" }}>
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: "6px",
-                          justifyContent: "center",
-                        }}
-                      >
-                        {match.status === "SCHEDULED" && (
-                          <>
-                            <button
-                              onClick={() => handleOpenEdit(match)}
-                              style={{
-                                backgroundColor: "#f1f5f9",
-                                color: "#334155",
-                                border: "1px solid #cbd5e1",
-                                padding: "6px 12px",
-                                borderRadius: "6px",
-                                fontSize: "11px",
-                                fontWeight: "bold",
-                                cursor: "pointer",
-                              }}
-                            >
-                              Edit Pairing
-                            </button>
-                            <button
-                              onClick={() => handleStartLive(match.id)}
-                              style={{
-                                backgroundColor: "#dc2626",
-                                color: "#fff",
-                                border: "none",
-                                padding: "6px 12px",
-                                borderRadius: "6px",
-                                fontSize: "11px",
-                                fontWeight: "bold",
-                                cursor: "pointer",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "4px",
-                              }}
-                            >
-                              <PlayArrowIcon style={{ fontSize: "14px" }} />{" "}
-                              Start Live
-                            </button>
-                          </>
-                        )}
-                        {match.status === "LIVE IN-PLAY" && (
-                          <>
-                            <button
-                              onClick={() => handleOpenUpdateScore(match)}
-                              style={{
-                                backgroundColor: "#0f172a",
-                                color: "#fff",
-                                border: "none",
-                                padding: "6px 12px",
-                                borderRadius: "6px",
-                                fontSize: "11px",
-                                fontWeight: "bold",
-                                cursor: "pointer",
-                              }}
-                            >
-                              Update
-                            </button>
-                            <button
-                              onClick={() => handleFinalizeWinner(match.id)}
-                              style={{
-                                backgroundColor: "#16a34a",
-                                color: "#fff",
-                                border: "none",
-                                padding: "6px 12px",
-                                borderRadius: "6px",
-                                fontSize: "11px",
-                                fontWeight: "bold",
-                                cursor: "pointer",
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "4px",
-                              }}
-                            >
-                              <CheckCircleIcon style={{ fontSize: "14px" }} />{" "}
-                              Finalize Winner
-                            </button>
-                          </>
-                        )}
-                        {match.status === "COMPLETED" && (
-                          <button
-                            onClick={() => {
-                              setActiveMatch(match);
-                              setShowResultModal(true);
-                            }}
-                            style={{
-                              backgroundColor: "#f1f5f9",
-                              color: "#0f172a",
-                              border: "1px solid #cbd5e1",
-                              padding: "6px 14px",
-                              borderRadius: "6px",
-                              fontSize: "11px",
-                              fontWeight: "bold",
-                              cursor: "pointer",
-                              display: "flex",
-                              alignItems: "center",
-                              gap: "4px",
-                            }}
-                          >
-                            <VisibilityOutlinedIcon
-                              style={{ fontSize: "14px" }}
-                            />{" "}
-                            View Result
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })
-            ) : (
-              <tr>
-                <td
-                  colSpan="7"
-                  style={{
-                    padding: "30px",
-                    textAlign: "center",
-                    color: "#64748b",
-                  }}
-                >
-                  No matches found for {selectedTournament} ({selectedCategory}
-                  ).
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-
-        {/* Pagination Footer */}
-        <div
-          style={{
-            padding: "16px 20px",
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            borderTop: "1px solid #e2e8f0",
-            backgroundColor: "#f8fafc",
-          }}
-        >
-          <div style={{ fontSize: "12px", color: "#64748b" }}>
-            Showing {filteredMatches.length > 0 ? indexOfFirstRow + 1 : 0} to{" "}
-            {Math.min(indexOfLastRow, filteredMatches.length)} of{" "}
-            {filteredMatches.length} entries
-          </div>
-          <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
-            <button
-              onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-              disabled={currentPage === 1}
-              style={{
-                padding: "6px 12px",
-                backgroundColor: "#fff",
-                border: "1px solid #cbd5e1",
-                borderRadius: "6px",
-                fontSize: "12px",
-                cursor: currentPage === 1 ? "not-allowed" : "pointer",
-                color: currentPage === 1 ? "#94a3b8" : "#334155",
-              }}
-            >
-              Previous
-            </button>
-            {Array.from({ length: totalPages }).map((_, index) => (
-              <button
-                key={index}
-                onClick={() => setCurrentPage(index + 1)}
+              <h1 style={{ margin: 0, fontSize: "20px", letterSpacing: "-0.02em" }}>
+                {selectedTournament?.title || "Tournament Bracket"}
+              </h1>
+              <span
                 style={{
-                  width: "32px",
-                  height: "32px",
-                  backgroundColor:
-                    currentPage === index + 1 ? "#0f172a" : "#fff",
-                  color: currentPage === index + 1 ? "#fff" : "#334155",
-                  border: "1px solid #cbd5e1",
-                  borderRadius: "6px",
-                  fontSize: "12px",
-                  fontWeight: "bold",
-                  cursor: "pointer",
+                  borderRadius: "999px",
+                  backgroundColor: "#ef3340",
+                  padding: "4px 8px",
+                  fontSize: "10px",
+                  fontWeight: 800,
+                  textTransform: "uppercase",
                 }}
               >
-                {index + 1}
-              </button>
-            ))}
-            <button
-              onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-              disabled={currentPage === totalPages || totalPages === 0}
-              style={{
-                padding: "6px 12px",
-                backgroundColor: "#fff",
-                border: "1px solid #cbd5e1",
-                borderRadius: "6px",
-                fontSize: "12px",
-                cursor:
-                  currentPage === totalPages || totalPages === 0
-                    ? "not-allowed"
-                    : "pointer",
-                color:
-                  currentPage === totalPages || totalPages === 0
-                    ? "#94a3b8"
-                    : "#334155",
-              }}
-            >
-              Next
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* MODAL 1: CREATE OR EDIT MATCH PAIRING (Updated with expanded stages & Other manual input) */}
-      {showCreateModal && (
-        <div
-          style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            backgroundColor: "rgba(0,0,0,0.6)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1200,
-            padding: "20px",
-          }}
-        >
-          <div
-            style={{
-              backgroundColor: "#ffffff",
-              borderRadius: "16px",
-              width: "100%",
-              maxWidth: "560px",
-              padding: "32px",
-              boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)",
-              position: "relative",
-            }}
-          >
-            <button
-              onClick={() => setShowCreateModal(false)}
-              style={{
-                position: "absolute",
-                top: "20px",
-                right: "20px",
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                color: "#64748b",
-              }}
-            >
-              <CloseIcon style={{ fontSize: "20px" }} />
-            </button>
-
-            <h2
-              style={{
-                fontSize: "17px",
-                fontWeight: "bold",
-                color: "#0f172a",
-                margin: "0 0 4px 0",
-              }}
-            >
-              {isEditMode
-                ? "Edit Match Pairing & Bracket"
-                : "Create Match Pairing & Assign Bracket"}
-            </h2>
+                {statusLabel}
+              </span>
+            </div>
             <p
               style={{
+                margin: "7px 0 0",
+                color: "#b8c5d1",
                 fontSize: "12px",
-                color: "#64748b",
-                margin: "0 0 24px 0",
               }}
             >
-              Manually configure athlete matchup and assign court.
+              {selectedCategory?.categoryName ||
+                selectedCategory?.name ||
+                "Select a category"}{" "}
+              · Single Elimination · {eligibleRegistrations.length} participants
+              · {formatTournamentDate(selectedTournament)}
             </p>
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "16px",
-                marginBottom: "18px",
-              }}
-            >
-              <div>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "11px",
-                    fontWeight: "bold",
-                    color: "#334155",
-                    marginBottom: "6px",
-                  }}
-                >
-                  TOURNAMENT STAGE / ROUND *
-                </label>
-                <select
-                  value={isCustomStage ? "Other" : stage}
-                  onChange={(e) => {
-                    if (e.target.value === "Other") {
-                      setStage("");
-                    } else {
-                      setStage(e.target.value);
-                    }
-                  }}
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    borderRadius: "8px",
-                    border: "1px solid #cbd5e1",
-                    fontSize: "12px",
-                    outline: "none",
-                    backgroundColor: "#fff",
-                    marginBottom: isCustomStage ? "8px" : "0",
-                  }}
-                >
-                  <option value="">-- Select Stage --</option>
-                  <option value="Round of 64">Round of 64</option>
-                  <option value="Round of 32">Round of 32</option>
-                  <option value="Round of 16">Round of 16</option>
-                  <option value="Round 1">Round 1</option>
-                  <option value="Round 2">Round 2</option>
-                  <option value="Round 3">Round 3</option>
-                  <option value="Quarter-Finals">Quarter-Finals (QF)</option>
-                  <option value="Semi-Finals">Semi-Finals (SF)</option>
-                  <option value="Championship Final">Championship Final</option>
-                  <option value="Other">Other</option>
-                </select>
-                {isCustomStage && (
-                  <input
-                    type="text"
-                    value={stage}
-                    onChange={(e) => setStage(e.target.value)}
-                    placeholder="Type custom stage/round..."
-                    style={{
-                      width: "100%",
-                      padding: "10px 12px",
-                      borderRadius: "8px",
-                      border: "1px solid #cbd5e1",
-                      fontSize: "12px",
-                      outline: "none",
-                      boxSizing: "border-box",
-                    }}
-                  />
-                )}
-              </div>
-              <div>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "11px",
-                    fontWeight: "bold",
-                    color: "#334155",
-                    marginBottom: "6px",
-                  }}
-                >
-                  ASSIGNED COURT *
-                </label>
-                <select
-                  value={court}
-                  onChange={(e) => setCourt(e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: "10px 12px",
-                    borderRadius: "8px",
-                    border: "1px solid #cbd5e1",
-                    fontSize: "12px",
-                    outline: "none",
-                    backgroundColor: "#fff",
-                  }}
-                >
-                  <option value="">-- Select Court --</option>
-                  <option value="Court 01">Court 01 (Live Arena A)</option>
-                  <option value="Court 02">Court 02</option>
-                  <option value="Court 03">Court 03</option>
-                  <option value="Court 04">Court 04</option>
-                  <option value="Court 05">Court 05</option>
-                  <option value="Court 06">Court 06</option>
-                </select>
-              </div>
-            </div>
-
-            <div
-              style={{
-                backgroundColor: "#f8fafc",
-                border: "1px solid #e2e8f0",
-                borderRadius: "10px",
-                padding: "16px",
-                marginBottom: "12px",
-              }}
-            >
-              <label
-                style={{
-                  fontSize: "11px",
-                  fontWeight: "bold",
-                  color: "#dc2626",
-                  display: "block",
-                  marginBottom: "6px",
-                }}
-              >
-                <span
-                  style={{
-                    height: "8px",
-                    width: "8px",
-                    backgroundColor: "#dc2626",
-                    borderRadius: "50%",
-                    display: "inline-block",
-                    marginRight: "6px",
-                  }}
-                ></span>{" "}
-                SELECT ATHLETE 1 (PLAYER A - RED CORNER) *
-              </label>
-              <select
-                value={athlete1}
-                onChange={(e) => setAthlete1(e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: "10px",
-                  borderRadius: "6px",
-                  border: "1px solid #cbd5e1",
-                  fontSize: "12px",
-                  fontWeight: "bold",
-                  backgroundColor: "#fff",
-                  outline: "none",
-                }}
-              >
-                <option value="">-- Choose Athlete 1 --</option>
-                {approvedPlayersPool.map((p) => (
-                  <option key={p} value={p}>
-                    {p}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div
-              style={{
-                textAlign: "center",
-                margin: "-6px 0",
-                zIndex: 2,
-                position: "relative",
-              }}
-            >
-              <span
-                style={{
-                  backgroundColor: "#0f172a",
-                  color: "#fff",
-                  padding: "4px 8px",
-                  borderRadius: "50%",
-                  fontSize: "10px",
-                  fontWeight: "bold",
-                }}
-              >
-                VS
-              </span>
-            </div>
-
-            <div
-              style={{
-                backgroundColor: "#f8fafc",
-                border: "1px solid #e2e8f0",
-                borderRadius: "10px",
-                padding: "16px",
-                marginBottom: "18px",
-              }}
-            >
-              <label
-                style={{
-                  fontSize: "11px",
-                  fontWeight: "bold",
-                  color: "#1e3a8a",
-                  display: "block",
-                  marginBottom: "6px",
-                }}
-              >
-                <span
-                  style={{
-                    height: "8px",
-                    width: "8px",
-                    backgroundColor: "#1e3a8a",
-                    borderRadius: "50%",
-                    display: "inline-block",
-                    marginRight: "6px",
-                  }}
-                ></span>{" "}
-                SELECT ATHLETE 2 (PLAYER B - NAVY BLUE CORNER) *
-              </label>
-              <select
-                value={athlete2}
-                onChange={(e) => setAthlete2(e.target.value)}
-                style={{
-                  width: "100%",
-                  padding: "10px",
-                  borderRadius: "6px",
-                  border: "1px solid #cbd5e1",
-                  fontSize: "12px",
-                  fontWeight: "bold",
-                  backgroundColor: "#fff",
-                  outline: "none",
-                }}
-              >
-                <option value="">-- Choose Athlete 2 --</option>
-                {approvedPlayersPool
-                  .filter((p) => p !== athlete1)
-                  .map((p) => (
-                    <option key={p} value={p}>
-                      {p}
-                    </option>
-                  ))}
-              </select>
-            </div>
-
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 1fr",
-                gap: "16px",
-                marginBottom: "24px",
-              }}
-            >
-              <div>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "11px",
-                    fontWeight: "bold",
-                    color: "#334155",
-                    marginBottom: "6px",
-                  }}
-                >
-                  MATCH DATE *
-                </label>
-                <input
-                  type="date"
-                  value={matchDate}
-                  onChange={(e) => setMatchDate(e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: "10px",
-                    borderRadius: "8px",
-                    border: "1px solid #cbd5e1",
-                    fontSize: "12px",
-                    boxSizing: "border-box",
-                  }}
-                />
-              </div>
-              <div>
-                <label
-                  style={{
-                    display: "block",
-                    fontSize: "11px",
-                    fontWeight: "bold",
-                    color: "#334155",
-                    marginBottom: "6px",
-                  }}
-                >
-                  MATCH TIME *
-                </label>
-                <input
-                  type="time"
-                  value={matchTime}
-                  onChange={(e) => setMatchTime(e.target.value)}
-                  style={{
-                    width: "100%",
-                    padding: "10px",
-                    borderRadius: "8px",
-                    border: "1px solid #cbd5e1",
-                    fontSize: "12px",
-                    boxSizing: "border-box",
-                  }}
-                />
-              </div>
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "flex-end",
-                gap: "12px",
-              }}
-            >
-              <button
-                onClick={() => setShowCreateModal(false)}
-                style={{
-                  padding: "12px 24px",
-                  backgroundColor: "#f8fafc",
-                  border: "1px solid #cbd5e1",
-                  borderRadius: "8px",
-                  fontSize: "12px",
-                  fontWeight: "bold",
-                  cursor: "pointer",
-                  color: "#334155",
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleSaveMatchPairing}
-                style={{
-                  padding: "12px 28px",
-                  backgroundColor: "#0f172a",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "8px",
-                  fontSize: "12px",
-                  fontWeight: "bold",
-                  cursor: "pointer",
-                }}
-              >
-                {isEditMode ? "💾 SAVE CHANGES" : "💾 SAVE & PUSH"}
-              </button>
-            </div>
           </div>
         </div>
-      )}
-
-      {/* MODAL 2: UPDATE LIVE MATCH SCORE */}
-      {showUpdateScoreModal && activeMatch && (
         <div
           style={{
-            position: "fixed",
-            top: 0,
-            left: 0,
-            width: "100%",
-            height: "100%",
-            backgroundColor: "rgba(0,0,0,0.6)",
             display: "flex",
+            flexWrap: "wrap",
+            gap: "8px",
             alignItems: "center",
-            justifyContent: "center",
-            zIndex: 1200,
-            padding: "20px",
           }}
         >
-          <div
+          <label style={{ color: "#cbd5e1", fontSize: "11px", fontWeight: 700 }}>
+            Tournament
+            <select
+              value={selectedTournamentId}
+              onChange={(event) => handleTournamentChange(event.target.value)}
+              disabled={loadingLists}
+              style={{
+                ...inputStyle,
+                minWidth: "180px",
+                marginTop: "5px",
+                backgroundColor: "#102235",
+                color: "#ffffff",
+                border: "1px solid #355167",
+              }}
+            >
+              <option value="">Select tournament</option>
+              {tournaments.map((tournament) => (
+                <option key={tournament.id} value={tournament.id}>
+                  {tournament.title}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label style={{ color: "#cbd5e1", fontSize: "11px", fontWeight: 700 }}>
+            Category
+            <select
+              value={selectedCategoryId}
+              onChange={(event) => handleCategoryChange(event.target.value)}
+              disabled={loadingLists}
+              style={{
+                ...inputStyle,
+                minWidth: "190px",
+                marginTop: "5px",
+                backgroundColor: "#102235",
+                color: "#ffffff",
+                border: "1px solid #355167",
+              }}
+            >
+              <option value="">Select category</option>
+              {categories.map((category) => (
+                <option key={category.id} value={category.id}>
+                  {category.categoryName || category.name} (
+                  {category.categoryCode})
+                </option>
+              ))}
+            </select>
+          </label>
+          {!draw && (
+            <button
+              type="button"
+              onClick={handleCreateDraw}
+              disabled={busyAction !== "" || eligibleRegistrations.length < 2}
+              style={{
+                ...buttonStyle,
+                marginTop: "18px",
+                backgroundColor: "#EF3340",
+              }}
+            >
+              {busyAction === "create" ? "Generating…" : "Generate Bracket"}
+            </button>
+          )}
+          {draw && !isPublished && (
+            <button
+              type="button"
+              onClick={handlePublishDraw}
+              disabled={
+                busyAction !== "" ||
+                assignedEntries.length !== eligibleRegistrations.length
+              }
+              style={{
+                ...buttonStyle,
+                marginTop: "18px",
+                backgroundColor: "#EF3340",
+              }}
+            >
+              {busyAction === "publish" ? "Publishing…" : "Publish Bracket"}
+            </button>
+          )}
+          <button
+            type="button"
+            onClick={() =>
+              selectedCategoryId
+                ? setReloadKey((key) => key + 1)
+                : setListReloadKey((key) => key + 1)
+            }
+            disabled={loadingLists || loadingCategory}
             style={{
-              backgroundColor: "#ffffff",
-              borderRadius: "16px",
-              width: "100%",
-              maxWidth: "580px",
-              padding: "32px",
-              boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)",
-              position: "relative",
-              maxHeight: "90vh",
-              overflowY: "auto",
+              ...buttonStyle,
+              marginTop: "18px",
+              backgroundColor: "#1b3448",
+              border: "1px solid #355167",
             }}
           >
-            <button
-              onClick={() => setShowUpdateScoreModal(false)}
-              style={{
-                position: "absolute",
-                top: "20px",
-                right: "20px",
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                color: "#64748b",
-              }}
-            >
-              <CloseIcon style={{ fontSize: "20px" }} />
-            </button>
+            <RefreshIcon fontSize="small" />
+          </button>
+        </div>
+      </section>
 
-            <h2
-              style={{
-                fontSize: "16px",
-                fontWeight: "bold",
-                color: "#0f172a",
-                margin: "0 0 16px 0",
-              }}
-            >
-              Update Live Match Score — {activeMatch.id}
-            </h2>
-
-            <div
-              style={{
-                backgroundColor: "#f8fafc",
-                border: "1px solid #e2e8f0",
-                borderRadius: "10px",
-                padding: "16px",
-                display: "flex",
-                justifyContent: "space-between",
-                alignItems: "center",
-                marginBottom: "20px",
-              }}
-            >
-              <div>
-                <div
-                  style={{
-                    fontSize: "13px",
-                    fontWeight: "bold",
-                    color: "#dc2626",
-                  }}
-                >
-                  <span
-                    style={{
-                      height: "8px",
-                      width: "8px",
-                      backgroundColor: "#dc2626",
-                      borderRadius: "50%",
-                      display: "inline-block",
-                      marginRight: "6px",
-                    }}
-                  ></span>{" "}
-                  {activeMatch.athlete1}
-                </div>
-                <div
-                  style={{
-                    fontSize: "11px",
-                    color: "#64748b",
-                    marginTop: "2px",
-                  }}
-                >
-                  • Red Corner
-                </div>
-              </div>
-              <span
-                style={{
-                  backgroundColor: "#e2e8f0",
-                  padding: "4px 8px",
-                  borderRadius: "50%",
-                  fontSize: "10px",
-                  fontWeight: "bold",
-                }}
-              >
-                vs
-              </span>
-              <div style={{ textAlign: "right" }}>
-                <div
-                  style={{
-                    fontSize: "13px",
-                    fontWeight: "bold",
-                    color: "#1e3a8a",
-                  }}
-                >
-                  {activeMatch.athlete2}{" "}
-                  <span
-                    style={{
-                      height: "8px",
-                      width: "8px",
-                      backgroundColor: "#1e3a8a",
-                      borderRadius: "50%",
-                      display: "inline-block",
-                      marginLeft: "6px",
-                    }}
-                  ></span>
-                </div>
-                <div
-                  style={{
-                    fontSize: "11px",
-                    color: "#64748b",
-                    marginTop: "2px",
-                  }}
-                >
-                  • Navy Blue Corner
-                </div>
-              </div>
-            </div>
-
-            <div
-              style={{
-                fontSize: "11px",
-                fontWeight: "bold",
-                color: "#64748b",
-                marginBottom: "12px",
-              }}
-            >
-              SET BY SET SCORE ENTRY (DIRECT NUMBER INPUT)
-            </div>
-
-            {completedSetsInModal.map((s, idx) => (
-              <div
-                key={idx}
-                style={{
-                  backgroundColor: "#f8fafc",
-                  padding: "12px 16px",
-                  borderRadius: "8px",
-                  marginBottom: "10px",
-                  border: "1px solid #e2e8f0",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginBottom: "6px",
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: "12px",
-                      fontWeight: "bold",
-                      color: "#0f172a",
-                    }}
-                  >
-                    Set {s.setNum} Scores (Completed)
-                  </span>
-                  <span
-                    style={{
-                      fontSize: "10px",
-                      color: "#16a34a",
-                      fontWeight: "bold",
-                    }}
-                  >
-                    ✔ Recorded
-                  </span>
-                </div>
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    fontSize: "12px",
-                    fontWeight: "600",
-                    color: "#334155",
-                  }}
-                >
-                  <span>
-                    {activeMatch.athlete1}:{" "}
-                    <strong style={{ color: "#dc2626", fontSize: "14px" }}>
-                      {s.s1 || 0}
-                    </strong>
-                  </span>
-                  <span>:</span>
-                  <span>
-                    {activeMatch.athlete2}:{" "}
-                    <strong style={{ color: "#1e3a8a", fontSize: "14px" }}>
-                      {s.s2 || 0}
-                    </strong>
-                  </span>
-                </div>
-              </div>
-            ))}
-
-            {activeSetInput && (
-              <div
-                style={{
-                  backgroundColor: "#fef2f2",
-                  border: "1px solid #fecaca",
-                  borderRadius: "10px",
-                  padding: "16px",
-                  marginBottom: "16px",
-                }}
-              >
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginBottom: "10px",
-                  }}
-                >
-                  <span
-                    style={{
-                      fontSize: "12px",
-                      fontWeight: "bold",
-                      color: "#dc2626",
-                    }}
-                  >
-                    ● Set {activeSetInput.setNum} (Active Set) *
-                  </span>
-                </div>
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr auto 1fr",
-                    gap: "10px",
-                    alignItems: "center",
-                  }}
-                >
-                  <div>
-                    <label
-                      style={{
-                        fontSize: "10px",
-                        fontWeight: "bold",
-                        color: "#dc2626",
-                        display: "block",
-                        marginBottom: "4px",
-                      }}
-                    >
-                      {activeMatch.athlete1}
-                    </label>
-                    <input
-                      type="number"
-                      placeholder="Score"
-                      value={activeSetInput.s1}
-                      onChange={(e) =>
-                        setActiveSetInput({
-                          ...activeSetInput,
-                          s1: e.target.value,
-                        })
-                      }
-                      style={{
-                        width: "100%",
-                        padding: "8px",
-                        textAlign: "center",
-                        fontSize: "16px",
-                        fontWeight: "bold",
-                        borderRadius: "6px",
-                        border: "1px solid #cbd5e1",
-                        outline: "none",
-                        boxSizing: "border-box",
-                      }}
-                    />
-                  </div>
-                  <span
-                    style={{
-                      fontSize: "16px",
-                      fontWeight: "bold",
-                      marginTop: "16px",
-                    }}
-                  >
-                    :
-                  </span>
-                  <div>
-                    <label
-                      style={{
-                        fontSize: "10px",
-                        fontWeight: "bold",
-                        color: "#1e3a8a",
-                        display: "block",
-                        marginBottom: "4px",
-                      }}
-                    >
-                      {activeMatch.athlete2}
-                    </label>
-                    <input
-                      type="number"
-                      placeholder="Score"
-                      value={activeSetInput.s2}
-                      onChange={(e) =>
-                        setActiveSetInput({
-                          ...activeSetInput,
-                          s2: e.target.value,
-                        })
-                      }
-                      style={{
-                        width: "100%",
-                        padding: "8px",
-                        textAlign: "center",
-                        fontSize: "16px",
-                        fontWeight: "bold",
-                        borderRadius: "6px",
-                        border: "1px solid #cbd5e1",
-                        outline: "none",
-                        boxSizing: "border-box",
-                      }}
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {activeSetInput && (
-              <button
-                onClick={() => {
-                  if (!activeSetInput.s1 && !activeSetInput.s2) {
-                    alert("Please enter scores for the active set!");
-                    return;
-                  }
-                  const updatedCompleted = [
-                    ...completedSetsInModal,
-                    activeSetInput,
-                  ];
-                  setCompletedSetsInModal(updatedCompleted);
-                  setMatchSets({
-                    ...matchSets,
-                    [activeMatch.id]: updatedCompleted,
-                  });
-                  setActiveSetInput(null);
-                }}
-                style={{
-                  width: "100%",
-                  padding: "10px",
-                  backgroundColor: "#0f172a",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "8px",
-                  fontSize: "15px",
-                  fontWeight: "bold",
-                  cursor: "pointer",
-                  marginBottom: "10px",
-                }}
-              >
-                💾 Save Scores
-              </button>
-            )}
-
-            {!activeSetInput && (
-              <button
-                onClick={() => {
-                  setActiveSetInput({
-                    setNum: completedSetsInModal.length + 1,
-                    s1: "",
-                    s2: "",
-                  });
-                }}
-                style={{
-                  width: "100%",
-                  padding: "12px",
-                  backgroundColor: "#f1f5f9",
-                  border: "1px dashed #cbd5e1",
-                  borderRadius: "8px",
-                  fontSize: "12px",
-                  fontWeight: "bold",
-                  cursor: "pointer",
-                  color: "#2563eb",
-                  marginBottom: "20px",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  gap: "6px",
-                }}
-              >
-                <AddCircleOutlineIcon style={{ fontSize: "18px" }} /> Add
-                Another Set
-              </button>
-            )}
-
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "flex-end",
-                gap: "12px",
-                marginTop: "17px",
-              }}
-            >
-              <button
-                onClick={() => setShowUpdateScoreModal(false)}
-                style={{
-                  padding: "12px 24px",
-                  backgroundColor: "#f8fafc",
-                  border: "1px solid #cbd5e1",
-                  borderRadius: "8px",
-                  fontSize: "15px",
-                  fontWeight: "bold",
-                  cursor: "pointer",
-                  color: "#334155",
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => {
-                  if (
-                    activeSetInput &&
-                    (activeSetInput.s1 || activeSetInput.s2)
-                  ) {
-                    const updatedCompleted = [
-                      ...completedSetsInModal,
-                      activeSetInput,
-                    ];
-                    setMatchSets({
-                      ...matchSets,
-                      [activeMatch.id]: updatedCompleted,
-                    });
-                  }
-                  setShowUpdateScoreModal(false);
-                }}
-                style={{
-                  padding: "12px 28px",
-                  backgroundColor: "#16a34a",
-                  color: "#fff",
-                  border: "none",
-                  borderRadius: "8px",
-                  fontSize: "15px",
-                  fontWeight: "bold",
-                  cursor: "pointer",
-                }}
-              >
-                ✔ Save & Finalize Scores
-              </button>
-            </div>
-          </div>
+      {loadingLists && <p role="status">Loading tournaments and categories…</p>}
+      {loadingCategory && <p role="status">Loading eligible registrations and draw…</p>}
+      {error && (
+        <div role="alert" style={{ ...cardStyle, color: "#b91c1c" }}>
+          {error}
+          <button
+            type="button"
+            onClick={() =>
+              selectedCategoryId
+                ? setReloadKey((key) => key + 1)
+                : setListReloadKey((key) => key + 1)
+            }
+            style={{ ...buttonStyle, marginLeft: "12px" }}
+          >
+            Retry
+          </button>
+        </div>
+      )}
+      {actionError && (
+        <div role="alert" style={{ ...cardStyle, color: "#b91c1c" }}>
+          {actionError}
+        </div>
+      )}
+      {notice && (
+        <div
+          role="status"
+          style={{
+            ...cardStyle,
+            padding: "12px 16px",
+            color: "#166534",
+            backgroundColor: "#f0fdf4",
+          }}
+        >
+          {notice}
         </div>
       )}
 
-      {/* MODAL 3: OFFICIAL MATCH RESULT DOSSIER */}
-      {showResultModal &&
-        activeMatch &&
-        (() => {
-          const sets = matchSets[activeMatch.id] || [];
-          const { winner } = determineWinner(
-            activeMatch.id,
-            activeMatch.athlete1,
-            activeMatch.athlete2,
-          );
-          const isP1Winner = winner === activeMatch.athlete1;
+      {!loadingLists && !error && !selectedCategoryId && (
+        <section style={cardStyle}>
+          <p style={{ margin: 0, color: "#64748b", fontSize: "13px" }}>
+            No categories are available. Add tournament categories before
+            managing draws.
+          </p>
+        </section>
+      )}
 
-          return (
+      {!loadingLists && !loadingCategory && selectedCategoryId && !error && (
+        <>
+          <section style={cardStyle}>
             <div
               style={{
-                position: "fixed",
-                top: 0,
-                left: 0,
-                width: "100%",
-                height: "100%",
-                backgroundColor: "rgba(0,0,0,0.6)",
                 display: "flex",
+                flexWrap: "wrap",
                 alignItems: "center",
-                justifyContent: "center",
-                zIndex: 1200,
-                padding: "20px",
+                justifyContent: "space-between",
+                gap: "12px",
+                marginBottom: "16px",
               }}
             >
+              <div>
+                <h2 style={{ margin: "0 0 5px", fontSize: "17px" }}>
+                  Eligible registrations
+                </h2>
+                <p style={{ margin: 0, color: "#64748b", fontSize: "12px" }}>
+                  {eligibleRegistrations.length} confirmed registration
+                  {eligibleRegistrations.length === 1 ? "" : "s"}
+                </p>
+              </div>
+              <input
+                type="search"
+                value={participantSearch}
+                onChange={(event) => setParticipantSearch(event.target.value)}
+                placeholder="Search participant or registration"
+                style={{
+                  ...inputStyle,
+                  maxWidth: "260px",
+                  marginRight: "auto",
+                  marginLeft: "14px",
+                }}
+              />
+              {!draw && (
+                <button
+                  type="button"
+                  onClick={handleCreateDraw}
+                  disabled={
+                    busyAction !== "" || eligibleRegistrations.length < 2
+                  }
+                  style={buttonStyle}
+                >
+                  <AddIcon
+                    style={{ fontSize: "16px", verticalAlign: "middle" }}
+                  />{" "}
+                  {busyAction === "create" ? "Creating…" : "Create draft draw"}
+                </button>
+              )}
+            </div>
+            {eligibleRegistrations.length === 0 ? (
+              <p style={{ color: "#64748b", fontSize: "13px" }}>
+                No eligible registrations were returned for this category.
+              </p>
+            ) : (
               <div
                 style={{
-                  backgroundColor: "#ffffff",
-                  borderRadius: "16px",
-                  width: "100%",
-                  maxWidth: "640px",
-                  padding: "32px",
-                  boxShadow: "0 25px 50px -12px rgba(0,0,0,0.25)",
-                  position: "relative",
+                  maxHeight: "420px",
+                  overflow: "auto",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: "8px",
+                }}
+              >
+                <table
+                  style={{
+                    width: "100%",
+                    borderCollapse: "collapse",
+                    fontSize: "13px",
+                    textAlign: "left",
+                  }}
+                >
+                  <thead>
+                    <tr
+                      style={{
+                        color: "#64748b",
+                        backgroundColor: "#f8fafc",
+                        position: "sticky",
+                        top: 0,
+                        zIndex: 1,
+                      }}
+                    >
+                      <th style={{ padding: "11px" }}>REGISTRATION</th>
+                      <th style={{ padding: "11px" }}>PLAYER / TEAM</th>
+                      {draw && !isPublished && (
+                        <th style={{ padding: "11px", width: "190px" }}>
+                          BRACKET POSITION
+                        </th>
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {visibleEligibleRegistrations.map((registration) => {
+                      const registrationId = getRegistrationId(registration);
+                      const key = String(registrationId);
+                      return (
+                        <tr
+                          key={key}
+                          style={{ borderTop: "1px solid #e2e8f0" }}
+                        >
+                          <td style={{ padding: "12px 11px" }}>
+                            #{registrationId}
+                          </td>
+                          <td style={{ padding: "12px 11px" }}>
+                            <strong>{getRegistrationName(registration)}</strong>
+                            {getRegistrationDetail(registration) && (
+                              <div
+                                style={{
+                                  marginTop: "3px",
+                                  color: "#64748b",
+                                  fontSize: "11px",
+                                }}
+                              >
+                                {getRegistrationDetail(registration)}
+                              </div>
+                            )}
+                          </td>
+                          {draw && !isPublished && (
+                            <td style={{ padding: "8px 11px" }}>
+                              <select
+                                value={assignments[key] || ""}
+                                onChange={(event) =>
+                                  setAssignments((current) => ({
+                                    ...current,
+                                    [key]: event.target.value,
+                                  }))
+                                }
+                                style={inputStyle}
+                              >
+                                <option value="">Not assigned</option>
+                                {Array.from(
+                                  { length: positionLimit },
+                                  (_, index) => index + 1,
+                                ).map((position) => (
+                                  <option key={position} value={position}>
+                                    Position {position}
+                                  </option>
+                                ))}
+                              </select>
+                            </td>
+                          )}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {draw && !isPublished && (
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                  gap: "12px",
+                  marginTop: "16px",
                 }}
               >
                 <button
-                  onClick={() => setShowResultModal(false)}
-                  style={{
-                    position: "absolute",
-                    top: "20px",
-                    right: "20px",
-                    background: "none",
-                    border: "none",
-                    cursor: "pointer",
-                    color: "#64748b",
-                  }}
+                  type="button"
+                  onClick={handleSaveAssignments}
+                  disabled={
+                    busyAction !== "" ||
+                    assignedEntries.length !== eligibleRegistrations.length
+                  }
+                  style={buttonStyle}
                 >
-                  <CloseIcon style={{ fontSize: "20px" }} />
+                  {busyAction === "assign"
+                    ? "Saving positions…"
+                    : "Save complete assignment"}
                 </button>
-
-                <h2
-                  style={{
-                    fontSize: "16px",
-                    fontWeight: "bold",
-                    color: "#0f172a",
-                    margin: "0 0 16px 0",
-                  }}
+                <button
+                  type="button"
+                  onClick={handlePublishDraw}
+                  disabled={
+                    busyAction !== "" ||
+                    assignedEntries.length !== eligibleRegistrations.length ||
+                    new Set(
+                      assignedEntries.map(
+                        (assignment) => assignment.bracketPosition,
+                      ),
+                    ).size !== assignedEntries.length
+                  }
+                  style={{ ...buttonStyle, backgroundColor: "#15803d" }}
                 >
-                  Official Match Result Dossier — {activeMatch.id}
-                </h2>
+                  {busyAction === "publish" ? "Publishing…" : "Publish draw"}
+                </button>
+                <span style={{ color: "#64748b", fontSize: "11px" }}>
+                  Saving replaces all positions currently stored for this draw.
+                </span>
+              </div>
+            )}
+          </section>
 
-                <div
-                  style={{
-                    backgroundColor: "#f8fafc",
-                    border: "1px solid #e2e8f0",
-                    borderRadius: "8px",
-                    padding: "12px 16px",
-                    display: "flex",
-                    gap: "10px",
-                    fontSize: "11px",
-                    color: "#64748b",
-                    marginBottom: "20px",
-                    flexWrap: "wrap",
-                  }}
-                >
-                  <span>{selectedTournament}</span> •
-                  <span style={{ fontWeight: "bold", color: "#0f172a" }}>
-                    {selectedCategory}
-                  </span>{" "}
-                  •
-                  <span style={{ color: "#dc2626", fontWeight: "bold" }}>
-                    {activeMatch.courtName}
+          {draw && (
+            <section
+              style={{
+                marginBottom: "10px",
+                padding: "14px 16px 12px",
+                border: "1px solid #dfe5ec",
+                borderRadius: "12px",
+                backgroundColor: "#ffffff",
+                color: "#0f172a",
+                boxShadow: "0 1px 3px rgba(15,23,42,0.04)",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "12px",
+                  marginBottom: "8px",
+                }}
+              >
+                <div>
+                  <h2 style={{ margin: "0 0 5px", fontSize: "17px", color: "#0f172a" }}>
+                    Bracket rounds
+                  </h2>
+                  <p style={{ margin: 0, color: "#64748b", fontSize: "12px" }}>
+                    Bracket and match data loaded from the selected draw.
+                  </p>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setBracketZoom((zoom) =>
+                        Math.max(0.75, Number((zoom - 0.1).toFixed(2))),
+                      )
+                    }
+                    style={{
+                      width: "32px",
+                      height: "32px",
+                      borderRadius: "7px",
+                      border: "1px solid #cbd5e1",
+                      backgroundColor: "#ffffff",
+                      color: "#334155",
+                      cursor: "pointer",
+                    }}
+                  >
+                    −
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBracketZoom(1)}
+                    style={{
+                      height: "32px",
+                      borderRadius: "7px",
+                      border: "1px solid #cbd5e1",
+                      backgroundColor: "#ffffff",
+                      color: "#334155",
+                      padding: "0 10px",
+                      fontSize: "11px",
+                      cursor: "pointer",
+                    }}
+                  >
+                    {Math.round(bracketZoom * 100)}%
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setBracketZoom((zoom) =>
+                        Math.min(1.25, Number((zoom + 0.1).toFixed(2))),
+                      )
+                    }
+                    style={{
+                      width: "32px",
+                      height: "32px",
+                      borderRadius: "7px",
+                      border: "1px solid #cbd5e1",
+                      backgroundColor: "#ffffff",
+                      color: "#334155",
+                      cursor: "pointer",
+                    }}
+                  >
+                    +
+                  </button>
+                  <span
+                    style={{
+                      padding: "6px 10px",
+                      borderRadius: "20px",
+                      backgroundColor: isPublished ? "#123926" : "#3d3020",
+                      color: isPublished ? "#86efac" : "#fcd34d",
+                      fontSize: "11px",
+                      fontWeight: 700,
+                    }}
+                  >
+                    {statusLabel}
                   </span>
                 </div>
-
+              </div>
+              {rounds.length > 0 && (
                 <div
                   style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "7px",
+                    overflowX: "auto",
+                    paddingBottom: "6px",
+                  }}
+                >
+                  <div style={{ display: "flex", gap: "7px" }}>
+                    {["All", ...rounds.map(([roundName]) => roundName)].map(
+                      (roundName) => (
+                        <button
+                          key={roundName}
+                          type="button"
+                          onClick={() => setSelectedBracketRound(roundName)}
+                          style={{
+                            border:
+                              selectedBracketRound === roundName
+                                ? "1px solid #EF3340"
+                                : "1px solid #cbd5e1",
+                            borderRadius: "999px",
+                            backgroundColor:
+                              selectedBracketRound === roundName
+                                ? "#EF3340"
+                                : "#ffffff",
+                            color:
+                              selectedBracketRound === roundName
+                                ? "#ffffff"
+                                : "#475569",
+                            padding: "6px 10px",
+                            whiteSpace: "nowrap",
+                            fontSize: "11px",
+                            fontWeight: 700,
+                            cursor: "pointer",
+                          }}
+                        >
+                          {roundName}
+                        </button>
+                      ),
+                    )}
+                  </div>
+                  <div
+                    style={{
+                      marginLeft: "auto",
+                      display: "flex",
+                      gap: "10px",
+                      whiteSpace: "nowrap",
+                      color: "#64748b",
+                      fontSize: "10px",
+                    }}
+                  >
+                    {[
+                      ["#64748b", "Pending"],
+                      ["#2563eb", "In progress"],
+                      ["#16a34a", "Completed"],
+                      ["#94a3b8", "BYE"],
+                    ].map(([color, label]) => (
+                      <span
+                        key={label}
+                        style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}
+                      >
+                        <span
+                          style={{
+                            width: "7px",
+                            height: "7px",
+                            borderRadius: "50%",
+                            backgroundColor: color,
+                          }}
+                        />
+                        {label}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {rounds.length === 0 ? (
+                <p style={{ color: "#64748b", fontSize: "13px" }}>
+                  No bracket matches are available yet. Assign positions and
+                  publish the draw to generate the bracket.
+                </p>
+              ) : (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "stretch",
+                    gap: "0",
+                    overflowX: "auto",
+                    padding: "6px 8px 8px",
+                    position: "relative",
+                    transform: `scale(${bracketZoom})`,
+                    transformOrigin: "top left",
+                    width: `${100 / bracketZoom}%`,
+                  }}
+                >
+                  {selectedBracketRound === "All" && (
+                    <svg
+                      aria-hidden="true"
+                      style={{
+                        position: "absolute",
+                        inset: "0",
+                        width: "100%",
+                        height: "100%",
+                        pointerEvents: "none",
+                        zIndex: 0,
+                        overflow: "visible",
+                      }}
+                    >
+                      {rounds.map(([roundName, roundMatches], roundIndex) => {
+                        if (roundIndex >= rounds.length - 1) return null;
+                        const nextRoundMatches =
+                          rounds[roundIndex + 1]?.[1] || [];
+                        const cardGap =
+                          Math.max(8, 72 * 2 ** roundIndex - 64);
+                        const nextCardGap =
+                          Math.max(
+                            8,
+                            72 * 2 ** (roundIndex + 1) - 64,
+                          );
+                        const cardPitch = 64 + cardGap;
+                        const nextCardPitch = 64 + nextCardGap;
+                        const roundPadding =
+                          36 * (2 ** roundIndex - 1);
+                        const nextRoundPadding =
+                          36 * (2 ** (roundIndex + 1) - 1);
+                        const sourceX =
+                          8 +
+                          roundIndex * BRACKET_TRACK_WIDTH +
+                          BRACKET_COLUMN_WIDTH;
+                        const targetX =
+                          8 +
+                          (roundIndex + 1) * BRACKET_TRACK_WIDTH;
+                        const joinX = sourceX + 9;
+
+                        return roundMatches
+                          .filter((_, index) => index % 2 === 0)
+                          .map((_, pairIndex) => {
+                            const sourceIndex = pairIndex * 2;
+                            const sourceMatch =
+                              roundMatches[sourceIndex];
+                            const pairedMatch =
+                              roundMatches[sourceIndex + 1];
+                            if (!sourceMatch && !pairedMatch) return null;
+
+                            const firstY =
+                              8 +
+                              roundPadding +
+                              sourceIndex * cardPitch +
+                              32;
+                            const secondY =
+                              8 +
+                              roundPadding +
+                              (sourceIndex + 1) * cardPitch +
+                              32;
+                            const targetY =
+                              8 +
+                              nextRoundPadding +
+                              pairIndex * nextCardPitch +
+                              32;
+                            const topY = Math.min(firstY, secondY);
+                            const bottomY =
+                              pairedMatch == null
+                                ? firstY
+                                : Math.max(firstY, secondY);
+                            const targetYWithinNext =
+                              pairIndex < nextRoundMatches.length
+                                ? targetY
+                                : (topY + bottomY) / 2;
+
+                            return (
+                              <g
+                                key={`${roundName}-connector-${pairIndex}`}
+                                fill="none"
+                                stroke="#94a3b8"
+                                strokeWidth="1.5"
+                                strokeLinecap="square"
+                                strokeLinejoin="round"
+                              >
+                                <path d={`M ${sourceX} ${firstY} H ${joinX}`} />
+                                {pairedMatch && (
+                                  <path
+                                    d={`M ${sourceX} ${secondY} H ${joinX}`}
+                                  />
+                                )}
+                                {pairedMatch && (
+                                  <path
+                                    d={`M ${joinX} ${topY} V ${bottomY}`}
+                                  />
+                                )}
+                                <path
+                                  d={`M ${joinX} ${targetYWithinNext} H ${targetX}`}
+                                />
+                              </g>
+                            );
+                          });
+                      })}
+                    </svg>
+                  )}
+                  {rounds
+                    .filter(
+                      ([roundName]) =>
+                        selectedBracketRound === "All" ||
+                        selectedBracketRound === roundName,
+                    )
+                    .map(([roundName, roundMatches], roundIndex) => (
+                      <div
+                        key={roundName}
+                        style={{
+                          display: "flex",
+                          alignItems: "stretch",
+                          flex: `0 0 ${BRACKET_TRACK_WIDTH}px`,
+                          width: `${BRACKET_TRACK_WIDTH}px`,
+                          position: "relative",
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: `${BRACKET_COLUMN_WIDTH}px`,
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: `${Math.max(8, 72 * 2 ** roundIndex - 64)}px`,
+                            paddingTop: `${36 * (2 ** roundIndex - 1)}px`,
+                          }}
+                        >
+                          <h3
+                            style={{
+                              height: "18px",
+                              margin: 0,
+                              color: "#475569",
+                              fontSize: "11px",
+                              textTransform: "uppercase",
+                              letterSpacing: "0.04em",
+                              position: "absolute",
+                              transform: "translateY(-22px)",
+                            }}
+                          >
+                            {roundName}
+                          </h3>
+                          {roundMatches.map((match, index) => {
+                            const matchId =
+                              match.id ?? match.matchId ?? index + 1;
+                            const first = getParticipant(
+                              match,
+                              1,
+                              registrationsById,
+                            );
+                            const second = getParticipant(
+                              match,
+                              2,
+                              registrationsById,
+                            );
+                            const winnerSide = getWinnerSide(match);
+                            const isExplicitBye =
+                              getMatchStatus(match) === "bye" ||
+                              match.isBye === true ||
+                              match.bye === true;
+                            const firstLabel =
+                              first === "Awaiting player" ? "Awaiting player" : first;
+                            const secondLabel =
+                              isExplicitBye
+                                ? "BYE"
+                                : second === "Awaiting player"
+                                  ? "Awaiting player"
+                                  : second;
+
+                            return (
+                              <article
+                                key={`${roundName}-${matchId}-${index}`}
+                                onClick={() =>
+                                  isPublished && openScoreEditor(match)
+                                }
+                                style={{
+                                  height: "64px",
+                                  boxSizing: "border-box",
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  gap: "6px",
+                                  cursor:
+                                    isPublished && !isFinalized
+                                      ? "pointer"
+                                      : "default",
+                                }}
+                              >
+                                {[firstLabel, secondLabel].map((label, participantIndex) => (
+                                  <div
+                                    key={`${participantIndex}-${label}`}
+                                    style={{
+                                      height: "29px",
+                                      boxSizing: "border-box",
+                                      display: "flex",
+                                      alignItems: "center",
+                                      padding: "0 12px",
+                                      borderRadius: "4px",
+                                      backgroundColor:
+                                        winnerSide === participantIndex + 1
+                                          ? "#86efac"
+                                          : "#536b7e",
+                                      color:
+                                        winnerSide === participantIndex + 1
+                                          ? "#14532d"
+                                          : "#ffffff",
+                                      fontSize: "12px",
+                                      fontWeight: 700,
+                                      overflow: "hidden",
+                                      whiteSpace: "nowrap",
+                                      textOverflow: "ellipsis",
+                                    }}
+                                    title={`Match #${matchId}: ${label}`}
+                                  >
+                                    {winnerSide === participantIndex + 1 ? "✓ " : ""}
+                                    {label}
+                                  </div>
+                                ))}
+                              </article>
+                            );
+                          })}
+                        </div>
+                        {selectedBracketRound === "All" &&
+                          roundIndex <
+                            rounds.filter(
+                              () => selectedBracketRound === "All",
+                            ).length -
+                              1 && <div style={{ width: "18px", flex: "0 0 18px" }} />}
+                      </div>
+                    ))}
+                </div>
+              )}
+            </section>
+          )}
+
+          {draw && (isFinalized || getChampion(draw)) && (() => {
+            const champion = getChampion(draw);
+            const championName =
+              champion?.name ||
+              champion?.athleteName ||
+              champion?.player?.name ||
+              champion?.user?.name ||
+              (typeof champion === "string" ? champion : "Champion");
+            const finalRoundMatch = [...matches].reverse().find((match) =>
+              /final/i.test(getRoundName(match)),
+            );
+            const finalGames = finalRoundMatch
+              ? getMatchGames(finalRoundMatch)
+              : [];
+            return (
+              <section
+                style={{
+                  marginBottom: "20px",
+                  borderRadius: "14px",
+                  border: "1px solid #c6a24a",
+                  background:
+                    "linear-gradient(135deg, #172235 0%, #0D1B2A 70%)",
+                  padding: "20px",
+                  color: "#ffffff",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  flexWrap: "wrap",
+                  gap: "16px",
+                }}
+              >
+                <div style={{ display: "flex", alignItems: "center", gap: "14px" }}>
+                  <div
+                    style={{
+                      width: "64px",
+                      height: "64px",
+                      borderRadius: "50%",
+                      display: "grid",
+                      placeItems: "center",
+                      backgroundColor: "#d9b44a",
+                      color: "#0D1B2A",
+                      fontSize: "28px",
+                      fontWeight: 900,
+                    }}
+                  >
+                    {championName
+                      .split(/\s+/)
+                      .map((part) => part[0])
+                      .join("")
+                      .slice(0, 2)
+                      .toUpperCase()}
+                  </div>
+                  <div>
+                    <div
+                      style={{
+                        color: "#d9b44a",
+                        fontSize: "10px",
+                        fontWeight: 900,
+                        letterSpacing: "0.12em",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      Tournament Champion
+                    </div>
+                    <h2 style={{ margin: "4px 0 0", fontSize: "22px" }}>
+                      {championName}
+                    </h2>
+                  </div>
+                </div>
+                <div style={{ textAlign: "right" }}>
+                  <div style={{ color: "#91a4b5", fontSize: "11px" }}>
+                    {selectedTournament?.title || "Tournament"}
+                  </div>
+                  <div
+                    style={{
+                      marginTop: "5px",
+                      fontFamily: "monospace",
+                      fontSize: "16px",
+                      fontWeight: 800,
+                    }}
+                  >
+                    {finalGames.length
+                      ? finalGames
+                          .map(
+                            (game) =>
+                              `${game.participant1Score}-${game.participant2Score}`,
+                          )
+                          .join("  ")
+                      : "Final score unavailable"}
+                  </div>
+                </div>
+              </section>
+            );
+          })()}
+
+          {draw && (
+            <section
+              style={{
+                ...cardStyle,
+                marginTop: "0",
+                marginBottom: "10px",
+                padding: "14px 16px",
+              }}
+            >
+              <h2 style={{ margin: "0 0 10px", fontSize: "17px" }}>
+                Match results
+              </h2>
+              {matches.length === 0 ? (
+                <p style={{ color: "#64748b", fontSize: "13px" }}>
+                  No matches are available in this draw yet.
+                </p>
+              ) : (
+                <div
+                  style={{
+                    maxHeight: "420px",
+                    overflow: "auto",
                     border: "1px solid #e2e8f0",
-                    borderRadius: "10px",
-                    overflow: "hidden",
-                    marginBottom: "24px",
+                    borderRadius: "8px",
                   }}
                 >
                   <table
                     style={{
                       width: "100%",
+                      minWidth: "720px",
                       borderCollapse: "collapse",
-                      fontSize: "12px",
                       textAlign: "left",
+                      fontSize: "12px",
+                    }}
+                  >
+                  <thead>
+                    <tr
+                      style={{
+                        color: "#64748b",
+                        backgroundColor: "#f8fafc",
+                        position: "sticky",
+                        top: 0,
+                        zIndex: 2,
+                      }}
+                    >
+                      <th style={{ padding: "12px" }}>MATCH</th>
+                      <th style={{ padding: "12px" }}>ROUND</th>
+                      <th style={{ padding: "12px" }}>PARTICIPANTS</th>
+                      <th style={{ padding: "12px" }}>GAMES</th>
+                      <th style={{ padding: "12px" }}>STATUS</th>
+                      {isPublished && (
+                        <th style={{ padding: "12px", textAlign: "right" }}>
+                          ACTION
+                        </th>
+                      )}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {matches.map((match, index) => {
+                      const gameScores = getMatchGames(match);
+                      return (
+                        <tr
+                          key={match.id ?? match.matchId ?? index}
+                          style={{ borderTop: "1px solid #e2e8f0" }}
+                        >
+                          <td style={{ padding: "12px" }}>
+                            #{match.id ?? match.matchId ?? index + 1}
+                          </td>
+                          <td style={{ padding: "12px" }}>
+                            {getRoundName(match)}
+                          </td>
+                          <td style={{ padding: "12px" }}>
+                            {getParticipant(match, 1, registrationsById)}
+                            {" vs "}
+                            {getParticipant(match, 2, registrationsById)}
+                          </td>
+                          <td style={{ padding: "12px", fontFamily: "monospace" }}>
+                            {gameScores.length
+                              ? gameScores
+                                  .map(
+                                    (game) =>
+                                      `${game.participant1Score}-${game.participant2Score}`,
+                                  )
+                                  .join(", ")
+                              : "—"}
+                          </td>
+                          <td style={{ padding: "12px" }}>
+                            {String(
+                              match.status || match.matchStatus || "pending",
+                            ).toUpperCase()}
+                          </td>
+                          {isPublished && (
+                            <td style={{ padding: "12px", textAlign: "right" }}>
+                              <button
+                                type="button"
+                                onClick={() => openScoreEditor(match)}
+                                disabled={busyAction !== "" || isFinalized}
+                                style={{
+                                  ...buttonStyle,
+                                  padding: "7px 10px",
+                                }}
+                              >
+                                {isMatchComplete(match)
+                                  ? "Update result"
+                                  : "Enter result"}
+                              </button>
+                            </td>
+                          )}
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                  </table>
+                </div>
+              )}
+            </section>
+          )}
+
+          {draw && isPublished && (
+            <section style={cardStyle}>
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                  gap: "10px",
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={handleFinalize}
+                  disabled={
+                    busyAction !== "" ||
+                    isFinalized ||
+                    !allMatchesComplete
+                  }
+                  style={{
+                    ...buttonStyle,
+                    backgroundColor: "#15803d",
+                    opacity:
+                      isFinalized || !allMatchesComplete ? 0.6 : 1,
+                  }}
+                >
+                  {busyAction === "finalize"
+                    ? "Finalizing…"
+                    : isFinalized
+                      ? "Results finalized"
+                      : "Finalize tournament results"}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleLoadAwards}
+                  disabled={busyAction !== ""}
+                  style={{
+                    ...buttonStyle,
+                    backgroundColor: "#f1f5f9",
+                    color: "#334155",
+                    border: "1px solid #cbd5e1",
+                  }}
+                >
+                  {busyAction === "awards"
+                    ? "Loading awards…"
+                    : "Load ranking-point awards"}
+                </button>
+                {!allMatchesComplete && !isFinalized && (
+                  <span style={{ color: "#64748b", fontSize: "12px" }}>
+                    Enter results for all matches before finalizing.
+                  </span>
+                )}
+              </div>
+              {awards.length > 0 && (
+                <div style={{ overflowX: "auto", marginTop: "18px" }}>
+                  <h3 style={{ fontSize: "14px" }}>Ranking-point awards</h3>
+                  <table
+                    style={{
+                      width: "100%",
+                      borderCollapse: "collapse",
+                      textAlign: "left",
+                      fontSize: "12px",
                     }}
                   >
                     <thead>
-                      <tr
-                        style={{
-                          backgroundColor: "#f8fafc",
-                          borderBottom: "1px solid #e2e8f0",
-                          color: "#64748b",
-                          fontSize: "10px",
-                          fontWeight: "bold",
-                        }}
-                      >
-                        <th style={{ padding: "10px 14px" }}>
-                          ATHLETE NAME / ASSOCIATION
-                        </th>
-                        {sets.map((s, idx) => (
-                          <th
-                            key={idx}
-                            style={{
-                              padding: "10px 14px",
-                              textAlign: "center",
-                            }}
-                          >
-                            SET {s.setNum}
-                          </th>
-                        ))}
-                        <th
-                          style={{ padding: "10px 14px", textAlign: "center" }}
-                        >
-                          MATCH STATUS
-                        </th>
+                      <tr style={{ color: "#64748b", backgroundColor: "#f8fafc" }}>
+                        <th style={{ padding: "10px" }}>PLAYER / REGISTRATION</th>
+                        <th style={{ padding: "10px" }}>AWARD</th>
+                        <th style={{ padding: "10px" }}>CATEGORY</th>
+                        <th style={{ padding: "10px" }}>POINTS</th>
                       </tr>
                     </thead>
                     <tbody>
-                      <tr
-                        style={{
-                          borderBottom: "1px solid #f1f5f9",
-                          backgroundColor: isP1Winner ? "#fff5f5" : "#fff",
-                        }}
-                      >
-                        <td
-                          style={{
-                            padding: "12px 14px",
-                            fontWeight: "bold",
-                            color: "#0f172a",
-                          }}
+                      {awards.map((award, index) => (
+                        <tr
+                          key={award.id ?? `${award.registrationId}-${index}`}
+                          style={{ borderTop: "1px solid #e2e8f0" }}
                         >
-                          <span
-                            style={{
-                              height: "8px",
-                              width: "8px",
-                              backgroundColor: "#dc2626",
-                              borderRadius: "50%",
-                              display: "inline-block",
-                              marginRight: "6px",
-                            }}
-                          ></span>{" "}
-                          {activeMatch.athlete1}{" "}
-                          {isP1Winner && (
-                            <span style={{ color: "#dc2626" }}>✔</span>
-                          )}
-                        </td>
-                        {sets.map((s, idx) => (
-                          <td
-                            key={idx}
-                            style={{
-                              padding: "12px 14px",
-                              fontWeight: isP1Winner ? "bold" : "normal",
-                              textAlign: "center",
-                            }}
-                          >
-                            {s.s1 || 0}
+                          <td style={{ padding: "11px 10px" }}>
+                            {award.player?.name ||
+                              award.registration?.name ||
+                              award.name ||
+                              (award.registrationId != null
+                                ? `Registration #${award.registrationId}`
+                                : "—")}
                           </td>
-                        ))}
-                        <td
-                          style={{ padding: "12px 14px", textAlign: "center" }}
-                        >
-                          {isP1Winner ? (
-                            <span
-                              style={{
-                                backgroundColor: "#fef2f2",
-                                color: "#dc2626",
-                                padding: "4px 8px",
-                                borderRadius: "4px",
-                                fontSize: "10px",
-                                fontWeight: "bold",
-                              }}
-                            >
-                              🏆 WINNER
-                            </span>
-                          ) : (
-                            <span
-                              style={{
-                                backgroundColor: "#f1f5f9",
-                                color: "#64748b",
-                                padding: "4px 8px",
-                                borderRadius: "4px",
-                                fontSize: "10px",
-                                fontWeight: "bold",
-                              }}
-                            >
-                              DEFEATED
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                      <tr
-                        style={{
-                          backgroundColor: !isP1Winner ? "#fff5f5" : "#fff",
-                        }}
-                      >
-                        <td
-                          style={{
-                            padding: "12px 14px",
-                            fontWeight: "bold",
-                            color: "#334155",
-                          }}
-                        >
-                          <span
-                            style={{
-                              height: "8px",
-                              width: "8px",
-                              backgroundColor: "#1e3a8a",
-                              borderRadius: "50%",
-                              display: "inline-block",
-                              marginRight: "6px",
-                            }}
-                          ></span>{" "}
-                          {activeMatch.athlete2}{" "}
-                          {!isP1Winner && (
-                            <span style={{ color: "#dc2626" }}>✔</span>
-                          )}
-                        </td>
-                        {sets.map((s, idx) => (
-                          <td
-                            key={idx}
-                            style={{
-                              padding: "12px 14px",
-                              fontWeight: !isP1Winner ? "bold" : "normal",
-                              textAlign: "center",
-                            }}
-                          >
-                            {s.s2 || 0}
+                          <td style={{ padding: "11px 10px" }}>
+                            {award.label || award.position || award.awardName || "—"}
                           </td>
-                        ))}
-                        <td
-                          style={{ padding: "12px 14px", textAlign: "center" }}
-                        >
-                          {!isP1Winner ? (
-                            <span
-                              style={{
-                                backgroundColor: "#fef2f2",
-                                color: "#dc2626",
-                                padding: "4px 8px",
-                                borderRadius: "4px",
-                                fontSize: "10px",
-                                fontWeight: "bold",
-                              }}
-                            >
-                              🏆 WINNER
-                            </span>
-                          ) : (
-                            <span
-                              style={{
-                                backgroundColor: "#f1f5f9",
-                                color: "#64748b",
-                                padding: "4px 8px",
-                                borderRadius: "4px",
-                                fontSize: "10px",
-                                fontWeight: "bold",
-                              }}
-                            >
-                              DEFEATED
-                            </span>
-                          )}
-                        </td>
-                      </tr>
+                          <td style={{ padding: "11px 10px" }}>
+                            {award.categoryName || award.categoryCode || "—"}
+                          </td>
+                          <td style={{ padding: "11px 10px", fontWeight: 700 }}>
+                            {award.points ?? award.pointsAwarded ?? "—"}
+                          </td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                 </div>
+              )}
+            </section>
+          )}
 
-                <div style={{ display: "flex", justifyContent: "flex-end" }}>
-                  <button
-                    onClick={() => setShowResultModal(false)}
-                    style={{
-                      padding: "12px 32px",
-                      backgroundColor: "#0f172a",
-                      color: "#fff",
-                      border: "none",
-                      borderRadius: "8px",
-                      fontSize: "12px",
-                      fontWeight: "bold",
-                      cursor: "pointer",
-                    }}
-                  >
-                    Close
-                  </button>
-                </div>
+          <p style={{ color: "#64748b", fontSize: "12px" }}>
+            Live-match controls, scheduling, and court assignment are not
+            available because the supplied API does not persist those actions.
+          </p>
+        </>
+      )}
+
+      {scoreMatch && (
+        <div
+          role="presentation"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setScoreMatch(null);
+          }}
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 1200,
+            padding: "20px",
+            display: "grid",
+            placeItems: "center",
+            backgroundColor: "rgba(15, 23, 42, 0.6)",
+          }}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="score-dialog-title"
+            style={{
+              width: "100%",
+              maxWidth: "540px",
+              maxHeight: "90vh",
+              overflowY: "auto",
+              padding: "24px",
+              borderRadius: "12px",
+              backgroundColor: "#ffffff",
+              boxSizing: "border-box",
+            }}
+          >
+            <h2
+              id="score-dialog-title"
+              style={{ margin: "0 0 6px", fontSize: "17px" }}
+            >
+              Enter match result
+            </h2>
+            <p style={{ margin: "0 0 18px", color: "#64748b", fontSize: "12px" }}>
+              {getParticipant(scoreMatch, 1, registrationsById)} vs{" "}
+              {getParticipant(scoreMatch, 2, registrationsById)}
+            </p>
+            {scoreGames.map((game, index) => (
+              <div
+                key={game.gameNumber}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "1fr 1fr 1fr",
+                  alignItems: "center",
+                  gap: "10px",
+                  marginBottom: "12px",
+                }}
+              >
+                <label style={{ fontSize: "12px" }}>
+                  Game {index + 1} · P1
+                  <input
+                    type="number"
+                    min="0"
+                    value={game.participant1Score}
+                    onChange={(event) =>
+                      setScoreGames((current) =>
+                        current.map((item, itemIndex) =>
+                          itemIndex === index
+                            ? { ...item, participant1Score: event.target.value }
+                            : item,
+                        ),
+                      )
+                    }
+                    style={{ ...inputStyle, marginTop: "5px" }}
+                  />
+                </label>
+                <span style={{ textAlign: "center", color: "#64748b" }}>vs</span>
+                <label style={{ fontSize: "12px" }}>
+                  Game {index + 1} · P2
+                  <input
+                    type="number"
+                    min="0"
+                    value={game.participant2Score}
+                    onChange={(event) =>
+                      setScoreGames((current) =>
+                        current.map((item, itemIndex) =>
+                          itemIndex === index
+                            ? { ...item, participant2Score: event.target.value }
+                            : item,
+                        ),
+                      )
+                    }
+                    style={{ ...inputStyle, marginTop: "5px" }}
+                  />
+                </label>
               </div>
+            ))}
+            {scoreGames.length < 5 && (
+              <button
+                type="button"
+                onClick={() =>
+                  setScoreGames((current) => [
+                    ...current,
+                    {
+                      gameNumber: current.length + 1,
+                      participant1Score: "",
+                      participant2Score: "",
+                    },
+                  ])
+                }
+                style={{
+                  ...buttonStyle,
+                  backgroundColor: "#f1f5f9",
+                  color: "#334155",
+                  border: "1px solid #cbd5e1",
+                }}
+              >
+                Add game
+              </button>
+            )}
+            {actionError && (
+              <p role="alert" style={{ color: "#b91c1c", fontSize: "12px" }}>
+                {actionError}
+              </p>
+            )}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                gap: "10px",
+                marginTop: "20px",
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setScoreMatch(null)}
+                disabled={busyAction === "score"}
+                style={{
+                  ...buttonStyle,
+                  backgroundColor: "#f1f5f9",
+                  color: "#334155",
+                }}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveMatchResult}
+                disabled={busyAction === "score"}
+                style={buttonStyle}
+              >
+                {busyAction === "score" ? "Saving…" : "Save result"}
+              </button>
             </div>
-          );
-        })()}
-    </div>
+          </section>
+        </div>
+      )}
+    </main>
   );
 }

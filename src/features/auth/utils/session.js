@@ -37,5 +37,18 @@ export function clearSession() {
 }
 
 export function getAccessToken() {
-  return readSession()?.token ?? null;
+  const sessionToken = readSession()?.token;
+  if (sessionToken) return sessionToken;
+
+  const legacyToken = localStorage.getItem("nyx_auth");
+  if (!legacyToken) return null;
+
+  try {
+    const parsed = JSON.parse(legacyToken);
+    if (typeof parsed?.token === "string") return parsed.token;
+  } catch {
+    if (legacyToken.trim()) return legacyToken.trim();
+  }
+
+  return null;
 }
