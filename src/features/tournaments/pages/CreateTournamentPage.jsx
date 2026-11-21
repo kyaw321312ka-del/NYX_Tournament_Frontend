@@ -30,6 +30,23 @@ function getPairingType(category) {
   return "singles";
 }
 
+function getAgeGroupPayload(category, availableAgeGroups) {
+  if (!category.ageGroup) return null;
+
+  const ageGroup = availableAgeGroups.find(
+    (option) => String(option.id) === String(category.ageGroup),
+  );
+  if (
+    !ageGroup ||
+    typeof ageGroup.name !== "string" ||
+    !Number.isFinite(Number(ageGroup.age))
+  ) {
+    return null;
+  }
+
+  return { name: ageGroup.name, age: Number(ageGroup.age) };
+}
+
 function formatDrawOption(value) {
   return value
     .toLowerCase()
@@ -414,6 +431,17 @@ export default function CreateTournamentPage() {
     }
 
     if (
+      categories.some(
+        (category) =>
+          category.ageGroup &&
+          !getAgeGroupPayload(category, availableAgeGroups),
+      )
+    ) {
+      setSubmissionError("Select a valid age group or clear the age restriction.");
+      return;
+    }
+
+    if (
       categories.some((category) => {
         const categoryEntryFee = parseNumericField(category.entryFee || fee);
         const scoringValues = [
@@ -480,7 +508,7 @@ export default function CreateTournamentPage() {
         return {
           categoryCode: category.code.trim().toUpperCase(),
           categoryName: category.name.trim(),
-          ageGroup: category.ageGroup ? Number(category.ageGroup) : null,
+          ageGroup: getAgeGroupPayload(category, availableAgeGroups),
           drawConfiguration: {
             drawFormat: category.drawConfiguration.drawFormat,
             seedingMethod: category.drawConfiguration.seedingMethod,
