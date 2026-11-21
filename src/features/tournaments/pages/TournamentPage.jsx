@@ -86,7 +86,11 @@ export default function TournamentPage() {
       setIsLoading(true);
       setErrorMessage("");
       try {
-        const result = await getTournaments({ page, pageSize: PAGE_SIZE });
+        const result = await getTournaments({
+          page,
+          pageSize: PAGE_SIZE,
+          authenticated: true,
+        });
         if (cancelled) return;
         setTournaments(result.tournaments);
         setPageCount(

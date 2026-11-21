@@ -58,9 +58,14 @@ export default function CreateTournamentPage() {
       code: "",
       name: "",
       ageGroup: "",
+      entryFee: "",
       pairingType: "",
       seeds: "8 Seeded Positions",
-      format: "Best of 3 Sets to 21 Points",
+      format: "Best of 3 games",
+      pointsToWin: "21",
+      winningMargin: "2",
+      maxPoints: "30",
+      gamesToWin: "2",
       status: "Open (Fast Closing)",
       criteria: "",
       pointsPool: "",
@@ -177,9 +182,14 @@ export default function CreateTournamentPage() {
         code: "",
         name: "",
         ageGroup: "",
+        entryFee: "",
         pairingType: "",
         seeds: "8 Seeded Positions",
-        format: "Best of 3 Sets to 21 Points",
+        format: "Best of 3 games",
+        pointsToWin: "21",
+        winningMargin: "2",
+        maxPoints: "30",
+        gamesToWin: "2",
         status: "Open (Fast Closing)",
         criteria: "",
         pointsPool: "",
@@ -246,7 +256,7 @@ export default function CreateTournamentPage() {
         setSubmissionError(
           error instanceof Error
             ? error.message
-            : "Unable to publish the created tournament.",
+            : "Unable to publish the created draft.",
         );
       } finally {
         setIsSubmitting(false);
@@ -263,38 +273,55 @@ export default function CreateTournamentPage() {
       return;
     }
 
-    // 1. Validate Banner Image
-    if (!bannerFile) return;
-
-    // 2. Validate Basic Details
-    if (!title || !fee || !startDate || !endDate || !pointsPool || !description)
+    // 1. Validate Basic Details
+    if (!title || !startDate || !endDate || !pointsPool || !description)
       return;
 
-    // 3. Validate Venue & Location
+    // 2. Validate Venue & Location
     if (!courtName || !address) return;
 
-    // 4. Validate Official Rules
+    // 3. Validate Official Rules
     for (let r of rules) {
       if (!r.title || !r.description) return;
     }
 
-    // 5. Validate Event Categories (including criteria, points pool, and shuttle)
+    // 4. Validate Event Categories and their ranking-point tiers.
     for (let c of categories) {
       if (
         !c.code ||
         !c.name ||
-        !c.criteria ||
         !c.pointsPool ||
-        !c.shuttle ||
-        !c.shuttleSpeed ||
         c.pointTiers.length === 0 ||
         c.pointTiers.some((tier) => !tier.place || !tier.points)
       )
         return;
     }
 
+    if (
+      categories.some((category) => {
+        const categoryEntryFee = parseNumericField(category.entryFee || fee);
+        const scoringValues = [
+          category.pointsToWin,
+          category.winningMargin,
+          category.maxPoints,
+          category.gamesToWin,
+        ];
+        return (
+          categoryEntryFee === null ||
+          categoryEntryFee < 0 ||
+          scoringValues.some(
+            (value) => !Number.isInteger(Number(value)) || Number(value) < 1,
+          )
+        );
+      })
+    ) {
+      setSubmissionError(
+        "Each category needs a valid entry fee and positive whole-number match scoring settings.",
+      );
+      return;
+    }
+
     const numericValues = [
-      fee,
       pointsPool,
       ...categories.flatMap((category) => [
         category.pointsPool,
@@ -308,14 +335,13 @@ export default function CreateTournamentPage() {
       return;
     }
 
-    const [entryFee, rankingPointsPool] = numericValues;
-    let categoryNumberIndex = 2;
+    const rankingPointsPool = numericValues[0];
+    let categoryNumberIndex = 1;
     const tournament = {
       title: title.trim(),
       description: description.trim(),
       startDate,
       endDate,
-      bannerUrl: null,
       rankingPointsPool,
       venues: [{ venueName: courtName.trim(), address: address.trim() }],
       rules: rules.map((rule, sortOrder) => ({
@@ -340,14 +366,18 @@ export default function CreateTournamentPage() {
           categoryName: category.name.trim(),
           ageGroup: category.ageGroup ? Number(category.ageGroup) : null,
           pairingType: category.pairingType || getPairingType(category),
+          entryFee: parseNumericField(category.entryFee || fee),
           seedCount,
           matchFormat: category.format,
-          entryFee,
           entryStatus: categoryStatus,
-          eligibilityCriteria: category.criteria.trim(),
+          eligibilityCriteria: category.criteria.trim() || undefined,
           pointsPool: categoryPointsPool,
-          shuttleName: category.shuttle.trim(),
-          shuttleSpeed: category.shuttleSpeed.trim(),
+          pointsToWin: Number(category.pointsToWin),
+          winningMargin: Number(category.winningMargin),
+          maxPoints: Number(category.maxPoints),
+          gamesToWin: Number(category.gamesToWin),
+          shuttleName: category.shuttle.trim() || undefined,
+          shuttleSpeed: category.shuttleSpeed.trim() || undefined,
           pointTiers: category.pointTiers.map((tier, tierIndex) => ({
             position: tierIndex + 1,
             label: tier.place.trim(),
@@ -361,15 +391,6 @@ export default function CreateTournamentPage() {
     try {
       const createdTournament = await createTournament(tournament, bannerFile);
       setCreatedTournamentId(createdTournament.id);
-      try {
-        await publishTournament(createdTournament.id);
-      } catch (error) {
-        setSubmissionError(
-          `Tournament created as a draft, but publishing failed: ${error instanceof Error ? error.message : "Unable to publish tournament."}`,
-        );
-        return;
-      }
-      setShowSuccessModal(true);
     } catch (error) {
       setSubmissionError(
         error instanceof Error ? error.message : "Unable to create tournament.",
@@ -526,13 +547,10 @@ export default function CreateTournamentPage() {
             status.
           </p>
 
-          {/* Banner Upload Area with Error Border */}
+          {/* Optional tournament banner */}
           <div
             style={{
-              border:
-                attemptedSubmit && !bannerImage
-                  ? "2px dashed #dc2626"
-                  : "2px dashed #cbd5e1",
+              border: "2px dashed #cbd5e1",
               borderRadius: "10px",
               padding: "28px",
               textAlign: "center",
@@ -591,7 +609,7 @@ export default function CreateTournamentPage() {
                     marginBottom: "6px",
                   }}
                 >
-                  Drag & Drop Cover Banner Image or Browse File *
+                  Tournament Banner (Optional)
                 </div>
                 <div
                   style={{
@@ -600,8 +618,8 @@ export default function CreateTournamentPage() {
                     marginBottom: "16px",
                   }}
                 >
-                  Recommended dimension: 1200 × 400 px (PNG, JPG up to 5MB; 16:9
-                  ratio compatible)
+                  Recommended dimension: 1200 × 400 px (JPEG, PNG or WebP up to
+                  5MB)
                 </div>
                 <label
                   style={{
@@ -619,23 +637,11 @@ export default function CreateTournamentPage() {
                   Choose File
                   <input
                     type="file"
-                    accept="image/*"
+                    accept="image/jpeg,image/png,image/webp"
                     onChange={handleImageChange}
                     style={{ display: "none" }}
                   />
                 </label>
-                {attemptedSubmit && !bannerImage && (
-                  <span
-                    style={{
-                      fontSize: "11px",
-                      color: "#dc2626",
-                      marginTop: "8px",
-                      display: "block",
-                    }}
-                  >
-                    Cover banner image is required
-                  </span>
-                )}
               </div>
             )}
           </div>
@@ -702,7 +708,7 @@ export default function CreateTournamentPage() {
                   marginBottom: "6px",
                 }}
               >
-                Tournament Entry Fee (MMK) *
+                Default Category Entry Fee (MMK) (Optional)
               </label>
               <input
                 type="text"
@@ -714,26 +720,12 @@ export default function CreateTournamentPage() {
                   padding: "13px 16px",
                   borderRadius: "8px",
                   border:
-                    attemptedSubmit && !fee
-                      ? "1px solid #dc2626"
-                      : "1px solid #cbd5e1",
+                    "1px solid #cbd5e1",
                   fontSize: "13px",
                   outline: "none",
                   boxSizing: "border-box",
                 }}
               />
-              {attemptedSubmit && !fee && (
-                <span
-                  style={{
-                    fontSize: "11px",
-                    color: "#dc2626",
-                    marginTop: "4px",
-                    display: "block",
-                  }}
-                >
-                  Entry fee is required
-                </span>
-              )}
             </div>
           </div>
 
@@ -1442,12 +1434,18 @@ export default function CreateTournamentPage() {
             ];
             const isCustomSeed = !seedOptions.includes(cat.seeds);
             const formatOptions = [
-              "Best of 3 Sets to 21 Points",
-              "Best of 5 Sets to 11 Points",
-              "Single Set to 30 Points",
-              "Best of 3 Sets to 11 Points",
+              "Best of 3 games",
+              "Best of 5 games",
+              "Single game",
             ];
             const isCustomFormat = !formatOptions.includes(cat.format);
+            const categorySettingFields = [
+              ["entryFee", "Category Entry Fee (MMK)", "Uses default fee"],
+              ["pointsToWin", "Points to Win", "21"],
+              ["winningMargin", "Winning Margin", "2"],
+              ["maxPoints", "Maximum Points", "30"],
+              ["gamesToWin", "Games to Win", "2"],
+            ];
 
             return (
             <div
@@ -1789,10 +1787,9 @@ export default function CreateTournamentPage() {
                         marginBottom: isCustomFormat ? "8px" : "0",
                       }}
                     >
-                      <option>Best of 3 Sets to 21 Points</option>
-                      <option>Best of 5 Sets to 11 Points</option>
-                      <option>Single Set to 30 Points</option>
-                      <option>Best of 3 Sets to 11 Points</option>
+                      <option>Best of 3 games</option>
+                      <option>Best of 5 games</option>
+                      <option>Single game</option>
                       <option>Other</option>
                     </select>
                     {isCustomFormat && (
@@ -1857,6 +1854,58 @@ export default function CreateTournamentPage() {
               <div
                 style={{
                   display: "grid",
+                  gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
+                  gap: "14px",
+                  marginBottom: "16px",
+                }}
+              >
+                {categorySettingFields.map(([field, label, placeholder]) => (
+                  <div key={field}>
+                    <label
+                      style={{
+                        display: "block",
+                        fontSize: "11px",
+                        fontWeight: "bold",
+                        color: "#334155",
+                        marginBottom: "6px",
+                      }}
+                    >
+                      {label}
+                    </label>
+                    <input
+                      type="number"
+                      min={field === "entryFee" ? "0" : "1"}
+                      step="1"
+                      value={cat[field]}
+                      onChange={(event) => {
+                        const value = event.target.value;
+                        setCategories((current) =>
+                          current.map((category, categoryIndex) =>
+                            categoryIndex === idx
+                              ? { ...category, [field]: value }
+                              : category,
+                          ),
+                        );
+                      }}
+                      placeholder={placeholder}
+                      style={{
+                        width: "100%",
+                        padding: "12px 10px",
+                        borderRadius: "8px",
+                        border: "1px solid #cbd5e1",
+                        backgroundColor: "#fff",
+                        fontSize: "12px",
+                        outline: "none",
+                        boxSizing: "border-box",
+                      }}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              <div
+                style={{
+                  display: "grid",
                   gridTemplateColumns: "1fr 1fr 1fr",
                   gap: "20px",
                 }}
@@ -1871,7 +1920,7 @@ export default function CreateTournamentPage() {
                       marginBottom: "6px",
                     }}
                   >
-                    Eligibility Criteria *
+                    Eligibility Criteria
                   </label>
                   <input
                     type="text"
@@ -1886,27 +1935,12 @@ export default function CreateTournamentPage() {
                       width: "100%",
                       padding: "12px 16px",
                       borderRadius: "8px",
-                      border:
-                        attemptedSubmit && !cat.criteria
-                          ? "1px solid #dc2626"
-                          : "1px solid #cbd5e1",
+                      border: "1px solid #cbd5e1",
                       fontSize: "12px",
                       outline: "none",
                       boxSizing: "border-box",
                     }}
                   />
-                  {attemptedSubmit && !cat.criteria && (
-                    <span
-                      style={{
-                        fontSize: "11px",
-                        color: "#dc2626",
-                        marginTop: "4px",
-                        display: "block",
-                      }}
-                    >
-                      Criteria is required
-                    </span>
-                  )}
                 </div>
                 <div>
                   <label
@@ -1965,7 +1999,7 @@ export default function CreateTournamentPage() {
                       marginBottom: "6px",
                     }}
                   >
-                    Official Shuttle *
+                    Official Shuttle
                   </label>
                   <input
                     type="text"
@@ -1980,27 +2014,12 @@ export default function CreateTournamentPage() {
                       width: "100%",
                       padding: "12px 16px",
                       borderRadius: "8px",
-                      border:
-                        attemptedSubmit && !cat.shuttle
-                          ? "1px solid #dc2626"
-                          : "1px solid #cbd5e1",
+                      border: "1px solid #cbd5e1",
                       fontSize: "12px",
                       outline: "none",
                       boxSizing: "border-box",
                     }}
                   />
-                  {attemptedSubmit && !cat.shuttle && (
-                    <span
-                      style={{
-                        fontSize: "11px",
-                        color: "#dc2626",
-                        marginTop: "4px",
-                        display: "block",
-                      }}
-                    >
-                      Shuttle is required
-                    </span>
-                  )}
                 </div>
               </div>
 
@@ -2021,7 +2040,7 @@ export default function CreateTournamentPage() {
                   }}
                 >
                   <strong style={{ color: "#0f172a", fontSize: "13px" }}>
-                    Shuttle Speed *
+                    Shuttle Speed
                   </strong>
                   <input
                     type="text"
@@ -2040,28 +2059,12 @@ export default function CreateTournamentPage() {
                       width: "180px",
                       padding: "10px 12px",
                       borderRadius: "8px",
-                      border:
-                        attemptedSubmit && !cat.shuttleSpeed
-                          ? "1px solid #dc2626"
-                          : "1px solid #cbd5e1",
+                      border: "1px solid #cbd5e1",
                       fontSize: "12px",
                       boxSizing: "border-box",
                     }}
                   />
                 </div>
-                {attemptedSubmit && !cat.shuttleSpeed && (
-                  <span
-                    style={{
-                      fontSize: "11px",
-                      color: "#dc2626",
-                      display: "block",
-                      marginTop: "-8px",
-                      marginBottom: "12px",
-                    }}
-                  >
-                    Shuttle speed is required
-                  </span>
-                )}
                 <div
                   style={{
                     display: "flex",
@@ -2250,6 +2253,20 @@ export default function CreateTournamentPage() {
               {submissionError}
             </p>
           )}
+          {createdTournamentId != null && !showSuccessModal && (
+            <p
+              role="status"
+              style={{
+                alignSelf: "center",
+                margin: "0 auto 0 0",
+                color: "#166534",
+                fontSize: "13px",
+                fontWeight: "600",
+              }}
+            >
+              Draft created. Publish it separately when ready.
+            </p>
+          )}
           <button
             onClick={handlePublish}
             disabled={isSubmitting}
@@ -2266,10 +2283,12 @@ export default function CreateTournamentPage() {
             }}
           >
             {isSubmitting
-              ? "PUBLISHING..."
+              ? createdTournamentId != null
+                ? "PUBLISHING..."
+                : "CREATING DRAFT..."
               : createdTournamentId != null
-                ? "RETRY PUBLISH"
-                : "🚀 PUBLISH TOURNAMENT"}
+                ? "PUBLISH DRAFT"
+                : "CREATE TOURNAMENT DRAFT"}
           </button>
         </div>
       </div>

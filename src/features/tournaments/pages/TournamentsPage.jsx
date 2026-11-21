@@ -975,14 +975,7 @@ function Tournaments() {
               </p>
             </div>
 
-            <div className="tournament-live-courts">
-              <span className="tournament-live-label">LIVE COURTS</span>
-
-              <div className="tournament-live-count">
-                <SportsTennis />
-                <span>4</span>
-              </div>
-            </div>
+            
           </header>
 
           <section className="tournament-filters">

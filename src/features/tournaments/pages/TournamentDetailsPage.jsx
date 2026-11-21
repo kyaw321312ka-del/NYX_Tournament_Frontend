@@ -381,7 +381,10 @@ export default function TournamentDetailsPage() {
             : category.shuttle.trim(),
           shuttleSpeed:
             shuttleMatch?.[2] || category.source?.shuttleSpeed || "",
-          ageGroup: category.source?.ageGroup ?? null,
+          ageGroup:
+            category.source?.ageGroupId ??
+            category.source?.ageGroup ??
+            null,
           pointTiers: category.pointTiers.map((tier, tierIndex) => ({
             position: tier.source?.position ?? tierIndex + 1,
             label: tier.place.trim(),

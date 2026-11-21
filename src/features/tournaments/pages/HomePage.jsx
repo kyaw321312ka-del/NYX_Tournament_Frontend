@@ -14,45 +14,23 @@ import {
   AccessTime,
   MilitaryTech,
 } from "@mui/icons-material";
+import { getTournaments } from "../api/tournamentApi";
+import { resolveApiAssetUrl } from "../../../core/api/apiClient";
 
-const tournaments = [
-  {
-    id: 1,
-    title: "Yangon Masters 2026",
-    category: "MAJOR TIER 1",
-    date: "Dec 14 – 18, 2026",
-    location: "National Indoor Stadium 1, Yangon",
-    prize: "15,000 MMK",
-    description:
-      "Compete with the best badminton players and showcase your skills at the Yangon Masters championship.",
-    image:
-      "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=1400&q=85",
-  },
-  {
-    id: 2,
-    title: "Mandalay Open 2026",
-    category: "OPEN TIER 2",
-    date: "Nov 20 – 23, 2026",
-    location: "Mandalay Indoor Stadium",
-    prize: "10,000 MMK",
-    description:
-      "Join competitive matches, meet talented athletes, and compete for the Mandalay Open championship.",
-    image:
-      "https://images.unsplash.com/photo-1622279457486-62dcc4a431d6?auto=format&fit=crop&w=1400&q=85",
-  },
-  {
-    id: 3,
-    title: "Champions Cup 2026",
-    category: "CHAMPIONSHIP",
-    date: "Oct 25 – 28, 2026",
-    location: "Yangon Sports Arena",
-    prize: "20,000 MMK",
-    description:
-      "Challenge top-ranked players and compete for the ultimate NYX badminton title.",
-    image:
-      "https://images.unsplash.com/photo-1599058917212-d750089bc07e?auto=format&fit=crop&w=1400&q=85",
-  },
-];
+const DEFAULT_TOURNAMENT_IMAGE =
+  "https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?auto=format&fit=crop&w=1400&q=85";
+
+function formatTournamentDate(date) {
+  if (!date) return "Date not set";
+  const parsedDate = new Date(date);
+  if (Number.isNaN(parsedDate.getTime())) return "Date not set";
+  return new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  }).format(parsedDate);
+}
 
 const initialMatches = [
   {
@@ -145,29 +123,90 @@ const initialPlayers = [
 export default function Home() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [tournaments, setTournaments] = useState([]);
+  const [tournamentLoadError, setTournamentLoadError] = useState("");
   const [activeTournament, setActiveTournament] = useState(0);
 
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 500);
-    return () => clearTimeout(timer);
+    let cancelled = false;
+
+    async function loadTournaments() {
+      setLoading(true);
+      setTournamentLoadError("");
+      try {
+        const result = await getTournaments({ page: 1, pageSize: 20 });
+        if (cancelled) return;
+        const publishedTournaments = result.tournaments
+          .filter(
+            (item) =>
+              (item.publicationStatus || "").toLowerCase() === "published",
+          )
+          .map((item) => {
+            const startDate = formatTournamentDate(item.startDate);
+            const endDate = formatTournamentDate(item.endDate);
+            const venues = (item.venues || [])
+              .map((venue) =>
+                [venue.venueName, venue.address].filter(Boolean).join(", "),
+              )
+              .filter(Boolean);
+            const rankingPoints = Number(item.rankingPointsPool);
+
+            return {
+              id: item.id,
+              title: item.title || "Untitled Tournament",
+              date:
+                startDate === endDate
+                  ? startDate
+                  : `${startDate} – ${endDate}`,
+              location: venues.join(" · ") || "Location to be announced",
+              prize:
+                Number.isFinite(rankingPoints) && rankingPoints > 0
+                  ? `${rankingPoints.toLocaleString()} PTS`
+                  : "Points TBA",
+              description: item.description || "Tournament details coming soon.",
+              image: item.bannerUrl
+                ? resolveApiAssetUrl(item.bannerUrl)
+                : DEFAULT_TOURNAMENT_IMAGE,
+            };
+          });
+        setTournaments(publishedTournaments);
+        setActiveTournament(0);
+      } catch (error) {
+        if (!cancelled) {
+          setTournamentLoadError(
+            error instanceof Error
+              ? error.message
+              : "Unable to load published tournaments.",
+          );
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    loadTournaments();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Auto animation slider for featured tournament card (every 4 seconds)
   useEffect(() => {
+    if (tournaments.length < 2) return undefined;
     const interval = setInterval(() => {
       setActiveTournament((current) => (current + 1) % tournaments.length);
     }, 4000);
     return () => clearInterval(interval);
-  }, []);
+  }, [tournaments.length]);
 
   const tournament = tournaments[activeTournament];
   const liveCount = initialMatches.filter((match) => match.live).length;
 
   const changeTournament = (direction) => {
-    setActiveTournament(
-      (current) =>
-        (current + direction + tournaments.length) % tournaments.length,
-    );
+    if (tournaments.length < 2) return;
+    setActiveTournament((current) => {
+      return (current + direction + tournaments.length) % tournaments.length;
+    });
   };
 
   if (loading) {
@@ -233,68 +272,94 @@ export default function Home() {
         </section>
 
         {/* Featured Tournament Card */}
-        <section className="nyx-feature-card nyx-reveal" id="nyx-tournament">
-          <div className="nyx-feature-top">
+        {tournament ? (
+          <section className="nyx-feature-card nyx-reveal" id="nyx-tournament">
+            <div className="nyx-feature-top">
+              <span className="nyx-label">FEATURED EVENT</span>
+
+              <span className="nyx-prize">
+                <EmojiEvents /> {tournament.prize}
+              </span>
+            </div>
+
+            <div className="nyx-feature-image-wrap">
+              <img
+                className="nyx-feature-image"
+                src={tournament.image}
+                alt={tournament.title}
+              />
+
+              <div className="nyx-image-overlay" />
+
+              <span className="nyx-image-category">{tournament.date}</span>
+
+              {tournaments.length > 1 && (
+                <>
+                  <button
+                    className="nyx-carousel-button nyx-carousel-left"
+                    onClick={() => changeTournament(-1)}
+                    aria-label="Previous tournament"
+                  >
+                    <KeyboardArrowLeft />
+                  </button>
+
+                  <button
+                    className="nyx-carousel-button nyx-carousel-right"
+                    onClick={() => changeTournament(1)}
+                    aria-label="Next tournament"
+                  >
+                    <KeyboardArrowRight />
+                  </button>
+                </>
+              )}
+            </div>
+
+            <div className="nyx-feature-info">
+              <h2>{tournament.title}</h2>
+
+              <p className="nyx-feature-description">
+                {tournament.description}
+              </p>
+
+              <div className="nyx-feature-meta">
+                <span>
+                  <LocationOn /> {tournament.location}
+                </span>
+
+                <span>
+                  <CalendarMonth /> {tournament.date}
+                </span>
+              </div>
+
+              <div className="nyx-feature-actions">
+                <button
+                  className="nyx-button nyx-button-red nyx-enroll-btn"
+                  onClick={() => navigate("/tournaments")}
+                >
+                  <Visibility /> View Details
+                </button>
+              </div>
+            </div>
+          </section>
+        ) : (
+          <section className="nyx-feature-card nyx-reveal" id="nyx-tournament">
             <span className="nyx-label">FEATURED EVENT</span>
-
-            <span className="nyx-prize">
-              <EmojiEvents /> {tournament.prize}
-            </span>
-          </div>
-
-          <div className="nyx-feature-image-wrap">
-            <img
-              className="nyx-feature-image"
-              src={tournament.image}
-              alt={tournament.title}
-            />
-
-            <div className="nyx-image-overlay" />
-
-            <span className="nyx-image-category">{tournament.date}</span>
-
-            <button
-              className="nyx-carousel-button nyx-carousel-left"
-              onClick={() => changeTournament(-1)}
-              aria-label="Previous tournament"
+            <p
+              role={tournamentLoadError ? "alert" : "status"}
+              className="nyx-feature-description"
             >
-              <KeyboardArrowLeft />
-            </button>
-
+              {tournamentLoadError
+                ? `Unable to load published tournaments: ${tournamentLoadError}`
+                : "There are no published tournaments to feature yet."}
+            </p>
             <button
-              className="nyx-carousel-button nyx-carousel-right"
-              onClick={() => changeTournament(1)}
-              aria-label="Next tournament"
+              className="nyx-button nyx-button-red"
+              onClick={() => navigate("/tournaments")}
             >
-              <KeyboardArrowRight />
+              Browse Tournaments <ArrowForward />
             </button>
-          </div>
-
-          <div className="nyx-feature-info">
-            <h2>{tournament.title}</h2>
-
-            <p className="nyx-feature-description">{tournament.description}</p>
-
-            <div className="nyx-feature-meta">
-              <span>
-                <LocationOn /> {tournament.location}
-              </span>
-
-              <span>
-                <CalendarMonth /> {tournament.date}
-              </span>
-            </div>
-
-            <div className="nyx-feature-actions">
-              <button
-                className="nyx-button nyx-button-red nyx-enroll-btn"
-                onClick={() => navigate("/tournaments")}
-              >
-                <Visibility /> View Details
-              </button>
-            </div>
-          </div>
-        </section>
+          </section>
+        )}
 
         {/* Today's Matches Section */}
         <section className="nyx-section nyx-reveal" id="nyx-matches">

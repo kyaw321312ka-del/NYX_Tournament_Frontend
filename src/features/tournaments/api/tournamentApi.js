@@ -23,12 +23,18 @@ export async function getTournamentCategories({ authenticated = true } = {}) {
   return response.data;
 }
 
-export async function getTournaments({ page = 1, pageSize = 20 } = {}) {
+export async function getTournaments({
+  page = 1,
+  pageSize = 20,
+  authenticated = false,
+} = {}) {
   const query = new URLSearchParams({
     page: String(page),
     pageSize: String(pageSize),
   });
-  const response = await apiRequest(`/tournaments?${query}`);
+  const response = await apiRequest(`/tournaments?${query}`, {
+    authenticated,
+  });
 
   if (response?.success !== true || !Array.isArray(response.data)) {
     throw new Error(
@@ -76,14 +82,19 @@ export async function publishTournament(id) {
   return response;
 }
 
-export async function createTournament(tournament, banner) {
-  const formData = new FormData();
-  formData.append("tournament", JSON.stringify(tournament));
-  formData.append("banner", banner, banner.name);
+export async function createTournament(tournament, banner = null) {
+  let body;
+  if (banner) {
+    body = new FormData();
+    body.append("tournament", JSON.stringify(tournament));
+    body.append("banner", banner, banner.name);
+  } else {
+    body = JSON.stringify(tournament);
+  }
 
   const response = await apiRequest("/tournaments", {
     method: "POST",
-    body: formData,
+    body,
   });
 
   if (response?.success !== true || response.data?.id == null) {
