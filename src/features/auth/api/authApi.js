@@ -11,6 +11,7 @@ export async function registerAccount({
   const formData = new FormData();
   formData.append("name", registrationData.fullName);
   formData.append("email", registrationData.email);
+  formData.append("phno", String(registrationData.phone || "").trim());
   formData.append("password", password);
   formData.append("gender", registrationData.gender);
   formData.append("birthday", registrationData.birthday);

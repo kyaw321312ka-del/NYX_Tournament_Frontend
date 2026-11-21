@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate, Link } from "react-router-dom";
 import {
   PersonOutlined,
   EmailOutlined,
+  PhoneOutlined,
   SportsTennisOutlined,
   LocationOnOutlined,
   ArrowForwardRounded,
@@ -15,16 +16,19 @@ export default function Register() {
   const location = useLocation();
 
   // Personal Info State
-  const [formData, setFormData] = useState(
-    location.state?.registrationData || {
+  const [formData, setFormData] = useState(() => ({
       fullName: "",
       email: "",
       gender: "",
       birthday: "",
       club: "",
       address: "",
-    },
-  );
+      ...location.state?.registrationData,
+      phone:
+        location.state?.registrationData?.phone ||
+        location.state?.registrationData?.phno ||
+        "",
+    }));
 
   // Categories State (Max 3 allowed)
   const [selectedCategories, setSelectedCategories] = useState(
@@ -88,6 +92,7 @@ export default function Register() {
   const isFormValid =
     formData.fullName.trim() !== "" &&
     formData.email.trim() !== "" &&
+    String(formData.phone || "").trim() !== "" &&
     formData.gender !== "" &&
     formData.birthday !== "" &&
     formData.club.trim() !== "" &&
@@ -432,6 +437,60 @@ export default function Register() {
                     required
                     placeholder="e.g., minthant@example.com"
                     value={formData.email}
+                    onChange={handleInputChange}
+                    style={{
+                      width: "100%",
+                      padding: "11px 12px 11px 38px",
+                      backgroundColor: "#f8fafc",
+                      border: "1px solid #cbd5e1",
+                      borderRadius: "10px",
+                      fontSize: "13.5px",
+                      color: "#0f172a",
+                      outline: "none",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Phone Number */}
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "11.5px",
+                    fontWeight: "800",
+                    color: "#334155",
+                    marginBottom: "5px",
+                  }}
+                >
+                  Phone Number <span style={{ color: "#ef4444" }}>*</span>
+                </label>
+                <div
+                  style={{
+                    position: "relative",
+                    display: "flex",
+                    alignItems: "center",
+                  }}
+                >
+                  <span
+                    style={{
+                      position: "absolute",
+                      left: "12px",
+                      color: "#94a3b8",
+                      display: "flex",
+                    }}
+                  >
+                    <PhoneOutlined style={{ fontSize: "18px" }} />
+                  </span>
+                  <input
+                    type="tel"
+                    name="phone"
+                    required
+                    autoComplete="tel"
+                    inputMode="tel"
+                    placeholder="e.g., +95 9 123 456 789"
+                    value={formData.phone || ""}
                     onChange={handleInputChange}
                     style={{
                       width: "100%",

@@ -1025,8 +1025,14 @@ export default function MatchesManagementPage() {
       createDrawInProgress.current ||
       !selectedCategoryId ||
       loadingCategory ||
-      eligibleRegistrations.length < 2
+      eligibleRegistrations.length < 2 ||
+      isFinalized
     ) {
+      if (isFinalized) {
+        setActionError(
+          "Results are finalized for this category. A new draft cannot be created.",
+        );
+      }
       return;
     }
 
@@ -1740,25 +1746,26 @@ export default function MatchesManagementPage() {
                   marginLeft: "14px",
                 }}
               />
-              {(!draw || isPublished || drawRegistrationSetChanged) && (
-                <button
-                  type="button"
-                  onClick={handleCreateDraw}
-                  disabled={
-                    busyAction !== "" ||
-                    loadingCategory ||
-                    eligibleRegistrations.length < 2
-                  }
-                  style={buttonStyle}
-                >
-                  <AddIcon style={{ fontSize: "16px", verticalAlign: "middle" }} />{" "}
-                  {busyAction === "create"
-                    ? "Creating…"
-                    : isPublished || drawRegistrationSetChanged
-                      ? "Create draft for current entries"
-                      : "Create draft once"}
-                </button>
-              )}
+              {(!draw || isPublished || drawRegistrationSetChanged) &&
+                !isFinalized && (
+                  <button
+                    type="button"
+                    onClick={handleCreateDraw}
+                    disabled={
+                      busyAction !== "" ||
+                      loadingCategory ||
+                      eligibleRegistrations.length < 2
+                    }
+                    style={buttonStyle}
+                  >
+                    <AddIcon style={{ fontSize: "16px", verticalAlign: "middle" }} />{" "}
+                    {busyAction === "create"
+                      ? "Creating…"
+                      : isPublished || drawRegistrationSetChanged
+                        ? "Create draft for current entries"
+                        : "Create draft once"}
+                  </button>
+                )}
             </div>
             {draw && !isPublished && (
               <p
@@ -1807,7 +1814,20 @@ export default function MatchesManagementPage() {
                   pair; otherwise those matches cannot advance anyone.
                 </p>
               )}
-            {draw && isPublished && (
+            {draw && isFinalized && (
+              <p
+                role="status"
+                style={{
+                  color: "#166534",
+                  fontSize: "12px",
+                  margin: "-4px 0 14px",
+                }}
+              >
+                Results are finalized for this category. No further drafts can
+                be created.
+              </p>
+            )}
+            {draw && isPublished && !isFinalized && (
               <p
                 style={{
                   color: "#64748b",
