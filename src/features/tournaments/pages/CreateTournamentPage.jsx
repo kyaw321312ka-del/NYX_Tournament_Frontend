@@ -7,6 +7,7 @@ import DeleteOutlineIcon from "@mui/icons-material/DeleteOutlined";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import {
   createTournament,
+  getDrawConfigurationOptions,
   getTournamentCategories,
   publishTournament,
 } from "../api/tournamentApi";
@@ -27,6 +28,14 @@ function getPairingType(category) {
   if (code === "XD" || name.includes("mixed")) return "mixed_doubles";
   if (["MD", "WD"].includes(code) || name.includes("doubles")) return "doubles";
   return "singles";
+}
+
+function formatDrawOption(value) {
+  return value
+    .toLowerCase()
+    .split("_")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
 }
 
 export default function CreateTournamentPage() {
@@ -58,6 +67,7 @@ export default function CreateTournamentPage() {
       code: "",
       name: "",
       ageGroup: "",
+      drawConfiguration: null,
       entryFee: "",
       pairingType: "",
       seeds: "8 Seeded Positions",
@@ -89,6 +99,12 @@ export default function CreateTournamentPage() {
   const [availableAgeGroups, setAvailableAgeGroups] = useState([]);
   const [isLoadingAgeGroups, setIsLoadingAgeGroups] = useState(true);
   const [ageGroupLoadError, setAgeGroupLoadError] = useState("");
+  const [drawConfigurationOptions, setDrawConfigurationOptions] =
+    useState(null);
+  const [isLoadingDrawConfiguration, setIsLoadingDrawConfiguration] =
+    useState(true);
+  const [drawConfigurationLoadError, setDrawConfigurationLoadError] =
+    useState("");
 
   // Success Modal State
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -116,6 +132,53 @@ export default function CreateTournamentPage() {
     }
 
     loadCategories();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadDrawConfigurationOptions() {
+      setIsLoadingDrawConfiguration(true);
+      setDrawConfigurationLoadError("");
+      try {
+        const options = await getDrawConfigurationOptions();
+        if (cancelled) return;
+        setDrawConfigurationOptions(options);
+        setCategories((current) =>
+          current.map((category) => ({
+            ...category,
+            drawConfiguration: {
+              drawFormat:
+                category.drawConfiguration?.drawFormat ||
+                options.defaults.drawFormat,
+              seedingMethod:
+                category.drawConfiguration?.seedingMethod ||
+                options.defaults.seedingMethod,
+              thirdPlaceMatch:
+                typeof category.drawConfiguration?.thirdPlaceMatch ===
+                "boolean"
+                  ? category.drawConfiguration.thirdPlaceMatch
+                  : options.defaults.thirdPlaceMatch,
+            },
+          })),
+        );
+      } catch (error) {
+        if (!cancelled) {
+          setDrawConfigurationLoadError(
+            error instanceof Error
+              ? error.message
+              : "Unable to load draw configuration options.",
+          );
+        }
+      } finally {
+        if (!cancelled) setIsLoadingDrawConfiguration(false);
+      }
+    }
+
+    loadDrawConfigurationOptions();
     return () => {
       cancelled = true;
     };
@@ -182,6 +245,11 @@ export default function CreateTournamentPage() {
         code: "",
         name: "",
         ageGroup: "",
+        drawConfiguration: drawConfigurationOptions
+          ? {
+              ...drawConfigurationOptions.defaults,
+            }
+          : null,
         entryFee: "",
         pairingType: "",
         seeds: "8 Seeded Positions",
@@ -205,6 +273,22 @@ export default function CreateTournamentPage() {
 
   const handleRemoveCategory = (index) => {
     setCategories(categories.filter((_, i) => i !== index));
+  };
+
+  const updateCategoryDrawConfiguration = (categoryIndex, field, value) => {
+    setCategories((current) =>
+      current.map((category, index) =>
+        index === categoryIndex
+          ? {
+              ...category,
+              drawConfiguration: {
+                ...(category.drawConfiguration || {}),
+                [field]: value,
+              },
+            }
+          : category,
+      ),
+    );
   };
 
   const handleAddPointTier = (categoryIndex) => {
@@ -272,6 +356,17 @@ export default function CreateTournamentPage() {
       );
       return;
     }
+    if (
+      isLoadingDrawConfiguration ||
+      drawConfigurationLoadError ||
+      !drawConfigurationOptions
+    ) {
+      setSubmissionError(
+        drawConfigurationLoadError ||
+          "Wait for draw configuration options to finish loading before submitting.",
+      );
+      return;
+    }
 
     // 1. Validate Basic Details
     if (!title || !startDate || !endDate || !pointsPool || !description)
@@ -290,11 +385,32 @@ export default function CreateTournamentPage() {
       if (
         !c.code ||
         !c.name ||
+        !c.drawConfiguration?.drawFormat ||
+        !c.drawConfiguration?.seedingMethod ||
         !c.pointsPool ||
         c.pointTiers.length === 0 ||
         c.pointTiers.some((tier) => !tier.place || !tier.points)
       )
         return;
+    }
+
+    if (
+      categories.some(
+        (category) =>
+          !category.drawConfiguration ||
+          !drawConfigurationOptions.drawFormats.includes(
+            category.drawConfiguration.drawFormat,
+          ) ||
+          !drawConfigurationOptions.seedingMethods.includes(
+            category.drawConfiguration.seedingMethod,
+          ) ||
+          typeof category.drawConfiguration.thirdPlaceMatch !== "boolean",
+      )
+    ) {
+      setSubmissionError(
+        "Each category needs a valid draw format, seeding method, and third-place match setting.",
+      );
+      return;
     }
 
     if (
@@ -365,6 +481,11 @@ export default function CreateTournamentPage() {
           categoryCode: category.code.trim().toUpperCase(),
           categoryName: category.name.trim(),
           ageGroup: category.ageGroup ? Number(category.ageGroup) : null,
+          drawConfiguration: {
+            drawFormat: category.drawConfiguration.drawFormat,
+            seedingMethod: category.drawConfiguration.seedingMethod,
+            thirdPlaceMatch: category.drawConfiguration.thirdPlaceMatch,
+          },
           pairingType: category.pairingType || getPairingType(category),
           entryFee: parseNumericField(category.entryFee || fee),
           seedCount,
@@ -1422,15 +1543,23 @@ export default function CreateTournamentPage() {
               Unable to load age groups: {ageGroupLoadError}
             </p>
           )}
+          {isLoadingDrawConfiguration && (
+            <p role="status" style={{ color: "#64748b", fontSize: "12px" }}>
+              Loading draw configuration options...
+            </p>
+          )}
+          {drawConfigurationLoadError && (
+            <p role="alert" style={{ color: "#b91c1c", fontSize: "12px" }}>
+              Unable to load draw configuration options:{" "}
+              {drawConfigurationLoadError}
+            </p>
+          )}
 
           {categories.map((cat, idx) => {
             const seedOptions = [
-              "Single Elimination",
-              "Double Elimination",
-              "Round Robin",
               "8 Seeded Positions",
               "16 Seeded Positions",
-              "Unseeded Knockout",
+              "Unseeded",
             ];
             const isCustomSeed = !seedOptions.includes(cat.seeds);
             const formatOptions = [
@@ -1446,6 +1575,7 @@ export default function CreateTournamentPage() {
               ["maxPoints", "Maximum Points", "30"],
               ["gamesToWin", "Games to Win", "2"],
             ];
+            const drawConfiguration = cat.drawConfiguration || {};
 
             return (
             <div
@@ -1510,6 +1640,138 @@ export default function CreateTournamentPage() {
                     Category
                   </button>
                 )}
+              </div>
+
+              <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "1fr 1fr 1fr",
+                gap: "20px",
+                marginBottom: "16px",
+              }}
+              >
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "11px",
+                    fontWeight: "bold",
+                    color: "#334155",
+                    marginBottom: "6px",
+                  }}
+                >
+                  Draw Format
+                </label>
+                <select
+                  value={drawConfiguration.drawFormat || ""}
+                  onChange={(event) =>
+                    updateCategoryDrawConfiguration(
+                      idx,
+                      "drawFormat",
+                      event.target.value,
+                    )
+                  }
+                  disabled={
+                    isLoadingDrawConfiguration ||
+                    Boolean(drawConfigurationLoadError)
+                  }
+                  style={{
+                    width: "100%",
+                    padding: "12px 16px",
+                    borderRadius: "8px",
+                    border: "1px solid #cbd5e1",
+                    backgroundColor: "#fff",
+                    fontSize: "12px",
+                    outline: "none",
+                    boxSizing: "border-box",
+                  }}
+                >
+                  <option value="">Select a draw format</option>
+                  {(drawConfigurationOptions?.drawFormats || []).map(
+                    (drawFormat) => (
+                      <option key={drawFormat} value={drawFormat}>
+                        {formatDrawOption(drawFormat)}
+                      </option>
+                    ),
+                  )}
+                </select>
+              </div>
+
+              <div>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "11px",
+                    fontWeight: "bold",
+                    color: "#334155",
+                    marginBottom: "6px",
+                  }}
+                >
+                  Seeding Method
+                </label>
+                <select
+                  value={drawConfiguration.seedingMethod || ""}
+                  onChange={(event) =>
+                    updateCategoryDrawConfiguration(
+                      idx,
+                      "seedingMethod",
+                      event.target.value,
+                    )
+                  }
+                  disabled={
+                    isLoadingDrawConfiguration ||
+                    Boolean(drawConfigurationLoadError)
+                  }
+                  style={{
+                    width: "100%",
+                    padding: "12px 16px",
+                    borderRadius: "8px",
+                    border: "1px solid #cbd5e1",
+                    backgroundColor: "#fff",
+                    fontSize: "12px",
+                    outline: "none",
+                    boxSizing: "border-box",
+                  }}
+                >
+                  <option value="">Select a seeding method</option>
+                  {(drawConfigurationOptions?.seedingMethods || []).map(
+                    (seedingMethod) => (
+                      <option key={seedingMethod} value={seedingMethod}>
+                        {formatDrawOption(seedingMethod)}
+                      </option>
+                    ),
+                  )}
+                </select>
+              </div>
+
+              <label
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "10px",
+                  paddingTop: "22px",
+                  fontSize: "12px",
+                  fontWeight: "bold",
+                  color: "#334155",
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={Boolean(drawConfiguration.thirdPlaceMatch)}
+                  onChange={(event) =>
+                    updateCategoryDrawConfiguration(
+                      idx,
+                      "thirdPlaceMatch",
+                      event.target.checked,
+                    )
+                  }
+                  disabled={
+                    isLoadingDrawConfiguration ||
+                    Boolean(drawConfigurationLoadError)
+                  }
+                />
+                Third-place match
+              </label>
               </div>
 
               <div
@@ -1697,7 +1959,7 @@ export default function CreateTournamentPage() {
                         marginBottom: "6px",
                       }}
                     >
-                      Seeds / Pairing Type
+                      Seed Count
                     </label>
                     <select
                       value={isCustomSeed ? "Other" : cat.seeds}
@@ -1721,12 +1983,9 @@ export default function CreateTournamentPage() {
                         marginBottom: isCustomSeed ? "8px" : "0",
                       }}
                     >
-                      <option>Single Elimination</option>
-                      <option>Double Elimination</option>
-                      <option>Round Robin</option>
                       <option>8 Seeded Positions</option>
                       <option>16 Seeded Positions</option>
-                      <option>Unseeded Knockout</option>
+                      <option>Unseeded</option>
                       <option>Other</option>
                     </select>
                     {isCustomSeed && (

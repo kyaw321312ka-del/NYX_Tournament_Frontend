@@ -23,6 +23,32 @@ export async function getTournamentCategories({ authenticated = true } = {}) {
   return response.data;
 }
 
+export async function getDrawConfigurationOptions() {
+  const response = await apiRequest("/draw-configurations/options");
+  const options = response?.data;
+  const hasStringOptions = (values) =>
+    Array.isArray(values) &&
+    values.length > 0 &&
+    values.every((value) => typeof value === "string" && value.trim());
+
+  if (
+    response?.success !== true ||
+    !hasStringOptions(options?.drawFormats) ||
+    !hasStringOptions(options?.seedingMethods) ||
+    !options?.defaults ||
+    !options.drawFormats.includes(options.defaults.drawFormat) ||
+    !options.seedingMethods.includes(options.defaults.seedingMethod) ||
+    typeof options.defaults.thirdPlaceMatch !== "boolean"
+  ) {
+    throw new Error(
+      (typeof response?.message === "string" && response.message) ||
+        "The server returned invalid draw configuration options.",
+    );
+  }
+
+  return options;
+}
+
 export async function getTournaments({
   page = 1,
   pageSize = 20,

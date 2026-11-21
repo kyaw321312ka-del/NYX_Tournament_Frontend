@@ -39,7 +39,7 @@ export async function apiAssetRequest(assetPath) {
   );
   const apiOrigin = new URL(API_BASE_URL, window.location.origin).origin;
   if (assetUrl.origin !== apiOrigin) {
-    throw new Error("Identity document URL must use the API host.");
+    throw new Error("Protected asset URL must use the API host.");
   }
 
   const response = await fetch(assetUrl, { headers });
@@ -48,7 +48,7 @@ export async function apiAssetRequest(assetPath) {
     window.dispatchEvent(new Event(SESSION_EXPIRED_EVENT));
   }
   if (!response.ok) {
-    throw new Error(`Unable to load identity document (${response.status}).`);
+    throw new Error(`Unable to load protected asset (${response.status}).`);
   }
 
   return response.blob();
