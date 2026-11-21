@@ -47,6 +47,23 @@ const BRACKET_COLUMN_WIDTH = 210;
 const BRACKET_COLUMN_GAP = 32;
 const BRACKET_TRACK_WIDTH =
   BRACKET_COLUMN_WIDTH + BRACKET_COLUMN_GAP;
+const BRACKET_MATCH_HEIGHT = 52;
+const BRACKET_MATCH_BASE_GAP = 8;
+const BRACKET_MATCH_BASE_PITCH =
+  BRACKET_MATCH_HEIGHT + BRACKET_MATCH_BASE_GAP;
+
+function getBracketMatchGap(roundIndex) {
+  return Math.max(
+    BRACKET_MATCH_BASE_GAP,
+    BRACKET_MATCH_BASE_PITCH * 2 ** roundIndex - BRACKET_MATCH_HEIGHT,
+  );
+}
+
+function getBracketRoundPadding(roundIndex) {
+  return (
+    (BRACKET_MATCH_BASE_PITCH / 2) * (2 ** roundIndex - 1)
+  );
+}
 
 function messageFrom(error, fallback) {
   return error instanceof Error ? error.message : fallback;
@@ -1390,19 +1407,17 @@ export default function MatchesManagementPage() {
                         if (roundIndex >= rounds.length - 1) return null;
                         const nextRoundMatches =
                           rounds[roundIndex + 1]?.[1] || [];
-                        const cardGap =
-                          Math.max(8, 72 * 2 ** roundIndex - 64);
-                        const nextCardGap =
-                          Math.max(
-                            8,
-                            72 * 2 ** (roundIndex + 1) - 64,
-                          );
-                        const cardPitch = 64 + cardGap;
-                        const nextCardPitch = 64 + nextCardGap;
+                        const cardGap = getBracketMatchGap(roundIndex);
+                        const nextCardGap = getBracketMatchGap(
+                          roundIndex + 1,
+                        );
+                        const cardPitch = BRACKET_MATCH_HEIGHT + cardGap;
+                        const nextCardPitch =
+                          BRACKET_MATCH_HEIGHT + nextCardGap;
                         const roundPadding =
-                          36 * (2 ** roundIndex - 1);
+                          getBracketRoundPadding(roundIndex);
                         const nextRoundPadding =
-                          36 * (2 ** (roundIndex + 1) - 1);
+                          getBracketRoundPadding(roundIndex + 1);
                         const sourceX =
                           8 +
                           roundIndex * BRACKET_TRACK_WIDTH +
@@ -1426,17 +1441,17 @@ export default function MatchesManagementPage() {
                               8 +
                               roundPadding +
                               sourceIndex * cardPitch +
-                              32;
+                              BRACKET_MATCH_HEIGHT / 2;
                             const secondY =
                               8 +
                               roundPadding +
                               (sourceIndex + 1) * cardPitch +
-                              32;
+                              BRACKET_MATCH_HEIGHT / 2;
                             const targetY =
                               8 +
                               nextRoundPadding +
                               pairIndex * nextCardPitch +
-                              32;
+                              BRACKET_MATCH_HEIGHT / 2;
                             const topY = Math.min(firstY, secondY);
                             const bottomY =
                               pairedMatch == null
@@ -1498,8 +1513,8 @@ export default function MatchesManagementPage() {
                             width: `${BRACKET_COLUMN_WIDTH}px`,
                             display: "flex",
                             flexDirection: "column",
-                            gap: `${Math.max(8, 72 * 2 ** roundIndex - 64)}px`,
-                            paddingTop: `${36 * (2 ** roundIndex - 1)}px`,
+                            gap: `${getBracketMatchGap(roundIndex)}px`,
+                            paddingTop: `${getBracketRoundPadding(roundIndex)}px`,
                           }}
                         >
                           <h3
@@ -1550,11 +1565,11 @@ export default function MatchesManagementPage() {
                                   isPublished && openScoreEditor(match)
                                 }
                                 style={{
-                                  height: "64px",
+                                  height: `${BRACKET_MATCH_HEIGHT}px`,
                                   boxSizing: "border-box",
                                   display: "flex",
                                   flexDirection: "column",
-                                  gap: "6px",
+                                  gap: "4px",
                                   cursor:
                                     isPublished && !isFinalized
                                       ? "pointer"
@@ -1565,11 +1580,11 @@ export default function MatchesManagementPage() {
                                   <div
                                     key={`${participantIndex}-${label}`}
                                     style={{
-                                      height: "29px",
+                                      height: "24px",
                                       boxSizing: "border-box",
                                       display: "flex",
                                       alignItems: "center",
-                                      padding: "0 12px",
+                                      padding: "0 10px",
                                       borderRadius: "4px",
                                       backgroundColor:
                                         winnerSide === participantIndex + 1

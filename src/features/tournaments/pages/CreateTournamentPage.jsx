@@ -10,6 +10,7 @@ import {
   getTournamentCategories,
   publishTournament,
 } from "../api/tournamentApi";
+import { getAgeGroups } from "../../ageGroups/api/ageGroupApi";
 
 function parseNumericField(value) {
   const normalized = String(value)
@@ -56,6 +57,7 @@ export default function CreateTournamentPage() {
     {
       code: "",
       name: "",
+      ageGroup: "",
       pairingType: "",
       seeds: "8 Seeded Positions",
       format: "Best of 3 Sets to 21 Points",
@@ -79,6 +81,9 @@ export default function CreateTournamentPage() {
   const [availableCategories, setAvailableCategories] = useState([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
   const [categoryLoadError, setCategoryLoadError] = useState("");
+  const [availableAgeGroups, setAvailableAgeGroups] = useState([]);
+  const [isLoadingAgeGroups, setIsLoadingAgeGroups] = useState(true);
+  const [ageGroupLoadError, setAgeGroupLoadError] = useState("");
 
   // Success Modal State
   const [showSuccessModal, setShowSuccessModal] = useState(false);
@@ -106,6 +111,34 @@ export default function CreateTournamentPage() {
     }
 
     loadCategories();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadAgeGroups() {
+      setIsLoadingAgeGroups(true);
+      setAgeGroupLoadError("");
+      try {
+        const ageGroups = await getAgeGroups();
+        if (!cancelled) setAvailableAgeGroups(ageGroups);
+      } catch (error) {
+        if (!cancelled) {
+          setAgeGroupLoadError(
+            error instanceof Error
+              ? error.message
+              : "Unable to load age groups.",
+          );
+        }
+      } finally {
+        if (!cancelled) setIsLoadingAgeGroups(false);
+      }
+    }
+
+    loadAgeGroups();
     return () => {
       cancelled = true;
     };
@@ -143,6 +176,7 @@ export default function CreateTournamentPage() {
       {
         code: "",
         name: "",
+        ageGroup: "",
         pairingType: "",
         seeds: "8 Seeded Positions",
         format: "Best of 3 Sets to 21 Points",
@@ -304,6 +338,7 @@ export default function CreateTournamentPage() {
         return {
           categoryCode: category.code.trim().toUpperCase(),
           categoryName: category.name.trim(),
+          ageGroup: category.ageGroup ? Number(category.ageGroup) : null,
           pairingType: category.pairingType || getPairingType(category),
           seedCount,
           matchFormat: category.format,
@@ -1385,6 +1420,16 @@ export default function CreateTournamentPage() {
               Unable to load category options: {categoryLoadError}
             </p>
           )}
+          {isLoadingAgeGroups && (
+            <p role="status" style={{ color: "#64748b", fontSize: "12px" }}>
+              Loading age groups...
+            </p>
+          )}
+          {ageGroupLoadError && (
+            <p role="alert" style={{ color: "#b91c1c", fontSize: "12px" }}>
+              Unable to load age groups: {ageGroupLoadError}
+            </p>
+          )}
 
           {categories.map((cat, idx) => {
             const seedOptions = [
@@ -1472,7 +1517,7 @@ export default function CreateTournamentPage() {
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "1fr 2fr",
+                  gridTemplateColumns: "1fr 1.5fr 1fr",
                   gap: "20px",
                   marginBottom: "16px",
                 }}
@@ -1584,6 +1629,54 @@ export default function CreateTournamentPage() {
                       Name is required
                     </span>
                   )}
+                </div>
+                <div>
+                  <label
+                    style={{
+                      display: "block",
+                      fontSize: "11px",
+                      fontWeight: "bold",
+                      color: "#334155",
+                      marginBottom: "6px",
+                    }}
+                  >
+                    Age Group
+                  </label>
+                  <select
+                    value={cat.ageGroup}
+                    onChange={(event) => {
+                      const selectedAgeGroup = event.target.value;
+                      setCategories((current) =>
+                        current.map((category, categoryIndex) =>
+                          categoryIndex === idx
+                            ? { ...category, ageGroup: selectedAgeGroup }
+                            : category,
+                        ),
+                      );
+                    }}
+                    disabled={isLoadingAgeGroups || Boolean(ageGroupLoadError)}
+                    style={{
+                      width: "100%",
+                      padding: "12px 16px",
+                      borderRadius: "8px",
+                      border: "1px solid #cbd5e1",
+                      backgroundColor: "#fff",
+                      fontSize: "12px",
+                      outline: "none",
+                      boxSizing: "border-box",
+                    }}
+                  >
+                    <option value="">
+                      {isLoadingAgeGroups
+                        ? "Loading age groups..."
+                        : "Open / no age limit"}
+                    </option>
+                    {availableAgeGroups.map((ageGroup) => (
+                      <option key={ageGroup.id} value={ageGroup.id}>
+                        {ageGroup.name} (maximum age {ageGroup.age})
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 

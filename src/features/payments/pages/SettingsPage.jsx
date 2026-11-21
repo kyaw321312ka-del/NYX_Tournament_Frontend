@@ -12,11 +12,19 @@ import CloseIcon from "@mui/icons-material/Close";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import CheckCircleOutlineOutlinedIcon from "@mui/icons-material/CheckCircleOutlineOutlined";
 import WarningAmberIcon from "@mui/icons-material/WarningAmber";
+import CategoryOutlinedIcon from "@mui/icons-material/CategoryOutlined";
 import {
   createPaymentMethod,
   getPaymentMethods,
   updatePaymentMethodStatus,
 } from "../api/paymentApi";
+import {
+  createAgeGroup,
+  deleteAgeGroup,
+  getAgeGroup,
+  getAgeGroups,
+  updateAgeGroup,
+} from "../../ageGroups/api/ageGroupApi";
 
 export default function SettingsPage() {
   const outletContext = useOutletContext() || {};
@@ -37,6 +45,15 @@ export default function SettingsPage() {
   const [paymentLoadError, setPaymentLoadError] = useState("");
   const [paymentStatusError, setPaymentStatusError] = useState("");
   const [updatingPaymentId, setUpdatingPaymentId] = useState(null);
+  const [ageGroups, setAgeGroups] = useState([]);
+  const [isLoadingAgeGroups, setIsLoadingAgeGroups] = useState(true);
+  const [ageGroupLoadError, setAgeGroupLoadError] = useState("");
+  const [ageGroupActionError, setAgeGroupActionError] = useState("");
+  const [savingAgeGroup, setSavingAgeGroup] = useState(false);
+  const [deletingAgeGroupId, setDeletingAgeGroupId] = useState(null);
+  const [loadingAgeGroupId, setLoadingAgeGroupId] = useState(null);
+  const [editingAgeGroupId, setEditingAgeGroupId] = useState(null);
+  const [ageGroupForm, setAgeGroupForm] = useState({ name: "", age: "" });
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
@@ -104,6 +121,34 @@ export default function SettingsPage() {
     }
 
     loadPaymentMethods();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadAgeGroups() {
+      setIsLoadingAgeGroups(true);
+      setAgeGroupLoadError("");
+      try {
+        const result = await getAgeGroups();
+        if (!cancelled) setAgeGroups(result);
+      } catch (error) {
+        if (!cancelled) {
+          setAgeGroupLoadError(
+            error instanceof Error
+              ? error.message
+              : "Unable to load age groups.",
+          );
+        }
+      } finally {
+        if (!cancelled) setIsLoadingAgeGroups(false);
+      }
+    }
+
+    loadAgeGroups();
     return () => {
       cancelled = true;
     };
@@ -184,6 +229,89 @@ export default function SettingsPage() {
       );
     } finally {
       setUpdatingPaymentId(null);
+    }
+  };
+
+  const handleAgeGroupSubmit = async (event) => {
+    event.preventDefault();
+    const name = ageGroupForm.name.trim();
+    const age = Number(ageGroupForm.age);
+    if (!name || !Number.isInteger(age) || age < 1) {
+      setAgeGroupActionError("Enter an age group name and a positive whole-number age.");
+      return;
+    }
+
+    setSavingAgeGroup(true);
+    setAgeGroupActionError("");
+    try {
+      if (editingAgeGroupId == null) {
+        const created = await createAgeGroup({ name, age });
+        setAgeGroups((current) => [...current, { ...created, name, age }]);
+        triggerToast("Age group added.");
+      } else {
+        const updated = await updateAgeGroup(editingAgeGroupId, { name, age });
+        setAgeGroups((current) =>
+          current.map((group) =>
+            group.id === editingAgeGroupId
+              ? { ...group, ...(updated || {}), id: group.id, name, age }
+              : group,
+          ),
+        );
+        triggerToast("Age group updated.");
+      }
+      setEditingAgeGroupId(null);
+      setAgeGroupForm({ name: "", age: "" });
+    } catch (error) {
+      setAgeGroupActionError(
+        error instanceof Error ? error.message : "Unable to save age group.",
+      );
+    } finally {
+      setSavingAgeGroup(false);
+    }
+  };
+
+  const handleEditAgeGroup = async (group) => {
+    setLoadingAgeGroupId(group.id);
+    setAgeGroupActionError("");
+    try {
+      const details = await getAgeGroup(group.id);
+      setEditingAgeGroupId(group.id);
+      setAgeGroupForm({
+        name: details.name || "",
+        age: String(details.age ?? ""),
+      });
+    } catch (error) {
+      setAgeGroupActionError(
+        error instanceof Error ? error.message : "Unable to load age group.",
+      );
+    } finally {
+      setLoadingAgeGroupId(null);
+    }
+  };
+
+  const handleCancelAgeGroupEdit = () => {
+    setEditingAgeGroupId(null);
+    setAgeGroupForm({ name: "", age: "" });
+    setAgeGroupActionError("");
+  };
+
+  const handleDeleteAgeGroup = async (group) => {
+    if (!window.confirm(`Delete age group "${group.name}"?`)) return;
+    setDeletingAgeGroupId(group.id);
+    setAgeGroupActionError("");
+    try {
+      await deleteAgeGroup(group.id);
+      setAgeGroups((current) =>
+        current.filter((item) => item.id !== group.id),
+      );
+      if (editingAgeGroupId === group.id) handleCancelAgeGroupEdit();
+      triggerToast("Age group deleted.");
+    } catch (error) {
+      setAgeGroupActionError(
+        error instanceof Error ? error.message : "Unable to delete age group.",
+      );
+    } finally {
+      setDeletingAgeGroupId(null);
     }
   };
 
@@ -742,7 +870,212 @@ export default function SettingsPage() {
         </button>
       </div>
 
-      {/* 3. ADMINISTRATOR SECURITY & CREDENTIALS */}
+      {/* 3. AGE GROUP MANAGEMENT */}
+      <div style={styles.card}>
+        <div style={styles.cardHeader}>
+          <div>
+            <h3 style={styles.cardTitle}>
+              <CategoryOutlinedIcon
+                style={{ color: "#7c3aed", fontSize: "25px" }}
+              />{" "}
+              3. Age Group Management
+            </h3>
+            <p style={styles.cardDesc}>
+              Create and maintain the age groups available for tournament
+              registration.
+            </p>
+          </div>
+          <span
+            style={{
+              fontSize: "11px",
+              backgroundColor: isDark ? "#2e1065" : "#f5f3ff",
+              color: "#7c3aed",
+              padding: "4px 10px",
+              borderRadius: "6px",
+              fontWeight: "bold",
+              border: "1px solid #ddd6fe",
+            }}
+          >
+            {ageGroups.length} AGE GROUPS
+          </span>
+        </div>
+
+        {ageGroupLoadError && (
+          <p role="alert" style={{ color: "#b91c1c", fontSize: "13px" }}>
+            Unable to load age groups: {ageGroupLoadError}
+          </p>
+        )}
+        {ageGroupActionError && (
+          <p role="alert" style={{ color: "#b91c1c", fontSize: "13px" }}>
+            {ageGroupActionError}
+          </p>
+        )}
+
+        <form
+          onSubmit={handleAgeGroupSubmit}
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
+            gap: "12px",
+            alignItems: "end",
+            marginBottom: "20px",
+          }}
+        >
+          <div>
+            <label style={styles.label} htmlFor="age-group-name">
+              AGE GROUP NAME
+            </label>
+            <input
+              id="age-group-name"
+              type="text"
+              required
+              maxLength={50}
+              placeholder="e.g. U12"
+              style={styles.input}
+              value={ageGroupForm.name}
+              onChange={(event) =>
+                setAgeGroupForm((current) => ({
+                  ...current,
+                  name: event.target.value,
+                }))
+              }
+            />
+          </div>
+          <div>
+            <label style={styles.label} htmlFor="age-group-age">
+              MAXIMUM AGE
+            </label>
+            <input
+              id="age-group-age"
+              type="number"
+              required
+              min="1"
+              step="1"
+              placeholder="e.g. 12"
+              style={styles.input}
+              value={ageGroupForm.age}
+              onChange={(event) =>
+                setAgeGroupForm((current) => ({
+                  ...current,
+                  age: event.target.value,
+                }))
+              }
+            />
+          </div>
+          <div style={{ display: "flex", gap: "8px", gridColumn: "1 / -1" }}>
+            <button
+              type="submit"
+              disabled={savingAgeGroup}
+              style={styles.btnPrimary}
+            >
+              <AddCircleOutlineOutlinedIcon style={{ fontSize: "17px" }} />
+              {savingAgeGroup
+                ? "Saving..."
+                : editingAgeGroupId == null
+                  ? "Add Age Group"
+                  : "Save Changes"}
+            </button>
+            {editingAgeGroupId != null && (
+              <button
+                type="button"
+                onClick={handleCancelAgeGroupEdit}
+                disabled={savingAgeGroup}
+                style={styles.btnSecondary}
+              >
+                Cancel
+              </button>
+            )}
+          </div>
+        </form>
+
+        {isLoadingAgeGroups ? (
+          <p role="status" style={{ color: "#64748b", fontSize: "13px" }}>
+            Loading age groups...
+          </p>
+        ) : !ageGroupLoadError && ageGroups.length === 0 ? (
+          <p style={{ color: "#64748b", fontSize: "13px" }}>
+            No age groups have been added yet.
+          </p>
+        ) : (
+          <div style={{ display: "grid", gap: "10px" }}>
+            {ageGroups.map((group) => (
+              <div
+                key={group.id}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: "16px",
+                  padding: "14px 16px",
+                  backgroundColor: isDark ? "#24272b" : "#f8fafc",
+                  border: `1px solid ${isDark ? "#2d3139" : "#e2e8f0"}`,
+                  borderRadius: "10px",
+                }}
+              >
+                <div>
+                  <div
+                    style={{
+                      fontSize: "14px",
+                      fontWeight: "bold",
+                      color: isDark ? "#fff" : "#0f172a",
+                    }}
+                  >
+                    {group.name}
+                  </div>
+                  <div
+                    style={{
+                      fontSize: "12px",
+                      color: "#64748b",
+                      marginTop: "3px",
+                    }}
+                  >
+                    Maximum age: {group.age}
+                  </div>
+                </div>
+                <div style={{ display: "flex", gap: "8px" }}>
+                  <button
+                    type="button"
+                    onClick={() => handleEditAgeGroup(group)}
+                    disabled={
+                      savingAgeGroup ||
+                      deletingAgeGroupId != null ||
+                      loadingAgeGroupId != null
+                    }
+                    style={styles.btnSecondary}
+                  >
+                    <EditOutlinedIcon
+                      style={{ fontSize: "15px", verticalAlign: "middle" }}
+                    />{" "}
+                    {loadingAgeGroupId === group.id ? "Loading..." : "Edit"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteAgeGroup(group)}
+                    disabled={
+                      deletingAgeGroupId != null ||
+                      savingAgeGroup ||
+                      loadingAgeGroupId != null
+                    }
+                    aria-label={`Delete ${group.name}`}
+                    style={{
+                      ...styles.btnSecondary,
+                      color: "#b91c1c",
+                      borderColor: isDark ? "#7f1d1d" : "#fecaca",
+                    }}
+                  >
+                    <DeleteOutlineOutlinedIcon
+                      style={{ fontSize: "16px", verticalAlign: "middle" }}
+                    />{" "}
+                    {deletingAgeGroupId === group.id ? "Deleting..." : "Delete"}
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* 4. ADMINISTRATOR SECURITY & CREDENTIALS */}
       <div style={styles.card}>
         <div style={styles.cardHeader}>
           <div>
@@ -750,7 +1083,7 @@ export default function SettingsPage() {
               <AdminPanelSettingsIcon
                 style={{ color: "#dc2626", fontSize: "25px" }}
               />{" "}
-              3. Administrator Security & Credentials Management
+              4. Administrator Security & Credentials Management
             </h3>
             <p style={styles.cardDesc}>
               Update admin access details. Modifying credentials triggers a
