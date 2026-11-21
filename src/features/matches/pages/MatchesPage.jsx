@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import AddIcon from "@mui/icons-material/Add";
 import {
@@ -69,6 +69,46 @@ function messageFrom(error, fallback) {
   return error instanceof Error ? error.message : fallback;
 }
 
+function shuffle(items) {
+  const shuffledItems = [...items];
+  for (let index = shuffledItems.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1));
+    [shuffledItems[index], shuffledItems[swapIndex]] = [
+      shuffledItems[swapIndex],
+      shuffledItems[index],
+    ];
+  }
+  return shuffledItems;
+}
+
+function createAutoAssignments(registrations, positionLimit) {
+  const byeCount = positionLimit - registrations.length;
+  const byeMatchIndexes = new Set(
+    shuffle(
+      Array.from({ length: positionLimit / 2 }, (_, index) => index),
+    ).slice(0, byeCount),
+  );
+  const positions = [];
+
+  for (let matchIndex = 0; matchIndex < positionLimit / 2; matchIndex += 1) {
+    const firstPosition = matchIndex * 2 + 1;
+    if (byeMatchIndexes.has(matchIndex)) {
+      positions.push(
+        firstPosition + Math.floor(Math.random() * 2),
+      );
+    } else {
+      positions.push(firstPosition, firstPosition + 1);
+    }
+  }
+
+  return Object.fromEntries(
+    shuffle(registrations).map((registration, index) => [
+      String(getRegistrationId(registration)),
+      String(positions[index]),
+    ]),
+  );
+}
+
 function unwrapDraw(data) {
   return data?.draw || data;
 }
@@ -84,6 +124,54 @@ function getRegistrationId(registration) {
     registration?.registration?.id ??
     null
   );
+}
+
+function getDrawAssignments(draw) {
+  if (Array.isArray(draw?.assignments) && draw.assignments.length) {
+    return draw.assignments;
+  }
+  if (!Array.isArray(draw?.participants)) return [];
+  return draw.participants
+    .map((participant) => ({
+      registrationId:
+        participant?.registrationId ??
+        participant?.registration?.id ??
+        participant?.registration?.registrationId ??
+        participant?.id,
+      bracketPosition: participant?.bracketPosition,
+    }))
+    .filter(
+      (assignment) =>
+        assignment.registrationId != null &&
+        assignment.bracketPosition != null,
+    );
+}
+
+function getDrawRegistrationIds(draw) {
+  const entryLists = [
+    ["assignments", draw?.assignments],
+    ["participants", draw?.participants],
+    ["registrations", draw?.registrations],
+    ["entries", draw?.entries],
+  ];
+  const selectedList = entryLists.find(
+    ([, list]) => Array.isArray(list) && list.length > 0,
+  );
+  const [field, entries] = selectedList || [];
+  if (!entries) return null;
+
+  const ids = entries
+    .map(
+      (entry) =>
+        entry?.registrationId ??
+        entry?.registration?.id ??
+        entry?.registration?.registrationId ??
+        (field === "assignments" ? null : entry?.id) ??
+        null,
+    )
+    .filter((id) => id != null)
+    .map(String);
+  return ids.length === entries.length ? [...new Set(ids)] : null;
 }
 
 function getMemberName(member) {
@@ -132,8 +220,10 @@ function getRegistrationDetail(registration) {
 
 function flattenMatches(draw) {
   if (Array.isArray(draw?.matches)) return draw.matches;
-  if (!Array.isArray(draw?.rounds)) return [];
-  return draw.rounds.flatMap((round, roundIndex) =>
+  if (Array.isArray(draw?.bracket?.matches)) return draw.bracket.matches;
+  const rounds = draw?.rounds || draw?.bracket?.rounds;
+  if (!Array.isArray(rounds)) return [];
+  return rounds.flatMap((round, roundIndex) =>
     (Array.isArray(round.matches) ? round.matches : []).map((match) => ({
       ...match,
       roundName:
@@ -157,7 +247,13 @@ function getRoundName(match) {
   return "Matches";
 }
 
-function getParticipant(match, side, registrationsById) {
+function getParticipant(
+  match,
+  side,
+  registrationsById,
+  registrationsByPosition,
+) {
+  const slot = Array.isArray(match?.slots) ? match.slots[side - 1] : null;
   const participantList = Array.isArray(match?.participants)
     ? match.participants
     : Array.isArray(match?.entries)
@@ -165,6 +261,7 @@ function getParticipant(match, side, registrationsById) {
       : null;
   const listParticipant = participantList?.[side - 1];
   const direct =
+    slot?.participant ??
     listParticipant ??
     match[`participant${side}`] ??
     match[`participant${side}Registration`] ??
@@ -176,15 +273,20 @@ function getParticipant(match, side, registrationsById) {
     match[`athlete${side}Name`] ??
     null;
   if (direct && typeof direct === "object") {
-    return (
+    const directName =
       direct.name ||
       direct.athleteName ||
       direct.registrationName ||
       direct.player?.name ||
       direct.user?.name ||
       direct.registration?.name ||
-      "Awaiting player"
-    );
+      (Array.isArray(direct.members || direct.registration?.members)
+        ? (direct.members || direct.registration.members)
+            .map(getMemberName)
+            .filter(Boolean)
+            .join(" / ")
+        : "");
+    if (directName) return directName;
   }
   const registrationId =
     (direct && typeof direct === "object"
@@ -200,12 +302,87 @@ function getParticipant(match, side, registrationsById) {
     match[`participant${side}`]?.id ??
     (typeof direct === "number" ? direct : null);
   if (registrationId != null) {
-    return registrationsById.get(String(registrationId)) ||
-      (typeof direct === "string" ? direct : `Registration #${registrationId}`);
+    const participantName = registrationsById.get(String(registrationId));
+    if (participantName) return participantName;
+  }
+  const directPosition =
+    slot?.bracketPosition ??
+    match[`participant${side}BracketPosition`] ??
+    match[`participant${side}Position`] ??
+    match[`player${side}Position`] ??
+    match[`position${side}`] ??
+    (direct && typeof direct === "object"
+      ? direct.bracketPosition ?? direct.position ?? direct.seed
+      : null);
+  const position =
+    directPosition ??
+    (registrationId != null &&
+    !registrationsById.has(String(registrationId))
+      ? registrationId
+      : null) ??
+    (typeof direct === "string" && /^\d+$/.test(direct.trim())
+      ? direct.trim()
+      : null);
+  if (position != null) {
+    const assignedName = registrationsByPosition.get(String(Number(position)));
+    if (assignedName) return assignedName;
+  }
+  if (registrationId != null) {
+    return typeof direct === "string"
+      ? direct
+      : `Registration #${registrationId}`;
   }
   return typeof direct === "string" && direct.trim()
     ? direct
     : "Awaiting player";
+}
+
+function getParticipantBracketPosition(match, side, assignments) {
+  const slot = Array.isArray(match?.slots) ? match.slots[side - 1] : null;
+  const participantList = Array.isArray(match?.participants)
+    ? match.participants
+    : Array.isArray(match?.entries)
+      ? match.entries
+      : null;
+  const participant =
+    slot?.participant ??
+    participantList?.[side - 1] ??
+    match[`participant${side}`] ??
+    match[`participant${side}Registration`] ??
+    match[`player${side}`] ??
+    match[`registration${side}`] ??
+    null;
+  const directPosition =
+    slot?.bracketPosition ??
+    (participant && typeof participant === "object"
+      ? participant.bracketPosition ?? participant.position ?? participant.seed
+      : null) ??
+    match[`participant${side}BracketPosition`] ??
+    match[`participant${side}Position`] ??
+    match[`player${side}Position`] ??
+    match[`position${side}`];
+  const positionFromResponse = Number(directPosition);
+  if (Number.isInteger(positionFromResponse) && positionFromResponse > 0) {
+    return positionFromResponse;
+  }
+
+  const registrationId =
+    (participant && typeof participant === "object"
+      ? participant.registrationId ??
+        participant.registration?.id ??
+        participant.registration?.registrationId ??
+        participant.id
+      : typeof participant === "number"
+        ? participant
+        : null) ??
+    match[`participant${side}RegistrationId`] ??
+    match[`registration${side}Id`] ??
+    match[`participant${side}Id`];
+  const positionFromAssignments = Number(assignments[String(registrationId)]);
+  return Number.isInteger(positionFromAssignments) &&
+    positionFromAssignments > 0
+    ? positionFromAssignments
+    : null;
 }
 
 function getMatchStatus(match) {
@@ -219,11 +396,13 @@ function getMatchStatus(match) {
 }
 
 function getMatchGames(match) {
-  const games = Array.isArray(match.games)
-    ? match.games
-    : Array.isArray(match.results)
-      ? match.results
-      : [];
+  const games = Array.isArray(match.result?.games)
+    ? match.result.games
+    : Array.isArray(match.games)
+      ? match.games
+      : Array.isArray(match.results)
+        ? match.results
+        : [];
   return games.map((game, index) => ({
     gameNumber: Number(game.gameNumber ?? game.setNumber ?? index + 1),
     participant1Score:
@@ -233,13 +412,68 @@ function getMatchGames(match) {
   }));
 }
 
+function getBestOfGameCount(matchFormat) {
+  const match = String(matchFormat || "").match(/best\s+of\s+(\d+)/i);
+  if (!match) return null;
+  const count = Number(match[1]);
+  return Number.isInteger(count) && count > 0 && count % 2 === 1
+    ? count
+    : null;
+}
+
+function isByeMatch(match) {
+  return (
+    getMatchStatus(match) === "bye" ||
+    match.isBye === true ||
+    match.bye === true
+  );
+}
+
 function isMatchComplete(match) {
   const status = String(match.status || match.matchStatus || "").toLowerCase();
   return (
+    isByeMatch(match) ||
     ["completed", "complete", "finished", "final"].includes(status) ||
     match.winner != null ||
     match.winnerRegistrationId != null
   );
+}
+
+function isMatchPlayable(match, registrationsById, registrationsByPosition) {
+  if (isByeMatch(match)) return false;
+  const first = getParticipant(
+    match,
+    1,
+    registrationsById,
+    registrationsByPosition,
+  );
+  const second = getParticipant(
+    match,
+    2,
+    registrationsById,
+    registrationsByPosition,
+  );
+  return (
+    first !== "Awaiting player" &&
+    first !== "BYE" &&
+    second !== "Awaiting player" &&
+    second !== "BYE"
+  );
+}
+
+function getBadmintonGameWinner(game) {
+  const firstScore = game.participant1Score;
+  const secondScore = game.participant2Score;
+  const highScore = Math.max(firstScore, secondScore);
+  const scoreDifference = Math.abs(firstScore - secondScore);
+  if (
+    highScore > 30 ||
+    highScore < 21 ||
+    (highScore < 30 && scoreDifference < 2)
+  ) {
+    return null;
+  }
+  return firstScore > secondScore ? 1 : 2;
 }
 
 function getLatestDraw(draws) {
@@ -351,6 +585,7 @@ export default function MatchesManagementPage() {
   const [eligibleRegistrations, setEligibleRegistrations] = useState([]);
   const [draw, setDraw] = useState(null);
   const [assignments, setAssignments] = useState({});
+  const [positionsSaved, setPositionsSaved] = useState(false);
   const [awards, setAwards] = useState([]);
   const [scoreMatch, setScoreMatch] = useState(null);
   const [scoreGames, setScoreGames] = useState([]);
@@ -365,6 +600,7 @@ export default function MatchesManagementPage() {
   const [selectedBracketRound, setSelectedBracketRound] = useState("All");
   const [bracketZoom, setBracketZoom] = useState(1);
   const [participantSearch, setParticipantSearch] = useState("");
+  const createDrawInProgress = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -428,7 +664,7 @@ export default function MatchesManagementPage() {
         const latestDraw = getLatestDraw(draws);
         setDraw(latestDraw);
         const initialAssignments = {};
-        (latestDraw?.assignments || []).forEach((assignment) => {
+        getDrawAssignments(latestDraw).forEach((assignment) => {
           const registrationId =
             assignment.registrationId ??
             assignment.registration?.id ??
@@ -439,6 +675,23 @@ export default function MatchesManagementPage() {
             initialAssignments[String(registrationId)] = String(position);
           }
         });
+        const initialPositions = registrations.map((registration) =>
+          Number(initialAssignments[String(getRegistrationId(registration))]),
+        );
+        const initialPositionLimit = Math.max(
+          2,
+          2 ** Math.ceil(Math.log2(Math.max(registrations.length, 2))),
+        );
+        setPositionsSaved(
+          registrations.length >= 2 &&
+            initialPositions.every(
+              (position) =>
+                Number.isInteger(position) &&
+                position > 0 &&
+                position <= initialPositionLimit,
+            ) &&
+            new Set(initialPositions).size === registrations.length,
+        );
         setAssignments(initialAssignments);
       } catch (requestError) {
         if (!cancelled) {
@@ -446,6 +699,7 @@ export default function MatchesManagementPage() {
           setEligibleRegistrations([]);
           setDraw(null);
           setAssignments({});
+          setPositionsSaved(false);
         }
       } finally {
         if (!cancelled) setLoadingCategory(false);
@@ -464,6 +718,9 @@ export default function MatchesManagementPage() {
   const selectedCategory = categories.find(
     (category) => String(category.id) === selectedCategoryId,
   );
+  const bestOfGames = getBestOfGameCount(selectedCategory?.matchFormat);
+  const gamesToWin = bestOfGames ? Math.ceil(bestOfGames / 2) : null;
+  const maxScoreGames = bestOfGames ?? 5;
   const matches = useMemo(() => flattenMatches(draw), [draw]);
   const registrationsById = useMemo(
     () =>
@@ -477,6 +734,16 @@ export default function MatchesManagementPage() {
       ),
     [eligibleRegistrations],
   );
+  const registrationsByPosition = useMemo(() => {
+    const registrations = new Map();
+    Object.entries(assignments).forEach(([registrationId, position]) => {
+      const name = registrationsById.get(registrationId);
+      if (name && Number(position) > 0) {
+        registrations.set(String(Number(position)), name);
+      }
+    });
+    return registrations;
+  }, [assignments, registrationsById]);
   const visibleEligibleRegistrations = useMemo(() => {
     const query = participantSearch.trim().toLowerCase();
     if (!query) return eligibleRegistrations;
@@ -497,6 +764,11 @@ export default function MatchesManagementPage() {
   }, [matches]);
 
   const drawId = getDrawId(draw);
+  const drawRegistrationIds = getDrawRegistrationIds(draw);
+  const eligibleRegistrationIds = eligibleRegistrations
+    .map((registration) => getRegistrationId(registration))
+    .filter((id) => id != null)
+    .map(String);
   const drawStatus = String(
     draw?.status || draw?.drawStatus || (draw ? "DRAFT" : ""),
   ).toLowerCase();
@@ -504,6 +776,12 @@ export default function MatchesManagementPage() {
     Boolean(draw?.publishedAt) ||
     draw?.published === true ||
     ["published", "in_progress", "completed", "finalized"].includes(drawStatus);
+  const drawRegistrationSetChanged =
+    drawRegistrationIds !== null &&
+    (drawRegistrationIds.length !== eligibleRegistrationIds.length ||
+      eligibleRegistrationIds.some(
+        (registrationId) => !drawRegistrationIds.includes(registrationId),
+      ));
   const isFinalized =
     draw?.finalized === true ||
     Boolean(draw?.finalizedAt || draw?.resultsFinalizedAt) ||
@@ -525,6 +803,41 @@ export default function MatchesManagementPage() {
         Number.isInteger(assignment.bracketPosition) &&
         assignment.bracketPosition > 0,
     );
+  const assignedPositions = assignedEntries.map(
+    (assignment) => assignment.bracketPosition,
+  );
+  const hasCompleteUniqueAssignments =
+    eligibleRegistrations.length >= 2 &&
+    assignedEntries.length === eligibleRegistrations.length &&
+    new Set(assignedPositions).size === assignedPositions.length &&
+    assignedPositions.every((position) => position <= positionLimit);
+  const occupiedPositions = new Set(assignedPositions);
+  const emptyFirstRoundPairs = Array.from(
+    { length: positionLimit / 2 },
+    (_, index) => [index * 2 + 1, index * 2 + 2],
+  ).filter(
+    ([firstPosition, secondPosition]) =>
+      !occupiedPositions.has(firstPosition) &&
+      !occupiedPositions.has(secondPosition),
+  );
+  const canAssignAndPublish =
+    hasCompleteUniqueAssignments && emptyFirstRoundPairs.length === 0;
+  const canPublishCurrentDraft =
+    canAssignAndPublish && !drawRegistrationSetChanged;
+
+  function getAssignmentErrorMessage() {
+    if (
+      hasCompleteUniqueAssignments &&
+      emptyFirstRoundPairs.length > 0
+    ) {
+      const emptyMatches = emptyFirstRoundPairs
+        .map(([first, second]) => `${first}–${second}`)
+        .join(", ");
+      return `Both positions are empty in first-round match(es) ${emptyMatches}. Move a player into one position in each pair to create byes.`;
+    }
+    return `Assign each confirmed registration to a unique bracket position between 1 and ${positionLimit}.`;
+  }
+
   const allMatchesComplete =
     matches.length > 0 && matches.every(isMatchComplete);
 
@@ -533,6 +846,7 @@ export default function MatchesManagementPage() {
     setEligibleRegistrations([]);
     setDraw(null);
     setAssignments({});
+    setPositionsSaved(false);
     setAwards([]);
     setError("");
     setActionError("");
@@ -554,6 +868,7 @@ export default function MatchesManagementPage() {
     setEligibleRegistrations([]);
     setDraw(null);
     setAssignments({});
+    setPositionsSaved(false);
     setAwards([]);
     setError("");
     setActionError("");
@@ -570,7 +885,7 @@ export default function MatchesManagementPage() {
     );
     setDraw(freshDraw);
     const freshAssignments = {};
-    (freshDraw.assignments || []).forEach((assignment) => {
+    getDrawAssignments(freshDraw).forEach((assignment) => {
       const registrationId =
         assignment.registrationId ?? assignment.registration?.id;
       const position = assignment.bracketPosition ?? assignment.position;
@@ -579,9 +894,36 @@ export default function MatchesManagementPage() {
       }
     });
     setAssignments(freshAssignments);
+    const assignedPositions = eligibleRegistrations.map((registration) =>
+      Number(freshAssignments[String(getRegistrationId(registration))]),
+    );
+    const currentPositionLimit = Math.max(
+      2,
+      2 ** Math.ceil(Math.log2(Math.max(eligibleRegistrations.length, 2))),
+    );
+    setPositionsSaved(
+      eligibleRegistrations.length >= 2 &&
+        assignedPositions.every(
+          (position) =>
+            Number.isInteger(position) &&
+            position > 0 &&
+            position <= currentPositionLimit,
+        ) &&
+        new Set(assignedPositions).size === eligibleRegistrations.length,
+    );
   }
 
   async function handleCreateDraw() {
+    if (
+      createDrawInProgress.current ||
+      !selectedCategoryId ||
+      loadingCategory ||
+      eligibleRegistrations.length < 2
+    ) {
+      return;
+    }
+
+    createDrawInProgress.current = true;
     setBusyAction("create");
     setActionError("");
     setNotice("");
@@ -591,6 +933,19 @@ export default function MatchesManagementPage() {
       );
       const createdId = getDrawId(created);
       if (createdId != null) {
+        setDraw(created);
+        setPositionsSaved(false);
+        const createdAssignments = {};
+        getDrawAssignments(created).forEach((assignment) => {
+          const registrationId =
+            assignment.registrationId ?? assignment.registration?.id;
+          const position =
+            assignment.bracketPosition ?? assignment.position;
+          if (registrationId != null && position != null) {
+            createdAssignments[String(registrationId)] = String(position);
+          }
+        });
+        setAssignments(createdAssignments);
         await refreshDraw(createdId);
       } else {
         setReloadKey((key) => key + 1);
@@ -599,21 +954,27 @@ export default function MatchesManagementPage() {
     } catch (requestError) {
       setActionError(messageFrom(requestError, "Unable to create the draw."));
     } finally {
+      createDrawInProgress.current = false;
       setBusyAction("");
     }
   }
 
   async function handleSaveAssignments() {
     if (!drawId) return;
-    const positions = assignedEntries.map((assignment) => assignment.bracketPosition);
-    if (assignedEntries.length !== eligibleRegistrations.length) {
+    if (eligibleRegistrations.length < 2) {
       setActionError(
-        "Assign every eligible registration before saving the complete assignment set.",
+        "A draw needs at least two confirmed registrations.",
       );
       return;
     }
-    if (new Set(positions).size !== positions.length) {
-      setActionError("Each registration must have a unique bracket position.");
+    if (drawRegistrationSetChanged) {
+      setActionError(
+        "This draft snapshots a different registration set. Create a new draft before assigning positions.",
+      );
+      return;
+    }
+    if (!canAssignAndPublish) {
+      setActionError(getAssignmentErrorMessage());
       return;
     }
 
@@ -622,6 +983,7 @@ export default function MatchesManagementPage() {
     setNotice("");
     try {
       await assignDrawPositions(drawId, assignedEntries);
+      setPositionsSaved(true);
       await refreshDraw();
       setNotice("Bracket positions saved.");
     } catch (requestError) {
@@ -631,12 +993,73 @@ export default function MatchesManagementPage() {
     }
   }
 
+  function handleAutoAssign() {
+    if (eligibleRegistrations.length < 2) {
+      setActionError(
+        "A draw needs at least two confirmed registrations before positions can be assigned.",
+      );
+      return;
+    }
+    if (drawRegistrationSetChanged) {
+      setActionError(
+        "This draft snapshots a different registration set. Create a new draft before assigning positions.",
+      );
+      return;
+    }
+    if (eligibleRegistrations.some((registration) => getRegistrationId(registration) == null)) {
+      setActionError(
+        "A registration is missing its registration ID, so positions cannot be assigned safely.",
+      );
+      return;
+    }
+    if (
+      Object.keys(assignments).length > 0 &&
+      !window.confirm(
+        "Auto-assign will replace all current bracket positions with a randomized assignment. Continue?",
+      )
+    ) {
+      return;
+    }
+
+    setAssignments(createAutoAssignments(eligibleRegistrations, positionLimit));
+    setPositionsSaved(false);
+    setActionError("");
+    const byeCount = positionLimit - eligibleRegistrations.length;
+    setNotice(
+      `Randomly assigned ${eligibleRegistrations.length} registrations across ${positionLimit} positions with ${byeCount} first-round bye${byeCount === 1 ? "" : "s"}. Save positions or publish to apply them.`,
+    );
+  }
+
   async function handlePublishDraw() {
-    if (!drawId) return;
+    if (!drawId) {
+      setActionError("Select a category with a draft draw before publishing.");
+      return;
+    }
+    if (eligibleRegistrations.length < 2) {
+      setActionError(
+        "A draw needs at least two confirmed registrations.",
+      );
+      return;
+    }
+    if (drawRegistrationSetChanged) {
+      setActionError(
+        "This draft snapshots a different registration set. Create a new draft before publishing.",
+      );
+      return;
+    }
+    if (!canAssignAndPublish) {
+      setActionError(getAssignmentErrorMessage());
+      return;
+    }
+
     setBusyAction("publish");
     setActionError("");
     setNotice("");
     try {
+      if (!positionsSaved) {
+        await assignDrawPositions(drawId, assignedEntries);
+        setPositionsSaved(true);
+      }
       await publishCategoryDraw(drawId);
       await refreshDraw();
       setNotice("Draw published.");
@@ -680,15 +1103,24 @@ export default function MatchesManagementPage() {
   }
 
   function openScoreEditor(match) {
+    if (!isMatchPlayable(match, registrationsById, registrationsByPosition)) {
+      setActionError(
+        isByeMatch(match)
+          ? "This match is a bye; the player advances automatically."
+          : "This match is waiting for its players to advance from earlier rounds.",
+      );
+      return;
+    }
+
     const existingGames = getMatchGames(match);
     setScoreGames(
       existingGames.length
         ? existingGames
-        : [
-            { gameNumber: 1, participant1Score: "", participant2Score: "" },
-            { gameNumber: 2, participant1Score: "", participant2Score: "" },
-            { gameNumber: 3, participant1Score: "", participant2Score: "" },
-          ],
+        : Array.from({ length: bestOfGames ?? 3 }, (_, index) => ({
+            gameNumber: index + 1,
+            participant1Score: "",
+            participant2Score: "",
+          })),
     );
     setScoreMatch(match);
     setActionError("");
@@ -711,6 +1143,23 @@ export default function MatchesManagementPage() {
       );
       return;
     }
+    if (
+      scoreGames.some((game, index) => {
+        const isBlank =
+          game.participant1Score === "" && game.participant2Score === "";
+        const hasLaterScore = scoreGames
+          .slice(index + 1)
+          .some(
+            (laterGame) =>
+              laterGame.participant1Score !== "" ||
+              laterGame.participant2Score !== "",
+          );
+        return isBlank && hasLaterScore;
+      })
+    ) {
+      setActionError("Enter game scores in order without skipping a game.");
+      return;
+    }
     const games = startedGames.map((game, index) => ({
       gameNumber: index + 1,
       participant1Score: Number(game.participant1Score),
@@ -731,6 +1180,39 @@ export default function MatchesManagementPage() {
       setActionError("Enter a non-negative, non-tied score for each game.");
       return;
     }
+    const invalidGameIndex = games.findIndex(
+      (game) => getBadmintonGameWinner(game) == null,
+    );
+    if (invalidGameIndex >= 0) {
+      setActionError(
+        `Game ${invalidGameIndex + 1} must be won to at least 21 points by 2, with a maximum score of 30.`,
+      );
+      return;
+    }
+    if (gamesToWin != null) {
+      let participant1Wins = 0;
+      let participant2Wins = 0;
+      for (let index = 0; index < games.length; index += 1) {
+        const winner = getBadmintonGameWinner(games[index]);
+        if (winner === 1) participant1Wins += 1;
+        if (winner === 2) participant2Wins += 1;
+        if (
+          Math.max(participant1Wins, participant2Wins) >= gamesToWin &&
+          index < games.length - 1
+        ) {
+          setActionError(
+            "Do not enter additional games after a player has won the match.",
+          );
+          return;
+        }
+      }
+      if (Math.max(participant1Wins, participant2Wins) < gamesToWin) {
+        setActionError(
+          `Enter enough games for one player to win ${gamesToWin} game${gamesToWin === 1 ? "" : "s"}.`,
+        );
+        return;
+      }
+    }
 
     const matchId = scoreMatch.id ?? scoreMatch.matchId;
     if (matchId == null) {
@@ -744,7 +1226,9 @@ export default function MatchesManagementPage() {
       await updateMatchResult(drawId, matchId, games);
       await refreshDraw();
       setScoreMatch(null);
-      setNotice("Match result saved.");
+      setNotice(
+        "Match result saved. The draw refreshed, and the winner advances automatically.",
+      );
     } catch (requestError) {
       setActionError(messageFrom(requestError, "Unable to save match result."));
     } finally {
@@ -846,7 +1330,8 @@ export default function MatchesManagementPage() {
               {selectedCategory?.categoryName ||
                 selectedCategory?.name ||
                 "Select a category"}{" "}
-              · Single Elimination · {eligibleRegistrations.length} participants
+              · Single Elimination · {eligibleRegistrations.length} eligible
+              registrations
               · {formatTournamentDate(selectedTournament)}
             </p>
           </div>
@@ -906,27 +1391,13 @@ export default function MatchesManagementPage() {
               ))}
             </select>
           </label>
-          {!draw && (
-            <button
-              type="button"
-              onClick={handleCreateDraw}
-              disabled={busyAction !== "" || eligibleRegistrations.length < 2}
-              style={{
-                ...buttonStyle,
-                marginTop: "18px",
-                backgroundColor: "#EF3340",
-              }}
-            >
-              {busyAction === "create" ? "Generating…" : "Generate Bracket"}
-            </button>
-          )}
           {draw && !isPublished && (
             <button
               type="button"
               onClick={handlePublishDraw}
               disabled={
                 busyAction !== "" ||
-                assignedEntries.length !== eligibleRegistrations.length
+                loadingCategory
               }
               style={{
                 ...buttonStyle,
@@ -1037,25 +1508,94 @@ export default function MatchesManagementPage() {
                   marginLeft: "14px",
                 }}
               />
-              {!draw && (
+              {(!draw || isPublished || drawRegistrationSetChanged) && (
                 <button
                   type="button"
                   onClick={handleCreateDraw}
                   disabled={
-                    busyAction !== "" || eligibleRegistrations.length < 2
+                    busyAction !== "" ||
+                    loadingCategory ||
+                    eligibleRegistrations.length < 2
                   }
                   style={buttonStyle}
                 >
-                  <AddIcon
-                    style={{ fontSize: "16px", verticalAlign: "middle" }}
-                  />{" "}
-                  {busyAction === "create" ? "Creating…" : "Create draft draw"}
+                  <AddIcon style={{ fontSize: "16px", verticalAlign: "middle" }} />{" "}
+                  {busyAction === "create"
+                    ? "Creating…"
+                    : isPublished || drawRegistrationSetChanged
+                      ? "Create draft for current entries"
+                      : "Create draft once"}
                 </button>
               )}
             </div>
+            {draw && !isPublished && (
+              <p
+                style={{
+                  color: "#64748b",
+                  fontSize: "11px",
+                  margin: "-4px 0 14px",
+                }}
+              >
+                {drawRegistrationSetChanged
+                  ? `This draft snapshots ${drawRegistrationIds.length} registrations, while ${eligibleRegistrationIds.length} are currently eligible. Create a new draft before assigning positions.`
+                  : "A draft snapshots the confirmed registrations. If that set has changed, create a new draft before assigning positions."}
+              </p>
+            )}
+            {draw && !isPublished && eligibleRegistrations.length >= 2 && (
+              <p
+                style={{
+                  color: "#64748b",
+                  fontSize: "11px",
+                  margin: "-4px 0 14px",
+                }}
+              >
+                Assign each registration ID (not a member or user ID) to a
+                unique position from 1 to {positionLimit}. Positions 1–2 pair
+                in the first match, 3–4 in the second; empty positions become
+                byes.
+              </p>
+            )}
+            {draw &&
+              !isPublished &&
+              hasCompleteUniqueAssignments &&
+              emptyFirstRoundPairs.length > 0 && (
+                <p
+                  role="alert"
+                  style={{
+                    color: "#b91c1c",
+                    fontSize: "11px",
+                    margin: "-4px 0 14px",
+                  }}
+                >
+                  Positions{" "}
+                  {emptyFirstRoundPairs
+                    .map(([first, second]) => `${first}–${second}`)
+                    .join(", ")}{" "}
+                  are both empty. Move a player into one position in each
+                  pair; otherwise those matches cannot advance anyone.
+                </p>
+              )}
+            {draw && isPublished && (
+              <p
+                style={{
+                  color: "#64748b",
+                  fontSize: "11px",
+                  margin: "-4px 0 14px",
+                }}
+              >
+                {drawRegistrationSetChanged
+                  ? `This published draw has ${drawRegistrationIds.length} registrations, while ${eligibleRegistrationIds.length} are currently eligible. Create a new draft to include the current registration set.`
+                  : "The published draw is a snapshot of its original registrations. Create a new draft if the confirmed registration set has changed."}
+              </p>
+            )}
             {eligibleRegistrations.length === 0 ? (
               <p style={{ color: "#64748b", fontSize: "13px" }}>
                 No eligible registrations were returned for this category.
+              </p>
+            ) : eligibleRegistrations.length < 2 ? (
+              <p style={{ color: "#64748b", fontSize: "13px" }}>
+                At least two confirmed registrations are required before
+                creating a draft draw.
               </p>
             ) : (
               <div
@@ -1084,7 +1624,7 @@ export default function MatchesManagementPage() {
                         zIndex: 1,
                       }}
                     >
-                      <th style={{ padding: "11px" }}>REGISTRATION</th>
+                      <th style={{ padding: "11px" }}>REGISTRATION ID</th>
                       <th style={{ padding: "11px" }}>PLAYER / TEAM</th>
                       {draw && !isPublished && (
                         <th style={{ padding: "11px", width: "190px" }}>
@@ -1123,23 +1663,41 @@ export default function MatchesManagementPage() {
                             <td style={{ padding: "8px 11px" }}>
                               <select
                                 value={assignments[key] || ""}
-                                onChange={(event) =>
+                                onChange={(event) => {
+                                  setPositionsSaved(false);
                                   setAssignments((current) => ({
                                     ...current,
                                     [key]: event.target.value,
-                                  }))
-                                }
+                                  }));
+                                }}
+                                disabled={drawRegistrationSetChanged}
                                 style={inputStyle}
                               >
                                 <option value="">Not assigned</option>
                                 {Array.from(
                                   { length: positionLimit },
                                   (_, index) => index + 1,
-                                ).map((position) => (
-                                  <option key={position} value={position}>
-                                    Position {position}
-                                  </option>
-                                ))}
+                                )
+                                  .filter(
+                                    (position) =>
+                                      Number(assignments[key]) === position ||
+                                      !Object.entries(assignments).some(
+                                        ([
+                                          assignedRegistrationId,
+                                          assignedPosition,
+                                        ]) =>
+                                          assignedRegistrationId !== key &&
+                                          Number(assignedPosition) === position,
+                                      ),
+                                  )
+                                  .map((position) => (
+                                    <option
+                                      key={position}
+                                      value={position}
+                                    >
+                                      Position {position}
+                                    </option>
+                                  ))}
                               </select>
                             </td>
                           )}
@@ -1162,10 +1720,17 @@ export default function MatchesManagementPage() {
               >
                 <button
                   type="button"
+                  onClick={handleAutoAssign}
+                  disabled={busyAction !== "" || loadingCategory}
+                  style={{ ...buttonStyle, backgroundColor: "#334155" }}
+                >
+                  Auto-assign positions
+                </button>
+                <button
+                  type="button"
                   onClick={handleSaveAssignments}
                   disabled={
-                    busyAction !== "" ||
-                    assignedEntries.length !== eligibleRegistrations.length
+                    busyAction !== "" || !canPublishCurrentDraft
                   }
                   style={buttonStyle}
                 >
@@ -1177,20 +1742,16 @@ export default function MatchesManagementPage() {
                   type="button"
                   onClick={handlePublishDraw}
                   disabled={
-                    busyAction !== "" ||
-                    assignedEntries.length !== eligibleRegistrations.length ||
-                    new Set(
-                      assignedEntries.map(
-                        (assignment) => assignment.bracketPosition,
-                      ),
-                    ).size !== assignedEntries.length
+                    busyAction !== "" || loadingCategory
                   }
                   style={{ ...buttonStyle, backgroundColor: "#15803d" }}
                 >
                   {busyAction === "publish" ? "Publishing…" : "Publish draw"}
                 </button>
                 <span style={{ color: "#64748b", fontSize: "11px" }}>
-                  Saving replaces all positions currently stored for this draw.
+                  Auto-assign randomizes players and spreads byes across
+                  separate first-round matches. Saving replaces all positions
+                  currently stored for this draw.
                 </span>
               </div>
             )}
@@ -1336,38 +1897,6 @@ export default function MatchesManagementPage() {
                         </button>
                       ),
                     )}
-                  </div>
-                  <div
-                    style={{
-                      marginLeft: "auto",
-                      display: "flex",
-                      gap: "10px",
-                      whiteSpace: "nowrap",
-                      color: "#64748b",
-                      fontSize: "10px",
-                    }}
-                  >
-                    {[
-                      ["#64748b", "Pending"],
-                      ["#2563eb", "In progress"],
-                      ["#16a34a", "Completed"],
-                      ["#94a3b8", "BYE"],
-                    ].map(([color, label]) => (
-                      <span
-                        key={label}
-                        style={{ display: "inline-flex", alignItems: "center", gap: "5px" }}
-                      >
-                        <span
-                          style={{
-                            width: "7px",
-                            height: "7px",
-                            borderRadius: "50%",
-                            backgroundColor: color,
-                          }}
-                        />
-                        {label}
-                      </span>
-                    ))}
                   </div>
                 </div>
               )}
@@ -1534,21 +2063,45 @@ export default function MatchesManagementPage() {
                           {roundMatches.map((match, index) => {
                             const matchId =
                               match.id ?? match.matchId ?? index + 1;
+                            const sourceRoundIndex = rounds.findIndex(
+                              ([sourceRoundName]) =>
+                                sourceRoundName === roundName,
+                            );
                             const first = getParticipant(
                               match,
                               1,
                               registrationsById,
+                              registrationsByPosition,
                             );
                             const second = getParticipant(
                               match,
                               2,
                               registrationsById,
+                              registrationsByPosition,
                             );
+                            const canPlayMatch = isMatchPlayable(
+                              match,
+                              registrationsById,
+                              registrationsByPosition,
+                            );
+                            const firstPosition =
+                              getParticipantBracketPosition(
+                                match,
+                                1,
+                                assignments,
+                              ) ??
+                              (sourceRoundIndex === 0 ? index * 2 + 1 : null);
+                            const secondPosition =
+                              getParticipantBracketPosition(
+                                match,
+                                2,
+                                assignments,
+                              ) ??
+                              (sourceRoundIndex === 0
+                                ? index * 2 + 2
+                                : null);
                             const winnerSide = getWinnerSide(match);
-                            const isExplicitBye =
-                              getMatchStatus(match) === "bye" ||
-                              match.isBye === true ||
-                              match.bye === true;
+                            const isExplicitBye = isByeMatch(match);
                             const firstLabel =
                               first === "Awaiting player" ? "Awaiting player" : first;
                             const secondLabel =
@@ -1557,12 +2110,23 @@ export default function MatchesManagementPage() {
                                 : second === "Awaiting player"
                                   ? "Awaiting player"
                                   : second;
+                            const firstDisplayLabel =
+                              firstPosition == null
+                                ? firstLabel
+                                : `#${firstPosition} ${firstLabel}`;
+                            const secondDisplayLabel =
+                              secondPosition == null
+                                ? secondLabel
+                                : `#${secondPosition} ${secondLabel}`;
 
                             return (
                               <article
                                 key={`${roundName}-${matchId}-${index}`}
                                 onClick={() =>
-                                  isPublished && openScoreEditor(match)
+                                  isPublished &&
+                                  canPlayMatch &&
+                                  !isFinalized &&
+                                  openScoreEditor(match)
                                 }
                                 style={{
                                   height: `${BRACKET_MATCH_HEIGHT}px`,
@@ -1571,12 +2135,12 @@ export default function MatchesManagementPage() {
                                   flexDirection: "column",
                                   gap: "4px",
                                   cursor:
-                                    isPublished && !isFinalized
+                                    isPublished && canPlayMatch && !isFinalized
                                       ? "pointer"
                                       : "default",
                                 }}
                               >
-                                {[firstLabel, secondLabel].map((label, participantIndex) => (
+                                {[firstDisplayLabel, secondDisplayLabel].map((label, participantIndex) => (
                                   <div
                                     key={`${participantIndex}-${label}`}
                                     style={{
@@ -1777,6 +2341,12 @@ export default function MatchesManagementPage() {
                   <tbody>
                     {matches.map((match, index) => {
                       const gameScores = getMatchGames(match);
+                      const bye = isByeMatch(match);
+                      const canPlayMatch = isMatchPlayable(
+                        match,
+                        registrationsById,
+                        registrationsByPosition,
+                      );
                       return (
                         <tr
                           key={match.id ?? match.matchId ?? index}
@@ -1789,9 +2359,19 @@ export default function MatchesManagementPage() {
                             {getRoundName(match)}
                           </td>
                           <td style={{ padding: "12px" }}>
-                            {getParticipant(match, 1, registrationsById)}
+                            {getParticipant(
+                              match,
+                              1,
+                              registrationsById,
+                              registrationsByPosition,
+                            )}
                             {" vs "}
-                            {getParticipant(match, 2, registrationsById)}
+                            {getParticipant(
+                              match,
+                              2,
+                              registrationsById,
+                              registrationsByPosition,
+                            )}
                           </td>
                           <td style={{ padding: "12px", fontFamily: "monospace" }}>
                             {gameScores.length
@@ -1813,15 +2393,30 @@ export default function MatchesManagementPage() {
                               <button
                                 type="button"
                                 onClick={() => openScoreEditor(match)}
-                                disabled={busyAction !== "" || isFinalized}
+                                disabled={
+                                  busyAction !== "" ||
+                                  isFinalized ||
+                                  !canPlayMatch
+                                }
+                                title={
+                                  bye
+                                    ? "Bye matches advance automatically."
+                                    : canPlayMatch
+                                      ? "Enter the official match score."
+                                      : "Waiting for players to advance from earlier rounds."
+                                }
                                 style={{
                                   ...buttonStyle,
                                   padding: "7px 10px",
                                 }}
                               >
-                                {isMatchComplete(match)
-                                  ? "Update result"
-                                  : "Enter result"}
+                                {bye
+                                  ? "Bye · auto-advance"
+                                  : !canPlayMatch
+                                    ? "Awaiting players"
+                                    : isMatchComplete(match)
+                                      ? "Update result"
+                                      : "Enter result"}
                               </button>
                             </td>
                           )}
@@ -1983,8 +2578,26 @@ export default function MatchesManagementPage() {
               Enter match result
             </h2>
             <p style={{ margin: "0 0 18px", color: "#64748b", fontSize: "12px" }}>
-              {getParticipant(scoreMatch, 1, registrationsById)} vs{" "}
-              {getParticipant(scoreMatch, 2, registrationsById)}
+              <strong>P1:</strong>{" "}
+              {getParticipant(
+                scoreMatch,
+                1,
+                registrationsById,
+                registrationsByPosition,
+              )}{" "}
+              <span aria-hidden="true">vs</span>{" "}
+              <strong>P2:</strong>{" "}
+              {getParticipant(
+                scoreMatch,
+                2,
+                registrationsById,
+                registrationsByPosition,
+              )}
+            </p>
+            <p style={{ margin: "0 0 16px", color: "#64748b", fontSize: "12px" }}>
+              Enter the official score: each badminton game is played to 21,
+              must be won by 2, and is capped at 30.{" "}
+              {selectedCategory?.matchFormat || "Best of 3 games"}.
             </p>
             {scoreGames.map((game, index) => (
               <div
@@ -2002,6 +2615,8 @@ export default function MatchesManagementPage() {
                   <input
                     type="number"
                     min="0"
+                    max="30"
+                    step="1"
                     value={game.participant1Score}
                     onChange={(event) =>
                       setScoreGames((current) =>
@@ -2021,6 +2636,8 @@ export default function MatchesManagementPage() {
                   <input
                     type="number"
                     min="0"
+                    max="30"
+                    step="1"
                     value={game.participant2Score}
                     onChange={(event) =>
                       setScoreGames((current) =>
@@ -2036,7 +2653,7 @@ export default function MatchesManagementPage() {
                 </label>
               </div>
             ))}
-            {scoreGames.length < 5 && (
+            {scoreGames.length < maxScoreGames && (
               <button
                 type="button"
                 onClick={() =>

@@ -72,15 +72,12 @@ export async function getCategoryDraws(categoryId) {
 }
 
 export async function createCategoryDraw(categoryId) {
+  if (categoryId == null || String(categoryId).trim() === "") {
+    throw new Error("A tournament category is required to create a draw.");
+  }
   const response = await apiRequest(
     `/admin/tournament-categories/${encodeURIComponent(categoryId)}/draws`,
-    {
-      method: "POST",
-      body: JSON.stringify({
-        drawFormat: "SINGLE_ELIMINATION",
-        seedingMethod: "MANUAL",
-      }),
-    },
+    { method: "POST" },
   );
   return getSuccessfulData(response, "The server did not create the draw.");
 }
