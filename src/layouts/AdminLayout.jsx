@@ -292,8 +292,8 @@ export default function AdminDashboard() {
         element={
           <ProtectedRoute session={session}>
             <DashboardLayout
-              activeTitle="Points Allocation & Leaderboard Management"
-              activeSubtitle="Distribute manual tournament points to approved players and oversee live top 10 rankings."
+              activeTitle="Tournament Category Leaderboards"
+              activeSubtitle="Review finalized player placements and ranking points by tournament category."
               onLogout={handleLogout}
             >
               <RankingPage />

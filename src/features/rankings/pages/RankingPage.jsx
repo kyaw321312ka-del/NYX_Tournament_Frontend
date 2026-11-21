@@ -1,372 +1,155 @@
-import React, { useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import EmojiEventsOutlinedIcon from "@mui/icons-material/EmojiEventsOutlined";
-import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
-import SyncOutlinedIcon from "@mui/icons-material/SyncOutlined";
-import RestartAltIcon from "@mui/icons-material/RestartAlt";
+import RefreshIcon from "@mui/icons-material/Refresh";
 import SearchIcon from "@mui/icons-material/Search";
-import WarningAmberRoundedIcon from "@mui/icons-material/WarningAmberRounded";
-
-const INITIAL_PLAYERS = [
-  {
-    id: "PLY-001",
-    name: "Aung Aung",
-    contact: "+95 9 12345678",
-    tournament: "2026 National Badminton",
-    previousPoints: 1200,
-    currentPoints: 500,
-    pointsToAward: 0,
-  },
-  {
-    id: "PLY-002",
-    name: "Kyaw Kyaw",
-    contact: "+95 9 23456789",
-    tournament: "2026 National Badminton",
-    previousPoints: 800,
-    currentPoints: 200,
-    pointsToAward: 0,
-  },
-  {
-    id: "PLY-003",
-    name: "Min Min",
-    contact: "+95 9 34567890",
-    tournament: "2026 National Badminton",
-    previousPoints: 620,
-    currentPoints: 300,
-    pointsToAward: 0,
-  },
-  {
-    id: "PLY-004",
-    name: "Zaw Zaw",
-    contact: "+95 9 45678901",
-    tournament: "2026 National Badminton",
-    previousPoints: 590,
-    currentPoints: 150,
-    pointsToAward: 0,
-  },
-  {
-    id: "PLY-005",
-    name: "Nyi Nyi",
-    contact: "+95 9 56789012",
-    tournament: "2026 National Badminton",
-    previousPoints: 510,
-    currentPoints: 100,
-    pointsToAward: 0,
-  },
-  {
-    id: "PLY-006",
-    name: "Tun Tun",
-    contact: "+95 9 67890123",
-    tournament: "2026 National Badminton",
-    previousPoints: 480,
-    currentPoints: 50,
-    pointsToAward: 0,
-  },
-  {
-    id: "PLY-007",
-    name: "Kaung Kaung",
-    contact: "+95 9 78901234",
-    tournament: "2026 National Badminton",
-    previousPoints: 450,
-    currentPoints: 120,
-    pointsToAward: 0,
-  },
-  {
-    id: "PLY-008",
-    name: "Htet Htet",
-    contact: "+95 9 89012345",
-    tournament: "2026 National Badminton",
-    previousPoints: 420,
-    currentPoints: 400,
-    pointsToAward: 0,
-  },
-  {
-    id: "PLY-009",
-    name: "Kyaw Swar",
-    contact: "+95 9 90123456",
-    tournament: "2026 National Badminton",
-    previousPoints: 390,
-    currentPoints: 0,
-    pointsToAward: 0,
-  },
-  {
-    id: "PLY-010",
-    name: "Mg Mg",
-    contact: "+95 9 01234567",
-    tournament: "2026 National Badminton",
-    previousPoints: 350,
-    currentPoints: 240,
-    pointsToAward: 0,
-  },
-
-  {
-    id: "PLY-011",
-    name: "Thura",
-    contact: "+95 9 11112222",
-    tournament: "Smash Summer Open 2026",
-    previousPoints: 650,
-    currentPoints: 120,
-    pointsToAward: 0,
-  },
-  {
-    id: "PLY-012",
-    name: "Mya Mya",
-    contact: "+95 9 22223333",
-    tournament: "Smash Summer Open 2026",
-    previousPoints: 500,
-    currentPoints: 90,
-    pointsToAward: 0,
-  },
-  {
-    id: "PLY-013",
-    name: "Soe Soe",
-    contact: "+95 9 33334444",
-    tournament: "Smash Summer Open 2026",
-    previousPoints: 450,
-    currentPoints: 110,
-    pointsToAward: 0,
-  },
-  {
-    id: "PLY-014",
-    name: "Bo Bo",
-    contact: "+95 9 44445555",
-    tournament: "Smash Summer Open 2026",
-    previousPoints: 400,
-    currentPoints: 70,
-    pointsToAward: 0,
-  },
-  {
-    id: "PLY-015",
-    name: "Aung Ko",
-    contact: "+95 9 55556666",
-    tournament: "Smash Summer Open 2026",
-    previousPoints: 380,
-    currentPoints: 60,
-    pointsToAward: 0,
-  },
-  {
-    id: "PLY-016",
-    name: "Lwin Lwin",
-    contact: "+95 9 66667777",
-    tournament: "Smash Summer Open 2026",
-    previousPoints: 340,
-    currentPoints: 50,
-    pointsToAward: 0,
-  },
-  {
-    id: "PLY-017",
-    name: "Pyae Sone",
-    contact: "+95 9 77778888",
-    tournament: "Smash Summer Open 2026",
-    previousPoints: 300,
-    currentPoints: 40,
-    pointsToAward: 0,
-  },
-  {
-    id: "PLY-018",
-    name: "Hla Hla",
-    contact: "+95 9 88889999",
-    tournament: "Smash Summer Open 2026",
-    previousPoints: 260,
-    currentPoints: 30,
-    pointsToAward: 0,
-  },
-  {
-    id: "PLY-019",
-    name: "Khin Khin",
-    contact: "+95 9 99990000",
-    tournament: "Smash Summer Open 2026",
-    previousPoints: 210,
-    currentPoints: 20,
-    pointsToAward: 0,
-  },
-  {
-    id: "PLY-020",
-    name: "Naing Naing",
-    contact: "+95 9 10101010",
-    tournament: "Smash Summer Open 2026",
-    previousPoints: 180,
-    currentPoints: 10,
-    pointsToAward: 0,
-  },
-
-  {
-    id: "PLY-021",
-    name: "Zin Zin",
-    contact: "+95 9 12121212",
-    tournament: "Weekend Shuttle Masters",
-    previousPoints: 720,
-    currentPoints: 150,
-    pointsToAward: 0,
-  },
-  {
-    id: "PLY-022",
-    name: "Wai Yan",
-    contact: "+95 9 23232323",
-    tournament: "Weekend Shuttle Masters",
-    previousPoints: 580,
-    currentPoints: 130,
-    pointsToAward: 0,
-  },
-  {
-    id: "PLY-023",
-    name: "Myo Min",
-    contact: "+95 9 34343434",
-    tournament: "Weekend Shuttle Masters",
-    previousPoints: 490,
-    currentPoints: 110,
-    pointsToAward: 0,
-  },
-  {
-    id: "PLY-024",
-    name: "Phyu Phyu",
-    contact: "+95 9 45454545",
-    tournament: "Weekend Shuttle Masters",
-    previousPoints: 420,
-    currentPoints: 90,
-    pointsToAward: 0,
-  },
-  {
-    id: "PLY-025",
-    name: "Thu Ra",
-    contact: "+95 9 56565656",
-    tournament: "Weekend Shuttle Masters",
-    previousPoints: 390,
-    currentPoints: 80,
-    pointsToAward: 0,
-  },
-  {
-    id: "PLY-026",
-    name: "Kyi Kyi",
-    contact: "+95 9 67676767",
-    tournament: "Weekend Shuttle Masters",
-    previousPoints: 330,
-    currentPoints: 70,
-    pointsToAward: 0,
-  },
-  {
-    id: "PLY-027",
-    name: "Ye Yint",
-    contact: "+95 9 78787878",
-    tournament: "Weekend Shuttle Masters",
-    previousPoints: 290,
-    currentPoints: 60,
-    pointsToAward: 0,
-  },
-  {
-    id: "PLY-028",
-    name: "Sane Sane",
-    contact: "+95 9 89898989",
-    tournament: "Weekend Shuttle Masters",
-    previousPoints: 250,
-    currentPoints: 50,
-    pointsToAward: 0,
-  },
-  {
-    id: "PLY-029",
-    name: "Thae Thae",
-    contact: "+95 9 90909090",
-    tournament: "Weekend Shuttle Masters",
-    previousPoints: 200,
-    currentPoints: 40,
-    pointsToAward: 0,
-  },
-  {
-    id: "PLY-030",
-    name: "Hein Hein",
-    contact: "+95 9 01010101",
-    tournament: "Weekend Shuttle Masters",
-    previousPoints: 150,
-    currentPoints: 30,
-    pointsToAward: 0,
-  },
-];
-
-const TOURNAMENTS = [
-  "2026 National Badminton",
-  "Smash Summer Open 2026",
-  "Weekend Shuttle Masters",
-];
+import { getCategoryLeaderboard } from "../api/rankingApi";
+import { getTournaments } from "../../tournaments/api/tournamentApi";
 
 export default function RankingPage() {
   const outletContext = useOutletContext() || {};
   const { isDark: parentIsDark } = outletContext;
   const isDark = parentIsDark ?? false;
 
-  const [selectedTournament, setSelectedTournament] = useState(TOURNAMENTS[0]);
-  const [players, setPlayers] = useState(INITIAL_PLAYERS);
+  const [categoryOptions, setCategoryOptions] = useState([]);
+  const [selectedCategoryId, setSelectedCategoryId] = useState("");
+  const [leaderboardData, setLeaderboardData] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [isEditing, setIsEditing] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [showRestartModal, setShowRestartModal] = useState(false);
+  const [loadingCategories, setLoadingCategories] = useState(true);
+  const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
+  const [loadError, setLoadError] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
 
   const ITEMS_PER_PAGE = 10;
 
-  const filteredPlayers = useMemo(() => {
-    return players.filter(
-      (p) =>
-        p.tournament === selectedTournament &&
-        (p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          p.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          p.contact.includes(searchTerm)),
-    );
-  }, [players, selectedTournament, searchTerm]);
+  useEffect(() => {
+    let cancelled = false;
 
-  const totalEntries = filteredPlayers.length;
-  const totalPages = Math.ceil(totalEntries / ITEMS_PER_PAGE) || 1;
-
-  const paginatedPlayers = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredPlayers.slice(start, start + ITEMS_PER_PAGE);
-  }, [filteredPlayers, currentPage]);
-
-  const emptyRowsCount = Math.max(0, ITEMS_PER_PAGE - paginatedPlayers.length);
-
-  const handleAwardChange = (id, val) => {
-    const numericVal = parseInt(val, 10) || 0;
-    setPlayers((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, pointsToAward: numericVal } : p)),
-    );
-  };
-
-  const handleSaveSync = () => {
-    setPlayers((prev) =>
-      prev.map((p) => {
-        if (p.tournament === selectedTournament && p.pointsToAward > 0) {
-          return {
-            ...p,
-            currentPoints: p.currentPoints + p.pointsToAward,
-            pointsToAward: 0,
-          };
+    async function loadCategories() {
+      setLoadingCategories(true);
+      setLoadError("");
+      try {
+        const result = await getTournaments({
+          page: 1,
+          pageSize: 100,
+          authenticated: true,
+        });
+        const options = result.tournaments.flatMap((tournament) =>
+          (Array.isArray(tournament.categories) ? tournament.categories : [])
+            .filter((category) => category.id != null)
+            .map((category) => ({
+              id: String(category.id),
+              label: `${tournament.title || "Tournament"} — ${
+                category.categoryName ||
+                category.name ||
+                category.categoryCode ||
+                `Category ${category.id}`
+              }`,
+            })),
+        );
+        if (cancelled) return;
+        setCategoryOptions(options);
+        if (options.length === 0) {
+          setLeaderboardData(null);
+          setLoadingLeaderboard(false);
         }
-        return p;
-      }),
-    );
-    setIsEditing(false);
-  };
+        setSelectedCategoryId((current) =>
+          options.some((option) => option.id === current)
+            ? current
+            : options[0]?.id || "",
+        );
+      } catch (requestError) {
+        if (!cancelled) {
+          setLoadError(
+            requestError instanceof Error
+              ? requestError.message
+              : "Unable to load tournament categories.",
+          );
+          setCategoryOptions([]);
+          setSelectedCategoryId("");
+          setLeaderboardData(null);
+          setLoadingLeaderboard(false);
+        }
+      } finally {
+        if (!cancelled) setLoadingCategories(false);
+      }
+    }
 
-  const handleConfirmRestart = () => {
-    setPlayers((prev) =>
-      prev.map((p) => ({
-        ...p,
-        previousPoints: 0,
-        currentPoints: 0,
-        pointsToAward: 0,
-      })),
-    );
-    setShowRestartModal(false);
-  };
+    loadCategories();
+    return () => {
+      cancelled = true;
+    };
+  }, [reloadKey]);
+
+  useEffect(() => {
+    if (!selectedCategoryId) {
+      return undefined;
+    }
+
+    let cancelled = false;
+    async function loadLeaderboard() {
+      setLoadingLeaderboard(true);
+      setLoadError("");
+      try {
+        const data = await getCategoryLeaderboard(selectedCategoryId);
+        if (!cancelled) setLeaderboardData(data);
+      } catch (requestError) {
+        if (!cancelled) {
+          setLoadError(
+            requestError instanceof Error
+              ? requestError.message
+              : "Unable to load the category leaderboard.",
+          );
+          setLeaderboardData(null);
+        }
+      } finally {
+        if (!cancelled) setLoadingLeaderboard(false);
+      }
+    }
+
+    loadLeaderboard();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedCategoryId, reloadKey]);
+
+  const entries = useMemo(
+    () => leaderboardData?.entries || [],
+    [leaderboardData],
+  );
+  const filteredEntries = useMemo(() => {
+    const query = searchTerm.trim().toLowerCase();
+    if (!query) return entries;
+    return entries.filter((entry) => {
+      const name = entry.player.name.toLowerCase();
+      return (
+        name.includes(query) ||
+        String(entry.registrationId).includes(query) ||
+        String(entry.player.id).includes(query) ||
+        entry.label.toLowerCase().includes(query)
+      );
+    });
+  }, [entries, searchTerm]);
+
+  const totalEntries = filteredEntries.length;
+  const totalPages = Math.ceil(totalEntries / ITEMS_PER_PAGE) || 1;
+  const activePage = Math.min(currentPage, totalPages);
+
+  const paginatedEntries = useMemo(() => {
+    const start = (activePage - 1) * ITEMS_PER_PAGE;
+    return filteredEntries.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredEntries, activePage]);
 
   const top10Leaderboard = useMemo(() => {
-    return [...players]
-      .map((p) => ({
-        ...p,
-        totalPoints: p.previousPoints + p.currentPoints + p.pointsToAward,
-      }))
-      .filter((p) => p.totalPoints > 0)
-      .sort((a, b) => b.totalPoints - a.totalPoints)
+    return [...entries]
+      .sort((first, second) => Number(first.position) - Number(second.position))
       .slice(0, 10);
-  }, [players]);
+  }, [entries]);
+
+  const selectedCategory = categoryOptions.find(
+    (option) => option.id === selectedCategoryId,
+  );
 
   const styles = {
     container: {
@@ -472,12 +255,6 @@ export default function RankingPage() {
       color: isDark ? "#ffffff" : "#0f172a",
       margin: 0,
     },
-    actions: {
-      display: "flex",
-      gap: "10px",
-      flexWrap: "wrap",
-      alignItems: "center",
-    },
     btn: {
       padding: "9px 16px",
       borderRadius: "8px",
@@ -488,30 +265,6 @@ export default function RankingPage() {
       display: "flex",
       alignItems: "center",
       gap: "6px",
-    },
-    btnEdit: {
-      backgroundColor: isDark ? "#24272b" : "#f1f5f9",
-      color: isDark ? "#ffffff" : "#334155",
-      border: `1px solid ${isDark ? "#2d3139" : "#cbd5e1"}`,
-    },
-    btnEditActive: {
-      backgroundColor: "#0284c7",
-      color: "#ffffff",
-      borderColor: "#0284c7",
-    },
-    btnSync: {
-      backgroundColor: "#10b981",
-      color: "#ffffff",
-    },
-    btnSyncDisabled: {
-      backgroundColor: isDark ? "#1a1c1e" : "#cbd5e1",
-      color: "#888",
-      cursor: "not-allowed",
-      border: isDark ? "1px solid #2d3139" : "none",
-    },
-    btnRestart: {
-      backgroundColor: "#ef4444",
-      color: "#ffffff",
     },
     tableWrapper: {
       overflowX: "auto",
@@ -547,23 +300,6 @@ export default function RankingPage() {
     pointsCell: {
       fontWeight: "bold",
       color: isDark ? "#cbd5e1" : "#334155",
-    },
-    awardInput: {
-      width: "90px",
-      padding: "8px",
-      textAlign: "center",
-      border: `1px solid ${isDark ? "#3b82f6" : "#cbd5e1"}`,
-      borderRadius: "6px",
-      fontSize: "14px",
-      fontWeight: "bold",
-      outline: "none",
-      backgroundColor: isDark ? "#24272b" : "#ffffff",
-      color: isDark ? "#ffffff" : "#000000",
-    },
-    awardInputDisabled: {
-      backgroundColor: isDark ? "#1a1c1e" : "#f8fafc",
-      borderColor: isDark ? "#2d3139" : "#e2e8f0",
-      color: "#888",
     },
     totalCell: {
       textAlign: "right",
@@ -683,80 +419,6 @@ export default function RankingPage() {
       padding: "20px 0",
       fontStyle: "italic",
     },
-    // Modal Styles
-    modalOverlay: {
-      position: "fixed",
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      backgroundColor: "rgba(0, 0, 0, 0.6)",
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      zIndex: 1000,
-      backdropFilter: "blur(2px)",
-    },
-    modalContent: {
-      backgroundColor: isDark ? "#1a1c1e" : "#ffffff",
-      padding: "24px",
-      borderRadius: "12px",
-      width: "100%",
-      maxWidth: "400px",
-      border: `1px solid ${isDark ? "#2d3139" : "#e2e8f0"}`,
-      boxShadow: "0 10px 25px rgba(0,0,0,0.2)",
-      textAlign: "center",
-    },
-    modalIconWrapper: {
-      width: "48px",
-      height: "48px",
-      borderRadius: "50%",
-      backgroundColor: isDark ? "rgba(239, 68, 68, 0.2)" : "#fee2e2",
-      display: "flex",
-      justifyContent: "center",
-      alignItems: "center",
-      margin: "0 auto 16px auto",
-      color: "#ef4444",
-    },
-    modalTitle: {
-      fontSize: "18px",
-      fontWeight: "bold",
-      color: isDark ? "#ffffff" : "#0f172a",
-      margin: "0 0 8px 0",
-    },
-    modalText: {
-      fontSize: "14px",
-      color: "#64748b",
-      margin: "0 0 24px 0",
-      lineHeight: "1.5",
-    },
-    modalActions: {
-      display: "flex",
-      gap: "12px",
-      justifyContent: "center",
-    },
-    modalBtnCancel: {
-      flex: 1,
-      padding: "10px 16px",
-      borderRadius: "8px",
-      fontSize: "14px",
-      fontWeight: "600",
-      border: `1px solid ${isDark ? "#2d3139" : "#cbd5e1"}`,
-      backgroundColor: isDark ? "#24272b" : "#f1f5f9",
-      color: isDark ? "#e1e1e1" : "#334155",
-      cursor: "pointer",
-    },
-    modalBtnConfirm: {
-      flex: 1,
-      padding: "10px 16px",
-      borderRadius: "8px",
-      fontSize: "14px",
-      fontWeight: "600",
-      border: "none",
-      backgroundColor: "#ef4444",
-      color: "#ffffff",
-      cursor: "pointer",
-    },
   };
 
   return (
@@ -768,9 +430,12 @@ export default function RankingPage() {
             <SearchIcon style={styles.searchIcon} />
             <input
               type="text"
-              placeholder="Search tournaments..."
+              placeholder="Search players or registration IDs..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={(e) => {
+                setSearchTerm(e.target.value);
+                setCurrentPage(1);
+              }}
               style={styles.searchInput}
             />
           </div>
@@ -778,22 +443,27 @@ export default function RankingPage() {
 
         <div style={styles.topbarRight}>
           <div style={styles.selectContainer}>
-            Tournament:
+            Tournament category:
             <select
               style={styles.select}
-              value={selectedTournament}
+              value={selectedCategoryId}
+              disabled={loadingCategories || categoryOptions.length === 0}
               onChange={(e) => {
-                setSelectedTournament(e.target.value);
+                setSelectedCategoryId(e.target.value);
                 setCurrentPage(1);
+                setLeaderboardData(null);
               }}
             >
-              {TOURNAMENTS.map((t) => (
+              <option value="">
+                {loadingCategories ? "Loading categories…" : "Select category"}
+              </option>
+              {categoryOptions.map((option) => (
                 <option
-                  key={t}
-                  value={t}
+                  key={option.id}
+                  value={option.id}
                   style={{ backgroundColor: isDark ? "#1a1c1e" : "#fff" }}
                 >
-                  {t}
+                  {option.label}
                 </option>
               ))}
             </select>
@@ -802,51 +472,47 @@ export default function RankingPage() {
           <button
             style={{
               ...styles.btn,
-              ...styles.btnRestart,
+              backgroundColor: isDark ? "#24272b" : "#1e293b",
+              color: "#ffffff",
             }}
-            onClick={() => setShowRestartModal(true)}
-            title="Reset all player points to 0"
+            onClick={() => setReloadKey((key) => key + 1)}
+            disabled={loadingCategories || loadingLeaderboard}
+            title="Refresh tournament categories and leaderboard"
           >
-            <RestartAltIcon style={{ fontSize: "16px" }} />
-            Restart
+            <RefreshIcon style={{ fontSize: "16px" }} />
+            Refresh
           </button>
         </div>
       </div>
+
+      {loadError && (
+        <div
+          role="alert"
+          style={{ ...styles.card, color: "#b91c1c", marginBottom: "20px" }}
+        >
+          {loadError}
+        </div>
+      )}
+      {(loadingCategories || loadingLeaderboard) && (
+        <div role="status" style={{ marginBottom: "20px", color: "#64748b" }}>
+          {loadingCategories
+            ? "Loading tournament categories…"
+            : "Loading category leaderboard…"}
+        </div>
+      )}
 
       {/* MAIN GRID */}
       <div style={styles.grid}>
         {/* LEFT BOX */}
         <div style={styles.card}>
           <div style={styles.cardHeader}>
-            <h3 style={styles.cardHeaderTitle}>
-              Approved Player Points Allocation
-            </h3>
-
-            <div style={styles.actions}>
-              <button
-                style={{
-                  ...styles.btn,
-                  ...styles.btnEdit,
-                  ...(isEditing ? styles.btnEditActive : {}),
-                }}
-                onClick={() => setIsEditing(!isEditing)}
-              >
-                <EditOutlinedIcon style={{ fontSize: "16px" }} />
-                Edit Points
-              </button>
-
-              <button
-                style={{
-                  ...styles.btn,
-                  ...styles.btnSync,
-                  ...(!isEditing ? styles.btnSyncDisabled : {}),
-                }}
-                disabled={!isEditing}
-                onClick={handleSaveSync}
-              >
-                <SyncOutlinedIcon style={{ fontSize: "16px" }} />
-                Save & Sync
-              </button>
+            <div>
+              <h3 style={styles.cardHeaderTitle}>Finalized Category Awards</h3>
+              {selectedCategory && (
+                <p style={{ margin: "5px 0 0", color: "#64748b", fontSize: "12px" }}>
+                  {selectedCategory.label}
+                </p>
+              )}
             </div>
           </div>
 
@@ -855,66 +521,45 @@ export default function RankingPage() {
             <table style={styles.table}>
               <thead>
                 <tr>
-                  <th style={styles.th}>ID</th>
+                  <th style={styles.th}>Position</th>
+                  <th style={styles.th}>Registration ID</th>
                   <th style={styles.th}>Player Name</th>
-                  <th style={styles.th}>Current Points</th>
-                  <th style={{ ...styles.th, textAlign: "center" }}>
-                    Points To Award
-                  </th>
-                  <th style={{ ...styles.th, textAlign: "right" }}>
-                    New Total
-                  </th>
+                  <th style={styles.th}>Award</th>
+                  <th style={{ ...styles.th, textAlign: "right" }}>Points</th>
                 </tr>
               </thead>
               <tbody>
-                {paginatedPlayers.map((row) => {
-                  const newTotal =
-                    row.previousPoints +
-                    row.currentPoints +
-                    (row.pointsToAward || 0);
-
-                  return (
-                    <tr key={row.id}>
-                      <td style={{ ...styles.td, ...styles.idCell }}>
-                        {row.id}
-                      </td>
-                      <td style={{ ...styles.td, ...styles.nameCell }}>
-                        {row.name}
-                      </td>
-                      <td style={{ ...styles.td, ...styles.pointsCell }}>
-                        {row.currentPoints.toLocaleString()}
-                      </td>
-                      <td style={{ ...styles.td, textAlign: "center" }}>
-                        <input
-                          type="number"
-                          style={{
-                            ...styles.awardInput,
-                            ...(!isEditing ? styles.awardInputDisabled : {}),
-                          }}
-                          disabled={!isEditing}
-                          value={
-                            row.pointsToAward === 0 ? "" : row.pointsToAward
-                          }
-                          onChange={(e) =>
-                            handleAwardChange(row.id, e.target.value)
-                          }
-                          placeholder="0"
-                        />
-                      </td>
-                      <td style={{ ...styles.td, ...styles.totalCell }}>
-                        {newTotal.toLocaleString()}
-                      </td>
-                    </tr>
-                  );
-                })}
-
-                {Array.from({ length: emptyRowsCount }).map((_, idx) => (
-                  <tr key={`empty-${idx}`} style={{ height: "55px" }}>
-                    <td colSpan={5} style={styles.td}>
-                       
+                {paginatedEntries.map((entry) => (
+                  <tr key={entry.registrationId}>
+                    <td style={{ ...styles.td, ...styles.pointsCell }}>
+                      #{entry.position}
+                    </td>
+                    <td style={{ ...styles.td, ...styles.idCell }}>
+                      {entry.registrationId}
+                    </td>
+                    <td style={{ ...styles.td, ...styles.nameCell }}>
+                      {entry.player.name}
+                    </td>
+                    <td style={styles.td}>{entry.label}</td>
+                    <td style={{ ...styles.td, ...styles.totalCell }}>
+                      {Number(entry.points).toLocaleString()}
                     </td>
                   </tr>
                 ))}
+                {!loadingCategories &&
+                  !loadingLeaderboard &&
+                  !loadError &&
+                  paginatedEntries.length === 0 && (
+                    <tr>
+                      <td colSpan={5} style={styles.noDataText}>
+                        {categoryOptions.length === 0
+                          ? "No tournament categories are available."
+                          : entries.length === 0
+                            ? "No finalized leaderboard entries for this category yet."
+                            : "No entries match your search."}
+                      </td>
+                    </tr>
+                  )}
               </tbody>
             </table>
           </div>
@@ -923,20 +568,20 @@ export default function RankingPage() {
           <div style={styles.footer}>
             <span style={styles.entriesInfo}>
               Showing{" "}
-              {totalEntries === 0 ? 0 : (currentPage - 1) * ITEMS_PER_PAGE + 1}-
-              {Math.min(currentPage * ITEMS_PER_PAGE, totalEntries)} of{" "}
-              {totalEntries} approved players
+              {totalEntries === 0 ? 0 : (activePage - 1) * ITEMS_PER_PAGE + 1}-
+              {Math.min(activePage * ITEMS_PER_PAGE, totalEntries)} of{" "}
+              {totalEntries} leaderboard entries
             </span>
 
             <div style={styles.pagination}>
               <button
                 style={{
                   ...styles.pageNav,
-                  opacity: currentPage === 1 ? 0.4 : 1,
-                  cursor: currentPage === 1 ? "not-allowed" : "pointer",
+                  opacity: activePage === 1 ? 0.4 : 1,
+                  cursor: activePage === 1 ? "not-allowed" : "pointer",
                 }}
-                disabled={currentPage === 1}
-                onClick={() => setCurrentPage((p) => p - 1)}
+                disabled={activePage === 1}
+                onClick={() => setCurrentPage(activePage - 1)}
               >
                 Prev
               </button>
@@ -947,7 +592,7 @@ export default function RankingPage() {
                     key={page}
                     style={{
                       ...styles.pageNum,
-                      ...(currentPage === page ? styles.pageNumActive : {}),
+                      ...(activePage === page ? styles.pageNumActive : {}),
                     }}
                     onClick={() => setCurrentPage(page)}
                   >
@@ -960,14 +605,14 @@ export default function RankingPage() {
                 style={{
                   ...styles.pageNav,
                   opacity:
-                    currentPage === totalPages || totalPages === 0 ? 0.4 : 1,
+                    activePage === totalPages || totalPages === 0 ? 0.4 : 1,
                   cursor:
-                    currentPage === totalPages || totalPages === 0
+                    activePage === totalPages || totalPages === 0
                       ? "not-allowed"
                       : "pointer",
                 }}
-                disabled={currentPage === totalPages || totalPages === 0}
-                onClick={() => setCurrentPage((p) => p + 1)}
+                disabled={activePage === totalPages || totalPages === 0}
+                onClick={() => setCurrentPage(activePage + 1)}
               >
                 Next
               </button>
@@ -982,18 +627,18 @@ export default function RankingPage() {
               style={{ color: "#eab308", fontSize: "22px" }}
             />
             <h3 style={styles.lbHeaderTitle}>
-              Overall Top 10 Players Leaderboard
+              Category Top 10 Leaderboard
             </h3>
           </div>
 
           <div style={styles.lbList}>
             {top10Leaderboard.length > 0 ? (
               top10Leaderboard.map((item, index) => {
-                const rank = index + 1;
+                const rank = Number(item.position) || index + 1;
                 const isTop3 = rank <= 3;
                 return (
                   <div
-                    key={item.id}
+                    key={item.registrationId}
                     style={{
                       ...styles.lbItem,
                       ...(rank === 1 ? styles.lbItemRank1 : {}),
@@ -1010,12 +655,14 @@ export default function RankingPage() {
                     </div>
 
                     <div style={styles.playerInfo}>
-                      <span style={styles.lbName}>{item.name}</span>
-                      <span style={styles.lbId}>{item.id}</span>
+                      <span style={styles.lbName}>{item.player.name}</span>
+                      <span style={styles.lbId}>
+                        Registration #{item.registrationId}
+                      </span>
                     </div>
 
                     <div style={styles.lbPoints}>
-                      {item.totalPoints.toLocaleString()} Pts
+                      {Number(item.points).toLocaleString()} Pts
                     </div>
                   </div>
                 );
@@ -1026,36 +673,6 @@ export default function RankingPage() {
           </div>
         </div>
       </div>
-
-      {/* RESTART MODAL */}
-      {showRestartModal && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modalContent}>
-            <div style={styles.modalIconWrapper}>
-              <WarningAmberRoundedIcon style={{ fontSize: "24px" }} />
-            </div>
-            <h3 style={styles.modalTitle}>Reset All Points?</h3>
-            <p style={styles.modalText}>
-              Are you sure you want to reset all players' points to 0? This
-              action cannot be undone.
-            </p>
-            <div style={styles.modalActions}>
-              <button
-                style={styles.modalBtnCancel}
-                onClick={() => setShowRestartModal(false)}
-              >
-                Cancel
-              </button>
-              <button
-                style={styles.modalBtnConfirm}
-                onClick={handleConfirmRestart}
-              >
-                Yes, Reset
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

@@ -3,206 +3,109 @@ import {
   EmojiEventsRounded,
   SearchRounded,
   KeyboardArrowDownRounded,
-  TrendingUpRounded,
-  TrendingDownRounded,
-  VerifiedRounded,
   FileDownloadRounded,
 } from "@mui/icons-material";
-
-const leaderboardDatabase = [
-  {
-    rank: 1,
-    name: "Min Thant",
-    org: "Yangon",
-    category: "MS",
-    tournament: "Mandalay Open Cup 2026",
-    points: 4850,
-    winRate: "94%",
-    events: 6,
-    record: "16W - 1L",
-    trend: "up",
-    avatar:
-      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-  },
-  {
-    rank: 2,
-    name: "Zarni Tun",
-    org: "Mandalay",
-    category: "MS",
-    tournament: "Yangon Masters 2026",
-    points: 4120,
-    winRate: "80%",
-    events: 5,
-    record: "12W - 3L",
-    trend: "up",
-    avatar:
-      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&auto=format&fit=crop&q=80",
-  },
-  {
-    rank: 3,
-    name: "Aung Kyaw",
-    org: "Shan State",
-    category: "MS",
-    tournament: "Myanmar National Series 2026",
-    points: 3900,
-    winRate: "71%",
-    events: 5,
-    record: "10W - 4L",
-    trend: "up",
-    avatar:
-      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&auto=format&fit=crop&q=80",
-  },
-  {
-    rank: 4,
-    name: "Kyaw Swar",
-    org: "Mandalay Heroes · MS (Senior)",
-    category: "MS",
-    tournament: "Mandalay Open Cup 2026",
-    points: 3750,
-    winRate: "68%",
-    events: 5,
-    record: "14W - 7L",
-    trend: "up",
-    avatar:
-      "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=150&auto=format&fit=crop&q=80",
-  },
-  {
-    rank: 5,
-    name: "Htet Aung",
-    org: "Shan State Badminton · MS (Senior)",
-    category: "MS",
-    tournament: "Yangon Masters 2026",
-    points: 3420,
-    winRate: "65%",
-    events: 5,
-    record: "12W - 4L",
-    trend: "flat",
-    avatar:
-      "https://images.unsplash.com/photo-1522075469751-3a6694fb2f61?w=150&auto=format&fit=crop&q=80",
-  },
-  {
-    rank: 6,
-    name: "Zaw Lin",
-    org: "Yangon Badminton Club · MS (Senior)",
-    category: "MS",
-    tournament: "Myanmar National Series 2026",
-    points: 3100,
-    winRate: "60%",
-    events: 5,
-    record: "11W - 5L",
-    trend: "down",
-    avatar:
-      "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=150&auto=format&fit=crop&q=80",
-  },
-  {
-    rank: 7,
-    name: "Aung Myo",
-    org: "Mandalay Sports Club · MS (Senior)",
-    category: "MS",
-    tournament: "Mandalay Open Cup 2026",
-    points: 2850,
-    winRate: "58%",
-    events: 4,
-    record: "9W - 4L",
-    trend: "up",
-    avatar:
-      "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=150&auto=format&fit=crop&q=80",
-  },
-  {
-    rank: 8,
-    name: "Thet Naing",
-    org: "Bago Regional Squad · MS (Senior)",
-    category: "MS",
-    tournament: "Yangon Masters 2026",
-    points: 2600,
-    winRate: "55%",
-    events: 4,
-    record: "8W - 5L",
-    trend: "up",
-    avatar:
-      "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80",
-  },
-  {
-    rank: 9,
-    name: "Hein Min",
-    org: "Bago Regional Squad · MS (Senior)",
-    category: "MS",
-    tournament: "Myanmar National Series 2026",
-    points: 2500,
-    winRate: "53%",
-    events: 4,
-    record: "8W - 5L",
-    trend: "up",
-    avatar:
-      "https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=150&auto=format&fit=crop&q=80",
-  },
-  {
-    rank: 10,
-    name: "Kaung Myat",
-    org: "Bago Regional Squad · MS (Senior)",
-    category: "MS",
-    tournament: "Mandalay Open Cup 2026",
-    points: 2450,
-    winRate: "50%",
-    events: 4,
-    record: "8W - 5L",
-    trend: "down",
-    avatar:
-      "https://images.unsplash.com/photo-1628157582853-a796fa650a6a?w=150&auto=format&fit=crop&q=80",
-  },
-  {
-    rank: 11,
-    name: "Su Su",
-    org: "Yangon · WS",
-    category: "WS",
-    tournament: "Yangon Masters 2026",
-    points: 2350,
-    winRate: "70%",
-    events: 3,
-    record: "7W - 3L",
-    trend: "up",
-    avatar:
-      "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=150&auto=format&fit=crop&q=80",
-  },
-  {
-    rank: 12,
-    name: "May Shin",
-    org: "Mandalay · WS",
-    category: "WS",
-    tournament: "Mandalay Open Cup 2026",
-    points: 2200,
-    winRate: "60%",
-    events: 3,
-    record: "6W - 4L",
-    trend: "down",
-    avatar:
-      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80",
-  },
-];
-
-const categories = [
-  { id: "ALL", label: "All Categories", code: "All Categories" },
-  { id: "MS", label: "MS (Men's Singles)", code: "MS" },
-  { id: "WS", label: "WS (Women's Singles)", code: "WS" },
-  { id: "MD", label: "MD (Men's Doubles)", code: "MD" },
-  { id: "XD", label: "XD (Mixed Doubles)", code: "XD" },
-];
-
-const tournamentsList = [
-  "All Tournaments",
-  "Mandalay Open Cup 2026",
-  "Yangon Masters 2026",
-  "Myanmar National Series 2026",
-];
+import { getCategoryLeaderboard } from "../api/rankingApi";
+import { getTournaments } from "../../tournaments/api/tournamentApi";
 
 export default function WebLeaderboard() {
   const [searchQuery, setSearchQuery] = useState("");
-  const [activeCategory, setActiveCategory] = useState("ALL");
-  const [selectedTournament, setSelectedTournament] =
-    useState("All Tournaments");
+  const [tournaments, setTournaments] = useState([]);
+  const [selectedTournamentId, setSelectedTournamentId] = useState("");
+  const [selectedCategoryId, setSelectedCategoryId] = useState("");
+  const [leaderboardData, setLeaderboardData] = useState(null);
   const [showTourneyDropdown, setShowTourneyDropdown] = useState(false);
+  const [loadingTournaments, setLoadingTournaments] = useState(true);
+  const [loadingLeaderboard, setLoadingLeaderboard] = useState(false);
+  const [loadError, setLoadError] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
 
   const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadTournaments() {
+      setLoadingTournaments(true);
+      setLoadError("");
+      try {
+        const result = await getTournaments({
+          page: 1,
+          pageSize: 100,
+          authenticated: false,
+        });
+        const availableTournaments = result.tournaments.filter(
+          (tournament) =>
+            Array.isArray(tournament.categories) &&
+            tournament.categories.some((category) => category.id != null),
+        );
+        if (cancelled) return;
+        setTournaments(availableTournaments);
+        const nextTournament = availableTournaments[0];
+        const firstCategory = nextTournament?.categories?.find(
+          (category) => category.id != null,
+        );
+        setSelectedTournamentId(String(nextTournament?.id ?? ""));
+        setSelectedCategoryId(String(firstCategory?.id ?? ""));
+        if (!nextTournament) {
+          setLeaderboardData(null);
+          setLoadingLeaderboard(false);
+        }
+      } catch (requestError) {
+        if (!cancelled) {
+          setLoadError(
+            requestError instanceof Error
+              ? requestError.message
+              : "Unable to load tournaments.",
+          );
+          setTournaments([]);
+          setSelectedTournamentId("");
+          setSelectedCategoryId("");
+          setLeaderboardData(null);
+          setLoadingLeaderboard(false);
+        }
+      } finally {
+        if (!cancelled) setLoadingTournaments(false);
+      }
+    }
+
+    loadTournaments();
+    return () => {
+      cancelled = true;
+    };
+  }, [reloadKey]);
+
+  useEffect(() => {
+    if (!selectedCategoryId) return undefined;
+
+    let cancelled = false;
+    async function loadLeaderboard() {
+      setLoadingLeaderboard(true);
+      setLoadError("");
+      try {
+        const data = await getCategoryLeaderboard(selectedCategoryId, {
+          authenticated: false,
+        });
+        if (!cancelled) setLeaderboardData(data);
+      } catch (requestError) {
+        if (!cancelled) {
+          setLoadError(
+            requestError instanceof Error
+              ? requestError.message
+              : "Unable to load the leaderboard.",
+          );
+          setLeaderboardData(null);
+        }
+      } finally {
+        if (!cancelled) setLoadingLeaderboard(false);
+      }
+    }
+
+    loadLeaderboard();
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedCategoryId, reloadKey]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -214,27 +117,81 @@ export default function WebLeaderboard() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const selectedTournament = tournaments.find(
+    (tournament) => String(tournament.id) === String(selectedTournamentId),
+  );
+  const tournamentCategories = Array.isArray(selectedTournament?.categories)
+    ? selectedTournament.categories.filter((category) => category.id != null)
+    : [];
+  const selectedCategory = tournamentCategories.find(
+    (category) => String(category.id) === String(selectedCategoryId),
+  );
+  const entries = useMemo(
+    () =>
+      String(leaderboardData?.tournamentCategoryId) ===
+      String(selectedCategoryId)
+        ? leaderboardData.entries
+        : [],
+    [leaderboardData, selectedCategoryId],
+  );
+
   const filteredPlayers = useMemo(() => {
-    return leaderboardDatabase
-      .filter((player) => {
-        const matchSearch =
-          player.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          player.org.toLowerCase().includes(searchQuery.toLowerCase());
-
-        const matchCat =
-          activeCategory === "ALL" || player.category === activeCategory;
-
-        const matchTourney =
-          selectedTournament === "All Tournaments" ||
-          player.tournament === selectedTournament;
-
-        return matchSearch && matchCat && matchTourney;
+    const query = searchQuery.trim().toLowerCase();
+    return [...entries]
+      .filter((entry) => {
+        if (!query) return true;
+        return (
+          entry.player.name.toLowerCase().includes(query) ||
+          String(entry.registrationId).includes(query) ||
+          entry.label.toLowerCase().includes(query)
+        );
       })
-      .sort((a, b) => b.points - a.points);
-  }, [searchQuery, activeCategory, selectedTournament]);
+      .sort(
+        (first, second) =>
+          Number(first.position) - Number(second.position) ||
+          Number(second.points) - Number(first.points),
+      );
+  }, [entries, searchQuery]);
 
-  const topThree = leaderboardDatabase.slice(0, 3);
+  const topThree = filteredPlayers.slice(0, 3);
   const remainingPlayers = filteredPlayers;
+
+  function handleSelectTournament(tournament) {
+    const firstCategory = tournament.categories?.find(
+      (category) => category.id != null,
+    );
+    setSelectedTournamentId(String(tournament.id));
+    setSelectedCategoryId(String(firstCategory?.id ?? ""));
+    setLeaderboardData(null);
+    setSearchQuery("");
+    setShowTourneyDropdown(false);
+  }
+
+  function handleExportCsv() {
+    const rows = [
+      ["Position", "Registration ID", "Player", "Award", "Points"],
+      ...filteredPlayers.map((entry) => [
+        entry.position,
+        entry.registrationId,
+        entry.player.name,
+        entry.label,
+        entry.points,
+      ]),
+    ];
+    const csv = rows
+      .map((row) =>
+        row.map((value) => `"${String(value).replace(/"/g, '""')}"`).join(","),
+      )
+      .join("\r\n");
+    const downloadUrl = URL.createObjectURL(
+      new Blob([csv], { type: "text/csv;charset=utf-8" }),
+    );
+    const link = document.createElement("a");
+    link.href = downloadUrl;
+    link.download = `leaderboard-category-${selectedCategoryId}.csv`;
+    link.click();
+    URL.revokeObjectURL(downloadUrl);
+  }
 
   return (
     <>
@@ -471,9 +428,14 @@ export default function WebLeaderboard() {
           width: 64px;
           height: 64px;
           border-radius: 50%;
-          object-fit: cover;
+          display: grid;
+          place-items: center;
           margin-bottom: 14px;
           border: 2px solid #eef0f3;
+          background: #f1f3f6;
+          color: #596170;
+          font-size: 18px;
+          font-weight: 800;
         }
 
         .avatar-img-first {
@@ -599,9 +561,15 @@ export default function WebLeaderboard() {
         .table-avatar-img {
           width: 42px;
           height: 42px;
+          flex: 0 0 42px;
           border-radius: 50%;
-          object-fit: cover;
+          display: grid;
+          place-items: center;
           border: 1px solid #eef0f3;
+          background: #f1f3f6;
+          color: #596170;
+          font-size: 13px;
+          font-weight: 800;
         }
 
         .row-player-details {
@@ -670,7 +638,7 @@ export default function WebLeaderboard() {
               <input
                 className="search-input"
                 type="text"
-                placeholder="Search player name, club, or rank..."
+                placeholder="Search player, registration ID, or award..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -679,29 +647,30 @@ export default function WebLeaderboard() {
             <div className="tourney-filter-wrap" ref={dropdownRef}>
               <button
                 className="tourney-dropdown-btn"
+                type="button"
+                disabled={loadingTournaments || tournaments.length === 0}
+                aria-expanded={showTourneyDropdown}
                 onClick={() => setShowTourneyDropdown((v) => !v)}
               >
                 <span>
                   <EmojiEventsRounded
                     style={{ fontSize: 18, color: "#ae1236" }}
                   />
-                  {selectedTournament}
+                  {selectedTournament?.title || "Select tournament"}
                 </span>
                 <KeyboardArrowDownRounded />
               </button>
 
               {showTourneyDropdown && (
                 <div className="tourney-menu-list">
-                  {tournamentsList.map((tName) => (
+                  {tournaments.map((tournament) => (
                     <button
-                      key={tName}
-                      className={`tourney-option-item ${selectedTournament === tName ? "tourney-option-active" : ""}`}
-                      onClick={() => {
-                        setSelectedTournament(tName);
-                        setShowTourneyDropdown(false);
-                      }}
+                      key={tournament.id}
+                      type="button"
+                      className={`tourney-option-item ${String(selectedTournament?.id) === String(tournament.id) ? "tourney-option-active" : ""}`}
+                      onClick={() => handleSelectTournament(tournament)}
                     >
-                      {tName}
+                      {tournament.title || `Tournament #${tournament.id}`}
                     </button>
                   ))}
                 </div>
@@ -714,13 +683,17 @@ export default function WebLeaderboard() {
             className="category-tabs-row"
             aria-label="Leaderboard categories"
           >
-            {categories.map((cat) => (
+            {tournamentCategories.map((category) => (
               <button
-                key={cat.id}
-                className={`cat-tab-btn ${activeCategory === cat.id ? "cat-tab-active" : ""}`}
-                onClick={() => setActiveCategory(cat.id)}
+                key={category.id}
+                type="button"
+                className={`cat-tab-btn ${String(selectedCategoryId) === String(category.id) ? "cat-tab-active" : ""}`}
+                onClick={() => {
+                  setSelectedCategoryId(String(category.id));
+                  setLeaderboardData(null);
+                }}
               >
-                {cat.label}
+                {category.categoryName || category.name || category.categoryCode}
               </button>
             ))}
           </nav>
@@ -729,108 +702,110 @@ export default function WebLeaderboard() {
           <div className="season-header-box">
             <div className="season-title-wrap">
               <EmojiEventsRounded />
-              2026 Season Top Performers
+              {selectedTournament?.title || "Tournament"} ·{" "}
+              {selectedCategory?.categoryName ||
+                selectedCategory?.name ||
+                "Leaderboard"}
             </div>
             <span className="season-sub">
-              Live Official Standings · Updated Real-time
+              {leaderboardData?.finalizedAt
+                ? `Finalized ${new Date(leaderboardData.finalizedAt).toLocaleDateString()} · Draw v${leaderboardData.drawVersion}`
+                : "Finalized category standings"}
             </span>
           </div>
 
-          {/* Podium Cards for Top 3 Players with Heights Hierarchy */}
-          {topThree.length > 0 && (
+          {loadError && (
+            <div className="empty-ranking" role="alert">
+              {loadError}
+              <button
+                type="button"
+                className="tourney-option-item"
+                onClick={() => setReloadKey((key) => key + 1)}
+              >
+                Retry
+              </button>
+            </div>
+          )}
+          {(loadingTournaments || loadingLeaderboard) && (
+            <div className="empty-ranking" role="status">
+              {loadingTournaments
+                ? "Loading tournaments…"
+                : "Loading category leaderboard…"}
+            </div>
+          )}
+          {!loadingTournaments &&
+            !loadingLeaderboard &&
+            !loadError &&
+            tournaments.length === 0 && (
+              <div className="empty-ranking">
+                No published tournament categories are available.
+              </div>
+            )}
+
+          {topThree.length > 0 && !loadingLeaderboard && (
             <div className="podium-grid">
-              {/* #2 Rank */}
-              {topThree[1] && (
-                <div className="podium-card">
-                  <span className="rank-badge-pill badge-second">
-                    🥈 #2 SEED
-                  </span>
-                  <img
-                    src={topThree[1].avatar}
-                    alt={topThree[1].name}
-                    className="avatar-img"
-                  />
-                  <div className="player-podium-name">{topThree[1].name}</div>
-                  <div className="player-podium-org">{topThree[1].org}</div>
-                  <div className="podium-stats-box">
-                    Tournaments: <b>{topThree[1].events} Events</b>
-                    <br />
-                    <b>{topThree[1].record}</b>
-                  </div>
-                  <div className="podium-pts">
-                    {topThree[1].points.toLocaleString()}
-                  </div>
-                  <div className="podium-pts-label">PTS</div>
-                </div>
-              )}
-
-              {/* #1 Champion */}
-              {topThree[0] && (
-                <div className="podium-card podium-card-first">
-                  <span className="rank-badge-pill badge-first">
-                    👑 #1 CHAMPION
-                  </span>
-                  <img
-                    src={topThree[0].avatar}
-                    alt={topThree[0].name}
-                    className="avatar-img avatar-img-first"
-                  />
-                  <div
-                    className="player-podium-name"
-                    style={{ fontSize: "20px" }}
-                  >
-                    {topThree[0].name}
-                  </div>
-                  <div className="player-podium-org">{topThree[0].org}</div>
-                  <div
-                    className="podium-stats-box"
-                    style={{ background: "#fff9e6" }}
-                  >
-                    Win Rate: <b>{topThree[0].winRate}</b>
-                    <br />
-                    {topThree[0].events} Events · <b>{topThree[0].record}</b>
-                  </div>
-                  <div className="podium-pts" style={{ fontSize: "28px" }}>
-                    {topThree[0].points.toLocaleString()}
-                  </div>
-                  <div className="podium-pts-label">RANKING PTS</div>
-                </div>
-              )}
-
-              {/* #3 Rank */}
-              {topThree[2] && (
-                <div className="podium-card">
-                  <span className="rank-badge-pill badge-third">
-                    🥉 #3 SEED
-                  </span>
-                  <img
-                    src={topThree[2].avatar}
-                    alt={topThree[2].name}
-                    className="avatar-img"
-                  />
-                  <div className="player-podium-name">{topThree[2].name}</div>
-                  <div className="player-podium-org">{topThree[2].org}</div>
-                  <div className="podium-stats-box">
-                    Tournaments: <b>{topThree[2].events} Events</b>
-                    <br />
-                    <b>{topThree[2].record}</b>
-                  </div>
-                  <div className="podium-pts">
-                    {topThree[2].points.toLocaleString()}
-                  </div>
-                  <div className="podium-pts-label">PTS</div>
-                </div>
-              )}
+              {[topThree[1], topThree[0], topThree[2]]
+                .filter(Boolean)
+                .map((entry) => {
+                  const rank = Number(entry.position);
+                  const medal =
+                    rank === 1 ? "👑" : rank === 2 ? "🥈" : "🥉";
+                  const initials = entry.player.name
+                    .split(/\s+/)
+                    .map((part) => part[0])
+                    .join("")
+                    .slice(0, 2)
+                    .toUpperCase();
+                  return (
+                    <div
+                      key={entry.registrationId}
+                      className={`podium-card ${rank === 1 ? "podium-card-first" : ""}`}
+                    >
+                      <span
+                        className={`rank-badge-pill ${rank === 1 ? "badge-first" : rank === 2 ? "badge-second" : "badge-third"}`}
+                      >
+                        {medal} #{rank} {entry.label}
+                      </span>
+                      <div
+                        className={`avatar-img ${rank === 1 ? "avatar-img-first" : ""}`}
+                        role="img"
+                        aria-label={entry.player.name}
+                      >
+                        {initials}
+                      </div>
+                      <div className="player-podium-name">
+                        {entry.player.name}
+                      </div>
+                      <div className="player-podium-org">
+                        Registration #{entry.registrationId}
+                      </div>
+                      <div className="podium-stats-box">
+                        Award: <b>{entry.label}</b>
+                      </div>
+                      <div className="podium-pts">
+                        {Number(entry.points).toLocaleString()}
+                      </div>
+                      <div className="podium-pts-label">RANKING PTS</div>
+                    </div>
+                  );
+                })}
             </div>
           )}
 
           {/* Rankings Table with Actual Ranks & Profile Avatars */}
           <div className="rankings-card-box">
             <div className="rankings-table-header">
-              <div className="rankings-table-title">Global Season Rankings</div>
+              <div className="rankings-table-title">
+                {selectedCategory?.categoryName ||
+                  selectedCategory?.name ||
+                  "Category"}{" "}
+                Standings
+              </div>
               <button
                 className="export-csv-btn"
-                onClick={() => alert("Exported rankings to CSV successfully!")}
+                type="button"
+                disabled={remainingPlayers.length === 0}
+                onClick={handleExportCsv}
               >
                 <FileDownloadRounded style={{ fontSize: 16 }} />
                 Export CSV
@@ -840,7 +815,10 @@ export default function WebLeaderboard() {
             <div>
               {remainingPlayers.length > 0 ? (
                 remainingPlayers.map((player) => (
-                  <div className="rank-row-item" key={player.rank}>
+                  <div
+                    className="rank-row-item"
+                    key={player.registrationId}
+                  >
                     <div className="col-rank">
                       <span
                         style={{
@@ -854,57 +832,54 @@ export default function WebLeaderboard() {
                           fontWeight: "800",
                         }}
                       >
-                        {player.rank}
+                          {player.position}
                       </span>
                     </div>
 
                     <div className="col-player">
-                      <img
-                        src={player.avatar}
-                        alt={player.name}
-                        className="table-avatar-img"
-                      />
-                      <div className="row-player-details">
-                        <div className="row-player-name">
-                          {player.name}
-                          <VerifiedRounded
-                            style={{ fontSize: 15, color: "#2979ff" }}
-                          />
+                        <div
+                          className="table-avatar-img"
+                          role="img"
+                          aria-label={player.player.name}
+                        >
+                          {player.player.name
+                            .split(/\s+/)
+                            .map((part) => part[0])
+                            .join("")
+                            .slice(0, 2)
+                            .toUpperCase()}
                         </div>
-                        <div className="row-player-org">{player.org}</div>
+                      <div className="row-player-details">
+                          <div className="row-player-name">
+                            {player.player.name}
+                          </div>
+                          <div className="row-player-org">
+                            Registration #{player.registrationId}
+                          </div>
                       </div>
                     </div>
 
                     <div className="col-record">
-                      {player.record} ({player.events} Tourn.)
-                      <div
-                        style={{
-                          fontSize: "11px",
-                          color: player.trend === "up" ? "#087b59" : "#ae1236",
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "3px",
-                          fontWeight: "800",
-                        }}
-                      >
-                        {player.trend === "up" ? (
-                          <TrendingUpRounded style={{ fontSize: 14 }} />
-                        ) : (
-                          <TrendingDownRounded style={{ fontSize: 14 }} />
-                        )}
-                        {player.trend === "up" ? "+1 Rank" : "-1 Rank"}
-                      </div>
+                        {player.label}
                     </div>
 
                     <div className="col-pts">
-                      {player.points.toLocaleString()}
+                        {Number(player.points).toLocaleString()}
                       <div className="col-pts-sub">PTS</div>
                     </div>
                   </div>
                 ))
               ) : (
                 <div className="empty-ranking">
-                  No ranked players found matching your search criteria.
+                  {loadError
+                    ? "The leaderboard could not be loaded."
+                    : loadingTournaments || loadingLeaderboard
+                        ? "Loading leaderboard…"
+                        : !selectedCategoryId
+                          ? "Select a tournament category to see its leaderboard."
+                          : entries.length === 0
+                            ? "No finalized entries are available for this category yet."
+                            : "No players match your search."}
                 </div>
               )}
             </div>
