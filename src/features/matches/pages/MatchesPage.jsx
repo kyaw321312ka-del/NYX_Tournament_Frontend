@@ -43,11 +43,11 @@ const inputStyle = {
   fontSize: "13px",
 };
 
-const BRACKET_COLUMN_WIDTH = 210;
+const BRACKET_COLUMN_WIDTH = 250;
 const BRACKET_COLUMN_GAP = 32;
 const BRACKET_TRACK_WIDTH =
   BRACKET_COLUMN_WIDTH + BRACKET_COLUMN_GAP;
-const BRACKET_MATCH_HEIGHT = 52;
+const BRACKET_MATCH_HEIGHT = 68;
 const BRACKET_MATCH_BASE_GAP = 8;
 const BRACKET_MATCH_BASE_PITCH =
   BRACKET_MATCH_HEIGHT + BRACKET_MATCH_BASE_GAP;
@@ -226,6 +226,13 @@ function flattenMatches(draw) {
   return rounds.flatMap((round, roundIndex) =>
     (Array.isArray(round.matches) ? round.matches : []).map((match) => ({
       ...match,
+      bracketName:
+        match.bracketName ??
+        round.bracketName ??
+        round.bracketType ??
+        round.bracket?.name ??
+        (typeof round.bracket === "string" ? round.bracket : null),
+      stageName: match.stageName ?? round.stageName ?? round.stage,
       roundName:
         match.roundName ||
         round.name ||
@@ -245,6 +252,31 @@ function getRoundName(match) {
   if (typeof match.round === "string") return match.round;
   if (match.roundNumber != null) return `Round ${match.roundNumber}`;
   return "Matches";
+}
+
+function getDoubleEliminationSection(roundName, roundMatches) {
+  const labels = roundMatches.flatMap((match) => [
+    match.bracketName,
+    match.bracketType,
+    typeof match.bracket === "string" ? match.bracket : match.bracket?.name,
+    match.stageName,
+    typeof match.stage === "string" ? match.stage : match.stage?.name,
+    match.round?.name,
+    match.round?.bracketName,
+    match.round?.bracketType,
+  ]);
+  const searchText = [...labels, roundName]
+    .filter((label) => typeof label === "string")
+    .join(" ")
+    .replace(/[_-]+/g, " ")
+    .toLowerCase();
+
+  if (/\b(losers?|lower)\b/.test(searchText)) return "losers";
+  if (/\b(winners?|upper)\b/.test(searchText)) return "winners";
+  if (/\b(grand\s*finals?|championship|finals?)\b/.test(searchText)) {
+    return "finals";
+  }
+  return "other";
 }
 
 function getParticipant(
@@ -721,6 +753,22 @@ export default function MatchesManagementPage() {
   const bestOfGames = getBestOfGameCount(selectedCategory?.matchFormat);
   const gamesToWin = bestOfGames ? Math.ceil(bestOfGames / 2) : null;
   const maxScoreGames = bestOfGames ?? 5;
+  const drawFormat =
+    selectedCategory?.drawConfiguration?.drawFormat ??
+    selectedCategory?.drawFormat ??
+    selectedCategory?.seeds ??
+    draw?.drawConfiguration?.drawFormat ??
+    draw?.drawFormat ??
+    draw?.format ??
+    "";
+  const drawFormatLabel = drawFormat
+    ? String(drawFormat)
+        .replace(/[_-]+/g, " ")
+        .replace(/\b\w/g, (letter) => letter.toUpperCase())
+    : "Single Elimination";
+  const isDoubleElimination = /double[\s_-]*elimination/i.test(
+    String(drawFormat),
+  );
   const matches = useMemo(() => flattenMatches(draw), [draw]);
   const registrationsById = useMemo(
     () =>
@@ -757,11 +805,68 @@ export default function MatchesManagementPage() {
     const grouped = new Map();
     matches.forEach((match) => {
       const name = getRoundName(match);
-      if (!grouped.has(name)) grouped.set(name, []);
-      grouped.get(name).push(match);
+      const section = isDoubleElimination
+        ? getDoubleEliminationSection(name, [match])
+        : null;
+      const key = isDoubleElimination ? `${section}\0${name}` : name;
+      if (!grouped.has(key)) {
+        grouped.set(key, { name, section, matches: [] });
+      }
+      grouped.get(key).matches.push(match);
     });
-    return [...grouped.entries()];
-  }, [matches]);
+    const groups = [...grouped.values()];
+    const groupCounts = new Map();
+    groups.forEach(({ name }) => {
+      groupCounts.set(name, (groupCounts.get(name) || 0) + 1);
+    });
+    const sectionLabels = {
+      winners: "Winners",
+      losers: "Losers",
+      finals: "Finals",
+      other: "Other",
+    };
+    return groups.map(({ name, section, matches: roundMatches }) => [
+      isDoubleElimination && groupCounts.get(name) > 1
+        ? `${name} · ${sectionLabels[section] || "Other"}`
+        : name,
+      roundMatches,
+      section,
+    ]);
+  }, [isDoubleElimination, matches]);
+  const doubleEliminationSections = useMemo(() => {
+    const sectionConfig = [
+      {
+        id: "winners",
+        title: "Winners bracket",
+        description: "Rounds for players who have not yet lost.",
+      },
+      {
+        id: "losers",
+        title: "Losers bracket",
+        description: "Rounds where players continue after a loss.",
+      },
+      {
+        id: "finals",
+        title: "Finals",
+        description: "Championship matches.",
+      },
+      {
+        id: "other",
+        title: "Other stages",
+        description: "Rounds not identified as winners, losers, or finals.",
+      },
+    ];
+    const byId = new Map(
+      sectionConfig.map((section) => [section.id, { ...section, rounds: [] }]),
+    );
+    rounds.forEach(([roundName, roundMatches, section]) => {
+      const sectionId = section || "other";
+      byId.get(sectionId).rounds.push([roundName, roundMatches]);
+    });
+    return sectionConfig
+      .map((section) => byId.get(section.id))
+      .filter((section) => section.rounds.length > 0);
+  }, [rounds]);
 
   const drawId = getDrawId(draw);
   const drawRegistrationIds = getDrawRegistrationIds(draw);
@@ -843,6 +948,7 @@ export default function MatchesManagementPage() {
 
   function handleCategoryChange(nextCategoryId) {
     setSelectedCategoryId(nextCategoryId);
+    setSelectedBracketRound("All");
     setEligibleRegistrations([]);
     setDraw(null);
     setAssignments({});
@@ -855,6 +961,7 @@ export default function MatchesManagementPage() {
 
   function handleTournamentChange(nextTournamentId) {
     setSelectedTournamentId(nextTournamentId);
+    setSelectedBracketRound("All");
     const tournament = tournaments.find(
       (item) => String(item.id) === String(nextTournamentId),
     );
@@ -1244,6 +1351,131 @@ export default function MatchesManagementPage() {
         ? "Draft"
         : "No draw";
 
+  function renderBracketMatch(match, index, roundName, compact = false) {
+    const matchId = match.id ?? match.matchId ?? index + 1;
+    const sourceRoundIndex = rounds.findIndex(
+      ([sourceRoundName]) => sourceRoundName === roundName,
+    );
+    const first = getParticipant(
+      match,
+      1,
+      registrationsById,
+      registrationsByPosition,
+    );
+    const second = getParticipant(
+      match,
+      2,
+      registrationsById,
+      registrationsByPosition,
+    );
+    const canPlayMatch = isMatchPlayable(
+      match,
+      registrationsById,
+      registrationsByPosition,
+    );
+    const firstPosition =
+      getParticipantBracketPosition(match, 1, assignments) ??
+      (sourceRoundIndex === 0 ? index * 2 + 1 : null);
+    const secondPosition =
+      getParticipantBracketPosition(match, 2, assignments) ??
+      (sourceRoundIndex === 0 ? index * 2 + 2 : null);
+    const winnerSide = getWinnerSide(match);
+    const isExplicitBye = isByeMatch(match);
+    const firstDisplayLabel =
+      firstPosition == null ? first : `#${firstPosition} ${first}`;
+    const secondLabel = isExplicitBye ? "BYE" : second;
+    const secondDisplayLabel =
+      secondPosition == null ? secondLabel : `#${secondPosition} ${secondLabel}`;
+    const canOpenScore =
+      isPublished && canPlayMatch && !isFinalized;
+
+    return (
+      <article
+        key={`${roundName}-${matchId}-${index}`}
+        role={canOpenScore ? "button" : undefined}
+        tabIndex={canOpenScore ? 0 : undefined}
+        aria-label={canOpenScore ? `Enter result for match ${matchId}` : undefined}
+        onClick={() => canOpenScore && openScoreEditor(match)}
+        onKeyDown={(event) => {
+          if (
+            canOpenScore &&
+            (event.key === "Enter" || event.key === " ")
+          ) {
+            event.preventDefault();
+            openScoreEditor(match);
+          }
+        }}
+        style={{
+          height: compact ? "auto" : `${BRACKET_MATCH_HEIGHT}px`,
+          minHeight: compact ? `${BRACKET_MATCH_HEIGHT}px` : undefined,
+          boxSizing: "border-box",
+          display: "flex",
+          flexDirection: "column",
+          gap: "4px",
+          padding: compact ? "6px" : 0,
+          border: compact ? "1px solid #dbe3eb" : "none",
+          borderRadius: compact ? "8px" : 0,
+          backgroundColor: compact ? "#ffffff" : "transparent",
+          boxShadow: compact ? "0 1px 3px rgba(15,23,42,0.06)" : "none",
+          cursor: canOpenScore ? "pointer" : "default",
+        }}
+      >
+        {compact && (
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: "8px",
+              color: "#64748b",
+              fontSize: "10px",
+              fontWeight: 700,
+            }}
+          >
+            <span>Match #{matchId}</span>
+            <span>{getMatchStatus(match)}</span>
+          </div>
+        )}
+        {[firstDisplayLabel, secondDisplayLabel].map(
+          (label, participantIndex) => (
+            <div
+              key={`${participantIndex}-${label}`}
+              style={{
+                height: "32px",
+                flex: "0 0 32px",
+                boxSizing: "border-box",
+                display: "flex",
+                alignItems: "center",
+                padding: "0 8px",
+                borderRadius: "4px",
+                backgroundColor:
+                  winnerSide === participantIndex + 1 ? "#86efac" : "#536b7e",
+                color: winnerSide === participantIndex + 1 ? "#14532d" : "#ffffff",
+                fontSize: "13px",
+                fontWeight: 700,
+                overflow: "hidden",
+              }}
+              title={`Match #${matchId}: ${label}`}
+            >
+              <span
+                style={{
+                  display: "-webkit-box",
+                  WebkitBoxOrient: "vertical",
+                  WebkitLineClamp: 2,
+                  overflow: "hidden",
+                  overflowWrap: "anywhere",
+                  lineHeight: "14px",
+                }}
+              >
+                {winnerSide === participantIndex + 1 ? "✓ " : ""}
+                {label}
+              </span>
+            </div>
+          ),
+        )}
+      </article>
+    );
+  }
+
   return (
     <main
       style={{
@@ -1330,7 +1562,7 @@ export default function MatchesManagementPage() {
               {selectedCategory?.categoryName ||
                 selectedCategory?.name ||
                 "Select a category"}{" "}
-              · Single Elimination · {eligibleRegistrations.length} eligible
+              · {drawFormatLabel} · {eligibleRegistrations.length} eligible
               registrations
               · {formatTournamentDate(selectedTournament)}
             </p>
@@ -1532,7 +1764,7 @@ export default function MatchesManagementPage() {
               <p
                 style={{
                   color: "#64748b",
-                  fontSize: "11px",
+                  fontSize: "12px",
                   margin: "-4px 0 14px",
                 }}
               >
@@ -1545,7 +1777,7 @@ export default function MatchesManagementPage() {
               <p
                 style={{
                   color: "#64748b",
-                  fontSize: "11px",
+                  fontSize: "12px",
                   margin: "-4px 0 14px",
                 }}
               >
@@ -1563,7 +1795,7 @@ export default function MatchesManagementPage() {
                   role="alert"
                   style={{
                     color: "#b91c1c",
-                    fontSize: "11px",
+                    fontSize: "12px",
                     margin: "-4px 0 14px",
                   }}
                 >
@@ -1579,7 +1811,7 @@ export default function MatchesManagementPage() {
               <p
                 style={{
                   color: "#64748b",
-                  fontSize: "11px",
+                  fontSize: "12px",
                   margin: "-4px 0 14px",
                 }}
               >
@@ -1624,6 +1856,7 @@ export default function MatchesManagementPage() {
                         zIndex: 1,
                       }}
                     >
+                      <th style={{ padding: "11px", width: "52px" }}>NO.</th>
                       <th style={{ padding: "11px" }}>REGISTRATION ID</th>
                       <th style={{ padding: "11px" }}>PLAYER / TEAM</th>
                       {draw && !isPublished && (
@@ -1634,7 +1867,7 @@ export default function MatchesManagementPage() {
                     </tr>
                   </thead>
                   <tbody>
-                    {visibleEligibleRegistrations.map((registration) => {
+                    {visibleEligibleRegistrations.map((registration, index) => {
                       const registrationId = getRegistrationId(registration);
                       const key = String(registrationId);
                       return (
@@ -1642,6 +1875,9 @@ export default function MatchesManagementPage() {
                           key={key}
                           style={{ borderTop: "1px solid #e2e8f0" }}
                         >
+                          <td style={{ padding: "12px 11px" }}>
+                            {index + 1}
+                          </td>
                           <td style={{ padding: "12px 11px" }}>
                             #{registrationId}
                           </td>
@@ -1783,7 +2019,9 @@ export default function MatchesManagementPage() {
                     Bracket rounds
                   </h2>
                   <p style={{ margin: 0, color: "#64748b", fontSize: "12px" }}>
-                    Bracket and match data loaded from the selected draw.
+                    {isDoubleElimination
+                      ? "Winners, losers, and finals are grouped into separate bracket lanes."
+                      : "Bracket and match data loaded from the selected draw. Long player and team names wrap inside each match."}
                   </p>
                 </div>
                 <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
@@ -1816,7 +2054,7 @@ export default function MatchesManagementPage() {
                       backgroundColor: "#ffffff",
                       color: "#334155",
                       padding: "0 10px",
-                      fontSize: "11px",
+                      fontSize: "12px",
                       cursor: "pointer",
                     }}
                   >
@@ -1847,7 +2085,7 @@ export default function MatchesManagementPage() {
                       borderRadius: "20px",
                       backgroundColor: isPublished ? "#123926" : "#3d3020",
                       color: isPublished ? "#86efac" : "#fcd34d",
-                      fontSize: "11px",
+                      fontSize: "12px",
                       fontWeight: 700,
                     }}
                   >
@@ -1905,6 +2143,190 @@ export default function MatchesManagementPage() {
                   No bracket matches are available yet. Assign positions and
                   publish the draw to generate the bracket.
                 </p>
+              ) : isDoubleElimination ? (
+                <div
+                  style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: "14px",
+                    padding: "6px 0",
+                  }}
+                >
+                  {doubleEliminationSections.map((section) => {
+                    const visibleRounds = section.rounds.filter(
+                      ([roundName]) =>
+                        selectedBracketRound === "All" ||
+                        selectedBracketRound === roundName,
+                    );
+                    if (visibleRounds.length === 0) return null;
+
+                    const sectionColor =
+                      section.id === "winners"
+                        ? "#15803d"
+                        : section.id === "losers"
+                          ? "#b45309"
+                          : section.id === "finals"
+                            ? "#ae1236"
+                            : "#475569";
+
+                    return (
+                      <section
+                        key={section.id}
+                        aria-label={section.title}
+                        style={{
+                          minWidth: 0,
+                          border: "1px solid #e2e8f0",
+                          borderLeft: `4px solid ${sectionColor}`,
+                          borderRadius: "10px",
+                          backgroundColor: "#f8fafc",
+                        }}
+                      >
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            gap: "12px",
+                            padding: "12px 14px",
+                            borderBottom: "1px solid #e2e8f0",
+                          }}
+                        >
+                          <div>
+                            <h3
+                              style={{
+                                margin: 0,
+                                color: "#0f172a",
+                                fontSize: "14px",
+                              }}
+                            >
+                              {section.title}
+                            </h3>
+                            <p
+                              style={{
+                                margin: "3px 0 0",
+                                color: "#64748b",
+                                fontSize: "11px",
+                              }}
+                            >
+                              {section.description}
+                            </p>
+                          </div>
+                          <span
+                            style={{
+                              flex: "0 0 auto",
+                              padding: "4px 8px",
+                              borderRadius: "999px",
+                              backgroundColor: "#ffffff",
+                              color: sectionColor,
+                              border: `1px solid ${sectionColor}33`,
+                              fontSize: "10px",
+                              fontWeight: 800,
+                            }}
+                          >
+                            {visibleRounds.reduce(
+                              (total, [, roundMatches]) =>
+                                total + roundMatches.length,
+                              0,
+                            )}{" "}
+                            matches
+                          </span>
+                        </div>
+                        <div
+                          style={{
+                            overflowX: "auto",
+                            padding: "12px",
+                          }}
+                        >
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "flex-start",
+                              gap: "12px",
+                              transform: `scale(${bracketZoom})`,
+                              transformOrigin: "top left",
+                              width: `${100 / bracketZoom}%`,
+                            }}
+                          >
+                            {visibleRounds.map(
+                              ([roundName, roundMatches], roundIndex) => (
+                                <div
+                                  key={roundName}
+                                  style={{
+                                    flex: `0 0 ${BRACKET_COLUMN_WIDTH}px`,
+                                    width: `${BRACKET_COLUMN_WIDTH}px`,
+                                    minWidth: 0,
+                                  }}
+                                >
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: "8px",
+                                      minHeight: "30px",
+                                      marginBottom: "8px",
+                                    }}
+                                  >
+                                    <span
+                                      style={{
+                                        width: "22px",
+                                        height: "22px",
+                                        flex: "0 0 22px",
+                                        display: "grid",
+                                        placeItems: "center",
+                                        borderRadius: "50%",
+                                        backgroundColor: `${sectionColor}14`,
+                                        color: sectionColor,
+                                        fontSize: "10px",
+                                        fontWeight: 800,
+                                      }}
+                                    >
+                                      {roundIndex + 1}
+                                    </span>
+                                    <strong
+                                      style={{
+                                        color: "#334155",
+                                        fontSize: "11px",
+                                        lineHeight: 1.3,
+                                      }}
+                                    >
+                                      {roundName}
+                                    </strong>
+                                    <span
+                                      style={{
+                                        marginLeft: "auto",
+                                        color: "#64748b",
+                                        fontSize: "10px",
+                                        whiteSpace: "nowrap",
+                                      }}
+                                    >
+                                      {roundMatches.length} matches
+                                    </span>
+                                  </div>
+                                  <div
+                                    style={{
+                                      display: "flex",
+                                      flexDirection: "column",
+                                      gap: "8px",
+                                    }}
+                                  >
+                                    {roundMatches.map((match, index) =>
+                                      renderBracketMatch(
+                                        match,
+                                        index,
+                                        roundName,
+                                        true,
+                                      ),
+                                    )}
+                                  </div>
+                                </div>
+                              ),
+                            )}
+                          </div>
+                        </div>
+                      </section>
+                    );
+                  })}
+                </div>
               ) : (
                 <div
                   style={{
@@ -2060,119 +2482,9 @@ export default function MatchesManagementPage() {
                           >
                             {roundName}
                           </h3>
-                          {roundMatches.map((match, index) => {
-                            const matchId =
-                              match.id ?? match.matchId ?? index + 1;
-                            const sourceRoundIndex = rounds.findIndex(
-                              ([sourceRoundName]) =>
-                                sourceRoundName === roundName,
-                            );
-                            const first = getParticipant(
-                              match,
-                              1,
-                              registrationsById,
-                              registrationsByPosition,
-                            );
-                            const second = getParticipant(
-                              match,
-                              2,
-                              registrationsById,
-                              registrationsByPosition,
-                            );
-                            const canPlayMatch = isMatchPlayable(
-                              match,
-                              registrationsById,
-                              registrationsByPosition,
-                            );
-                            const firstPosition =
-                              getParticipantBracketPosition(
-                                match,
-                                1,
-                                assignments,
-                              ) ??
-                              (sourceRoundIndex === 0 ? index * 2 + 1 : null);
-                            const secondPosition =
-                              getParticipantBracketPosition(
-                                match,
-                                2,
-                                assignments,
-                              ) ??
-                              (sourceRoundIndex === 0
-                                ? index * 2 + 2
-                                : null);
-                            const winnerSide = getWinnerSide(match);
-                            const isExplicitBye = isByeMatch(match);
-                            const firstLabel =
-                              first === "Awaiting player" ? "Awaiting player" : first;
-                            const secondLabel =
-                              isExplicitBye
-                                ? "BYE"
-                                : second === "Awaiting player"
-                                  ? "Awaiting player"
-                                  : second;
-                            const firstDisplayLabel =
-                              firstPosition == null
-                                ? firstLabel
-                                : `#${firstPosition} ${firstLabel}`;
-                            const secondDisplayLabel =
-                              secondPosition == null
-                                ? secondLabel
-                                : `#${secondPosition} ${secondLabel}`;
-
-                            return (
-                              <article
-                                key={`${roundName}-${matchId}-${index}`}
-                                onClick={() =>
-                                  isPublished &&
-                                  canPlayMatch &&
-                                  !isFinalized &&
-                                  openScoreEditor(match)
-                                }
-                                style={{
-                                  height: `${BRACKET_MATCH_HEIGHT}px`,
-                                  boxSizing: "border-box",
-                                  display: "flex",
-                                  flexDirection: "column",
-                                  gap: "4px",
-                                  cursor:
-                                    isPublished && canPlayMatch && !isFinalized
-                                      ? "pointer"
-                                      : "default",
-                                }}
-                              >
-                                {[firstDisplayLabel, secondDisplayLabel].map((label, participantIndex) => (
-                                  <div
-                                    key={`${participantIndex}-${label}`}
-                                    style={{
-                                      height: "24px",
-                                      boxSizing: "border-box",
-                                      display: "flex",
-                                      alignItems: "center",
-                                      padding: "0 10px",
-                                      borderRadius: "4px",
-                                      backgroundColor:
-                                        winnerSide === participantIndex + 1
-                                          ? "#86efac"
-                                          : "#536b7e",
-                                      color:
-                                        winnerSide === participantIndex + 1
-                                          ? "#14532d"
-                                          : "#ffffff",
-                                      fontSize: "12px",
-                                      fontWeight: 700,
-                                      overflow: "hidden",
-                                      whiteSpace: "nowrap",
-                                      textOverflow: "ellipsis",
-                                    }}
-                                    title={`Match #${matchId}: ${label}`}
-                                  >
-                                    {winnerSide === participantIndex + 1 ? "✓ " : ""}
-                                    {label}
-                                  </div>
-                                ))}
-                              </article>
-                            );
-                          })}
+                          {roundMatches.map((match, index) =>
+                            renderBracketMatch(match, index, roundName),
+                          )}
                         </div>
                         {selectedBracketRound === "All" &&
                           roundIndex <

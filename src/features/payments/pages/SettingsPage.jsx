@@ -2,12 +2,8 @@ import { useEffect, useState } from "react";
 import { useOutletContext } from "react-router-dom";
 import LanguageIcon from "@mui/icons-material/Language";
 import PaymentsIcon from "@mui/icons-material/Payments";
-import AdminPanelSettingsIcon from "@mui/icons-material/AdminPanelSettings";
 import AddCircleOutlineOutlinedIcon from "@mui/icons-material/AddCircleOutlineOutlined";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
-import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
-import VisibilityIcon from "@mui/icons-material/Visibility";
-import VisibilityOffIcon from "@mui/icons-material/VisibilityOff";
 import CloseIcon from "@mui/icons-material/Close";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import CheckCircleOutlineOutlinedIcon from "@mui/icons-material/CheckCircleOutlineOutlined";
@@ -66,18 +62,6 @@ export default function SettingsPage() {
   });
   const [isCreatingPayment, setIsCreatingPayment] = useState(false);
   const [paymentCreateError, setPaymentCreateError] = useState("");
-
-  const [adminData, setAdminData] = useState({
-    username: "Hein Min Aung",
-    email: "admin@nyxbadminton.com",
-    password: "",
-    profilePic:
-      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80",
-  });
-  const [showPassword, setShowPassword] = useState(false);
-  const [showSecurityPassword, setShowSecurityPassword] = useState(false);
-  const [showSecurityModal, setShowSecurityModal] = useState(false);
-  const [masterPasswordInput, setMasterPasswordInput] = useState("");
 
   const [toastMessage, setToastMessage] = useState("");
 
@@ -315,21 +299,6 @@ export default function SettingsPage() {
     }
   };
 
-  const handleAdminUpdateAttempt = (e) => {
-    e.preventDefault();
-    setShowSecurityModal(true);
-  };
-
-  const handleConfirmSecurityVerification = () => {
-    if (masterPasswordInput.trim() === "") {
-      alert("Please enter your current master password.");
-      return;
-    }
-    setShowSecurityModal(false);
-    setMasterPasswordInput("");
-    triggerToast("Administrator credentials updated & verified successfully.");
-  };
-
   const handleSaveSynchronize = () => {
     triggerToast(
       "✨ All system settings saved & synchronized with live public tournament website successfully!",
@@ -431,17 +400,6 @@ export default function SettingsPage() {
       gridTemplateColumns: "1fr 1fr",
       gap: "16px",
       marginBottom: "16px",
-    },
-    adminLayout: {
-      display: "grid",
-      gridTemplateColumns: "140px 1fr",
-      gap: "24px",
-      alignItems: "start",
-    },
-    adminFieldsGrid: {
-      display: "grid",
-      gridTemplateColumns: "1fr 1fr",
-      gap: "16px",
     },
     paymentRow: (active) => ({
       display: "flex",
@@ -1075,185 +1033,6 @@ export default function SettingsPage() {
         )}
       </div>
 
-      {/* 4. ADMINISTRATOR SECURITY & CREDENTIALS */}
-      <div style={styles.card}>
-        <div style={styles.cardHeader}>
-          <div>
-            <h3 style={styles.cardTitle}>
-              <AdminPanelSettingsIcon
-                style={{ color: "#dc2626", fontSize: "25px" }}
-              />{" "}
-              4. Administrator Security & Credentials Management
-            </h3>
-            <p style={styles.cardDesc}>
-              Update admin access details. Modifying credentials triggers a
-              security verification password prompt.
-            </p>
-          </div>
-          <span
-            style={{
-              fontSize: "11px",
-              backgroundColor: isDark ? "#24272b" : "#f1f5f9",
-              color: "#64748b",
-              padding: "4px 10px",
-              borderRadius: "6px",
-              fontWeight: "bold",
-              border: `1px solid ${isDark ? "#2d3139" : "#cbd5e1"}`,
-            }}
-          >
-            ROLE: ROOT OPS
-          </span>
-        </div>
-
-        <form onSubmit={handleAdminUpdateAttempt}>
-          <div style={styles.adminLayout}>
-            <div
-              style={{
-                textAlign: "center",
-                backgroundColor: isDark ? "#24272b" : "#f8fafc",
-                padding: "16px",
-                borderRadius: "10px",
-                border: `1px solid ${isDark ? "#2d3139" : "#e2e8f0"}`,
-              }}
-            >
-              <div
-                style={{
-                  width: "70px",
-                  height: "70px",
-                  borderRadius: "50%",
-                  backgroundColor: "#e2e8f0",
-                  margin: "0 auto 8px auto",
-                  overflow: "hidden",
-                  border: "2px solid #cbd5e1",
-                }}
-              >
-                <img
-                  src={adminData.profilePic}
-                  alt="Admin Profile"
-                  style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                />
-              </div>
-              <label
-                style={{
-                  fontSize: "11px",
-                  color: "#2563eb",
-                  cursor: "pointer",
-                  fontWeight: "bold",
-                  display: "inline-block",
-                }}
-              >
-                Change Photo
-                <input
-                  type="file"
-                  accept="image/*"
-                  style={{ display: "none" }}
-                  onChange={(e) => {
-                    if (e.target.files[0]) {
-                      setAdminData({
-                        ...adminData,
-                        profilePic: URL.createObjectURL(e.target.files[0]),
-                      });
-                      triggerToast("Profile picture updated locally.");
-                    }
-                  }}
-                />
-              </label>
-              <div
-                style={{ fontSize: "10px", color: "#64748b", marginTop: "4px" }}
-              >
-                Admin Avatar
-              </div>
-            </div>
-
-            <div>
-              <div style={styles.adminFieldsGrid}>
-                <div style={{ marginBottom: "16px" }}>
-                  <label style={styles.label}>ADMIN USERNAME *</label>
-                  <input
-                    type="text"
-                    style={styles.input}
-                    value={adminData.username}
-                    onChange={(e) =>
-                      setAdminData({ ...adminData, username: e.target.value })
-                    }
-                  />
-                </div>
-                <div style={{ marginBottom: "16px" }}>
-                  <label style={styles.label}>ADMIN EMAIL ADDRESS *</label>
-                  <input
-                    type="email"
-                    style={styles.input}
-                    value={adminData.email}
-                    onChange={(e) =>
-                      setAdminData({ ...adminData, email: e.target.value })
-                    }
-                  />
-                </div>
-              </div>
-
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr auto",
-                  gap: "16px",
-                  alignItems: "end",
-                }}
-              >
-                <div>
-                  <label style={styles.label}>
-                    NEW LOGIN PASSWORD (Optional)
-                  </label>
-                  <div style={{ position: "relative" }}>
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Type new password to change..."
-                      style={styles.input}
-                      value={adminData.password}
-                      onChange={(e) =>
-                        setAdminData({ ...adminData, password: e.target.value })
-                      }
-                    />
-                    <span
-                      onClick={() => setShowPassword(!showPassword)}
-                      style={{
-                        position: "absolute",
-                        right: "12px",
-                        top: "50%",
-                        transform: "translateY(-50%)",
-                        cursor: "pointer",
-                        color: "#64748b",
-                      }}
-                    >
-                      {showPassword ? (
-                        <VisibilityOffIcon style={{ fontSize: "18px" }} />
-                      ) : (
-                        <VisibilityIcon style={{ fontSize: "18px" }} />
-                      )}
-                    </span>
-                  </div>
-                </div>
-                <div>
-                  <button type="submit" style={styles.btnPrimary}>
-                    <LockOutlinedIcon style={{ fontSize: "16px" }} /> Update
-                    Admin Credentials
-                  </button>
-                </div>
-              </div>
-
-              <div
-                style={{
-                  fontSize: "11px",
-                  color: "#64748b",
-                  marginTop: "12px",
-                }}
-              >
-                🕒 Last password update was 42 days ago.
-              </div>
-            </div>
-          </div>
-        </form>
-      </div>
-
       {/* FOOTER ACTIONS */}
       <div style={styles.footerActions}>
         <div
@@ -1597,122 +1376,6 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* MODAL 3: SECURITY VERIFICATION */}
-      {showSecurityModal && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modalCard}>
-            <button
-              type="button"
-              onClick={() => setShowSecurityModal(false)}
-              style={{
-                position: "absolute",
-                top: "16px",
-                right: "16px",
-                background: "none",
-                border: "none",
-                cursor: "pointer",
-                color: "#64748b",
-              }}
-            >
-              <CloseIcon style={{ fontSize: "20px" }} />
-            </button>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: "10px",
-                marginBottom: "8px",
-              }}
-            >
-              <LockOutlinedIcon
-                style={{ color: "#dc2626", fontSize: "24px" }}
-              />
-              <h3 style={{ fontSize: "16px", fontWeight: "bold", margin: 0 }}>
-                Security Verification Required
-              </h3>
-            </div>
-            <div
-              style={{
-                backgroundColor: "#fef2f2",
-                color: "#dc2626",
-                border: "1px solid #fecaca",
-                padding: "6px 10px",
-                borderRadius: "6px",
-                fontSize: "11px",
-                fontWeight: "bold",
-                display: "inline-block",
-                marginBottom: "16px",
-              }}
-            >
-              ● HIGH PRIVILEGE ACTION • ROOT ACCESS
-            </div>
-            <p
-              style={{
-                fontSize: "13px",
-                color: "#64748b",
-                margin: "0 0 20px 0",
-              }}
-            >
-              For security purposes, please re-enter your current Master
-              Administrator Password to authorize and apply these system
-              changes.
-            </p>
-
-            <div style={{ marginBottom: "20px" }}>
-              <label style={styles.label}>CURRENT MASTER PASSWORD *</label>
-              <div style={{ position: "relative" }}>
-                <input
-                  type={showSecurityPassword ? "text" : "password"}
-                  placeholder="Enter your current password..."
-                  style={styles.input}
-                  value={masterPasswordInput}
-                  onChange={(e) => setMasterPasswordInput(e.target.value)}
-                />
-                <span
-                  onClick={() => setShowSecurityPassword(!showSecurityPassword)}
-                  style={{
-                    position: "absolute",
-                    right: "12px",
-                    top: "50%",
-                    transform: "translateY(-50%)",
-                    cursor: "pointer",
-                    color: "#64748b",
-                  }}
-                >
-                  {showSecurityPassword ? (
-                    <VisibilityOffIcon style={{ fontSize: "18px" }} />
-                  ) : (
-                    <VisibilityIcon style={{ fontSize: "18px" }} />
-                  )}
-                </span>
-              </div>
-            </div>
-
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "flex-end",
-                gap: "10px",
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => setShowSecurityModal(false)}
-                style={styles.btnSecondary}
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmSecurityVerification}
-                style={{ ...styles.btnPrimary, backgroundColor: "#991b1b" }}
-              >
-                Confirm & Save Changes
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
