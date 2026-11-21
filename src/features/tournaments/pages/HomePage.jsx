@@ -334,7 +334,9 @@ export default function Home() {
               <div className="nyx-feature-actions">
                 <button
                   className="nyx-button nyx-button-red nyx-enroll-btn"
-                  onClick={() => navigate("/tournaments")}
+                  onClick={() =>
+                    navigate(`/tournament-details/${tournament.id}`)
+                  }
                 >
                   <Visibility /> View Details
                 </button>

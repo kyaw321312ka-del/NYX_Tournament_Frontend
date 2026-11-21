@@ -49,8 +49,11 @@ export async function getTournaments({
   };
 }
 
-export async function getTournament(id) {
-  const response = await apiRequest(`/tournaments/${encodeURIComponent(id)}`);
+export async function getTournament(id, { authenticated = false } = {}) {
+  const response = await apiRequest(
+    `/tournaments/${encodeURIComponent(id)}`,
+    { authenticated },
+  );
 
   if (
     response?.success !== true ||

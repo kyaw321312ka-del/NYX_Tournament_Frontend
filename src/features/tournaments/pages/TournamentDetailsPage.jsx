@@ -59,7 +59,7 @@ export default function TournamentDetailsPage() {
       setIsLoading(true);
       setLoadError("");
       try {
-        const tournament = await getTournament(id);
+        const tournament = await getTournament(id, { authenticated: true });
         if (cancelled) return;
 
         setOriginalTournament(tournament);
