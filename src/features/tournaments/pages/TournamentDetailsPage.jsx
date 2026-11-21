@@ -16,6 +16,23 @@ import {
 import { resolveApiAssetUrl } from "../../../core/api/apiClient";
 import { getAgeGroups } from "../../ageGroups/api/ageGroupApi";
 
+const POINT_FORMAT_PRESETS = [
+  {
+    value: "standard",
+    label: "Standard badminton (21 / 2 / 30)",
+    pointsToWin: 21,
+    winningMargin: 2,
+    maxPoints: 30,
+  },
+  {
+    value: "short",
+    label: "Short format (15 / 2 / 21)",
+    pointsToWin: 15,
+    winningMargin: 2,
+    maxPoints: 21,
+  },
+];
+
 function parseNumericField(value) {
   const normalized = String(value)
     .trim()
@@ -73,6 +90,16 @@ function getAgeGroupPayload(category, availableAgeGroups) {
   }
 
   return { name: ageGroup.name, age: Number(ageGroup.age) };
+}
+
+function getPointFormatPreset(category) {
+  const preset = POINT_FORMAT_PRESETS.find(
+    (option) =>
+      Number(category.pointsToWin) === option.pointsToWin &&
+      Number(category.winningMargin) === option.winningMargin &&
+      Number(category.maxPoints) === option.maxPoints,
+  );
+  return preset?.value || "custom";
 }
 
 export default function TournamentDetailsPage() {
@@ -408,6 +435,26 @@ export default function TournamentDetailsPage() {
     setCategories((current) =>
       current.map((category, index) =>
         index === categoryIndex ? { ...category, [field]: value } : category,
+      ),
+    );
+  };
+
+  const applyPointFormatPreset = (categoryIndex, presetValue) => {
+    const preset = POINT_FORMAT_PRESETS.find(
+      (option) => option.value === presetValue,
+    );
+    if (!preset) return;
+
+    setCategories((current) =>
+      current.map((category, index) =>
+        index === categoryIndex
+          ? {
+              ...category,
+              pointsToWin: String(preset.pointsToWin),
+              winningMargin: String(preset.winningMargin),
+              maxPoints: String(preset.maxPoints),
+            }
+          : category,
       ),
     );
   };
@@ -2686,10 +2733,61 @@ export default function TournamentDetailsPage() {
                 </div>
               </div>
 
+              <div style={{ marginBottom: "12px" }}>
+                <label
+                  style={{
+                    display: "block",
+                    fontSize: "11px",
+                    fontWeight: "bold",
+                    color: "#334155",
+                    marginBottom: "6px",
+                  }}
+                >
+                  Point Format Preset
+                </label>
+                <select
+                  value={getPointFormatPreset(cat)}
+                  disabled={!isEditing}
+                  onChange={(event) =>
+                    applyPointFormatPreset(idx, event.target.value)
+                  }
+                  style={{
+                    width: "100%",
+                    maxWidth: "420px",
+                    padding: "12px 16px",
+                    borderRadius: "8px",
+                    border: "1px solid #cbd5e1",
+                    backgroundColor: isEditing ? "#fff" : "#f8fafc",
+                    fontSize: "12px",
+                    outline: "none",
+                    cursor: isEditing ? "pointer" : "not-allowed",
+                  }}
+                >
+                  {POINT_FORMAT_PRESETS.map((preset) => (
+                    <option key={preset.value} value={preset.value}>
+                      {preset.label}
+                    </option>
+                  ))}
+                  <option value="custom" disabled>
+                    Custom (edit numeric fields below)
+                  </option>
+                </select>
+                <p
+                  style={{
+                    fontSize: "11px",
+                    color: "#64748b",
+                    margin: "6px 0 0",
+                  }}
+                >
+                  The preset fills the three point values below; the backend
+                  stores those numeric values.
+                </p>
+              </div>
+
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: "repeat(5, minmax(0, 1fr))",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))",
                   gap: "14px",
                   marginBottom: "16px",
                 }}
