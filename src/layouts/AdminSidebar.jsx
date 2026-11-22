@@ -75,6 +75,9 @@ export default function AdminSidebar({ onLogout }) {
     <div
       style={{
         width: "270px",
+        height: "100vh",
+        position: "sticky",
+        top: "0",
         backgroundColor: "#070b19",
         color: "#94a3b8",
         display: "flex",
@@ -82,10 +85,17 @@ export default function AdminSidebar({ onLogout }) {
         justifyContent: "space-between",
         borderRight: "1px solid #1e293b",
         flexShrink: "0",
-        minHeight: "100vh",
+        overflow: "hidden",
       }}
     >
-      <div>
+      <div
+        style={{
+          minHeight: "0",
+          flex: "1",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
         {/* Brand Header */}
         <div
           style={{
@@ -133,6 +143,9 @@ export default function AdminSidebar({ onLogout }) {
             display: "flex",
             flexDirection: "column",
             gap: "6px",
+            overflowY: "auto",
+            minHeight: "0",
+            scrollbarWidth: "thin",
           }}
         >
           {menuItems.map((item) => {
