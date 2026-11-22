@@ -15,6 +15,12 @@ import {
   updatePaymentMethodStatus,
 } from "../api/paymentApi";
 import {
+  createContactSupport,
+  deleteContactSupport,
+  getContactSupport,
+  updateContactSupport,
+} from "../api/contactSupportApi";
+import {
   createAgeGroup,
   deleteAgeGroup,
   getAgeGroup,
@@ -27,14 +33,16 @@ export default function SettingsPage() {
   const { isDark: parentIsDark } = outletContext;
   const isDark = parentIsDark ?? false;
 
-  const [websiteInfo, setWebsiteInfo] = useState({
-    name: "NYX Badminton Championship Portal",
-    email: "support@nyxbadminton.com",
-    phone: "+95 9 123 456 789",
-    address: "Mandalay Sports Complex, Mandalay",
-    description:
-      "Official tournament registration, BWF sanctioned live brackets, and national ranking portal for badminton athletes.",
+  const [contactSupport, setContactSupport] = useState({
+    phone: "",
+    website: "",
+    email: "",
+    address: "",
   });
+  const [isLoadingContactSupport, setIsLoadingContactSupport] =
+    useState(true);
+  const [contactSupportBusy, setContactSupportBusy] = useState(false);
+  const [contactSupportError, setContactSupportError] = useState("");
 
   const [payments, setPayments] = useState([]);
   const [isLoadingPayments, setIsLoadingPayments] = useState(true);
@@ -64,6 +72,37 @@ export default function SettingsPage() {
   const [paymentCreateError, setPaymentCreateError] = useState("");
 
   const [toastMessage, setToastMessage] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadContactSupport() {
+      setIsLoadingContactSupport(true);
+      setContactSupportError("");
+      try {
+        const result = await getContactSupport();
+        if (cancelled) return;
+        if (result) {
+          setContactSupport(result);
+        }
+      } catch (error) {
+        if (!cancelled) {
+          setContactSupportError(
+            error instanceof Error
+              ? error.message
+              : "Unable to load contact support information.",
+          );
+        }
+      } finally {
+        if (!cancelled) setIsLoadingContactSupport(false);
+      }
+    }
+
+    loadContactSupport();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -305,6 +344,65 @@ export default function SettingsPage() {
     );
   };
 
+  const handleContactSupportAction = async (action) => {
+    if (contactSupportBusy) return;
+
+    const payload = {
+      phone: contactSupport.phone.trim(),
+      website: contactSupport.website.trim(),
+      email: contactSupport.email.trim(),
+      address: contactSupport.address.trim(),
+    };
+    if (
+      action !== "delete" &&
+      (!payload.phone ||
+        !payload.website ||
+        !payload.address ||
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.email))
+    ) {
+      setContactSupportError(
+        "Enter a valid phone, website, email, and address before saving.",
+      );
+      return;
+    }
+
+    if (
+      action === "delete" &&
+      !window.confirm("Delete the contact support information?")
+    ) {
+      return;
+    }
+
+    setContactSupportBusy(true);
+    setContactSupportError("");
+    try {
+      if (action === "create") {
+        await createContactSupport(payload);
+        triggerToast("Contact support information created.");
+      } else if (action === "update") {
+        await updateContactSupport(payload);
+        triggerToast("Contact support information updated.");
+      } else {
+        await deleteContactSupport();
+        setContactSupport({
+          phone: "",
+          website: "",
+          email: "",
+          address: "",
+        });
+        triggerToast("Contact support information deleted.");
+      }
+    } catch (error) {
+      setContactSupportError(
+        error instanceof Error
+          ? error.message
+          : `Unable to ${action} contact support information.`,
+      );
+    } finally {
+      setContactSupportBusy(false);
+    }
+  };
+
   const styles = {
     container: {
       padding: "28px",
@@ -488,11 +586,10 @@ export default function SettingsPage() {
           <div>
             <h3 style={styles.cardTitle}>
               <LanguageIcon style={{ color: "#2563eb", fontSize: "25px" }} /> 1.
-              Website General Information & Footer Data
+              Contact Support Information
             </h3>
             <p style={styles.cardDesc}>
-              Core metadata and arena contact strings exposed on public
-              tournament registrations.
+              Manage the contact details displayed on the public website.
             </p>
           </div>
           <span
@@ -506,85 +603,117 @@ export default function SettingsPage() {
               border: `1px solid ${isDark ? "#2d3139" : "#cbd5e1"}`,
             }}
           >
-            PUBLIC META
+            CONTACT SUPPORT
           </span>
         </div>
 
-        <div style={styles.grid2}>
-          <div>
-            <label style={styles.label}>PLATFORM / WEBSITE NAME</label>
-            <input
-              type="text"
-              style={styles.input}
-              value={websiteInfo.name}
-              onChange={(e) =>
-                setWebsiteInfo({ ...websiteInfo, name: e.target.value })
-              }
-            />
-          </div>
-          <div>
-            <label style={styles.label}>OFFICIAL SUPPORT EMAIL</label>
-            <input
-              type="email"
-              style={styles.input}
-              value={websiteInfo.email}
-              onChange={(e) =>
-                setWebsiteInfo({ ...websiteInfo, email: e.target.value })
-              }
-            />
-          </div>
-        </div>
-
+        {isLoadingContactSupport && (
+          <p role="status" style={{ color: "#64748b", fontSize: "13px" }}>
+            Loading contact support information...
+          </p>
+        )}
         <div style={styles.grid2}>
           <div>
             <label style={styles.label}>CONTACT PHONE NUMBER</label>
             <input
               type="text"
               style={styles.input}
-              value={websiteInfo.phone}
-              onChange={(e) =>
-                setWebsiteInfo({ ...websiteInfo, phone: e.target.value })
+              disabled={isLoadingContactSupport}
+              value={contactSupport.phone}
+              onChange={(event) =>
+                setContactSupport({
+                  ...contactSupport,
+                  phone: event.target.value,
+                })
               }
             />
           </div>
           <div>
-            <label style={styles.label}>
-              PHYSICAL ARENA / HEADQUARTERS ADDRESS
-            </label>
+            <label style={styles.label}>WEBSITE</label>
             <input
               type="text"
               style={styles.input}
-              value={websiteInfo.address}
-              onChange={(e) =>
-                setWebsiteInfo({ ...websiteInfo, address: e.target.value })
+              disabled={isLoadingContactSupport}
+              value={contactSupport.website}
+              onChange={(event) =>
+                setContactSupport({
+                  ...contactSupport,
+                  website: event.target.value,
+                })
               }
             />
           </div>
         </div>
 
-        <div>
-          <div
+        <div style={styles.grid2}>
+          <div>
+            <label style={styles.label}>OFFICIAL SUPPORT EMAIL</label>
+            <input
+              type="email"
+              style={styles.input}
+              disabled={isLoadingContactSupport}
+              value={contactSupport.email}
+              onChange={(event) =>
+                setContactSupport({
+                  ...contactSupport,
+                  email: event.target.value,
+                })
+              }
+            />
+          </div>
+          <div>
+            <label style={styles.label}>
+              CONTACT ADDRESS
+            </label>
+            <input
+              type="text"
+              style={styles.input}
+              disabled={isLoadingContactSupport}
+              value={contactSupport.address}
+              onChange={(event) =>
+                setContactSupport({
+                  ...contactSupport,
+                  address: event.target.value,
+                })
+              }
+            />
+          </div>
+        </div>
+
+        {contactSupportError && (
+          <p role="alert" style={{ color: "#b91c1c", fontSize: "13px" }}>
+            {contactSupportError}
+          </p>
+        )}
+        <div style={{ display: "flex", flexWrap: "wrap", gap: "10px" }}>
+          <button
+            type="button"
+            onClick={() => handleContactSupportAction("create")}
+            disabled={contactSupportBusy || isLoadingContactSupport}
+            style={styles.btnPrimary}
+          >
+            {contactSupportBusy ? "Working..." : "Create Contact Support"}
+          </button>
+          <button
+            type="button"
+            onClick={() => handleContactSupportAction("update")}
+            disabled={contactSupportBusy || isLoadingContactSupport}
+            style={styles.btnSecondary}
+          >
+            Update Contact Support
+          </button>
+          <button
+            type="button"
+            onClick={() => handleContactSupportAction("delete")}
+            disabled={contactSupportBusy || isLoadingContactSupport}
             style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              marginBottom: "6px",
+              ...styles.btnSecondary,
+              color: "#b91c1c",
+              borderColor: isDark ? "#7f1d1d" : "#fecaca",
             }}
           >
-            <label style={{ ...styles.label, marginBottom: 0 }}>
-              WEBSITE SEO META DESCRIPTION
-            </label>
-            <span style={{ fontSize: "11px", color: "#64748b" }}>
-              {websiteInfo.description.length} / 160 Characters
-            </span>
-          </div>
-          <textarea
-            style={styles.textarea}
-            value={websiteInfo.description}
-            onChange={(e) =>
-              setWebsiteInfo({ ...websiteInfo, description: e.target.value })
-            }
-          />
+            Delete Contact Support
+          </button>
         </div>
       </div>
 
@@ -955,7 +1084,15 @@ export default function SettingsPage() {
             No age groups have been added yet.
           </p>
         ) : (
-          <div style={{ display: "grid", gap: "10px" }}>
+          <div
+            style={{
+              display: "grid",
+              gap: "10px",
+              maxHeight: "420px",
+              overflowY: "auto",
+              paddingRight: "8px",
+            }}
+          >
             {ageGroups.map((group) => (
               <div
                 key={group.id}

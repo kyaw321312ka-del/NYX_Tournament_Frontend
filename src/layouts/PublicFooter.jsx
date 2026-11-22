@@ -1,12 +1,45 @@
-import React from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import PhoneIcon from "@mui/icons-material/Phone";
 import LanguageIcon from "@mui/icons-material/Language";
 import EmailIcon from "@mui/icons-material/Email";
 import LocationOnIcon from "@mui/icons-material/LocationOn";
 import LogoImg from "../assets/hero.png";
+import { getContactSupport } from "../features/payments/api/contactSupportApi";
 
 export default function Footer() {
+  const [contactSupport, setContactSupport] = useState(null);
+  const [contactSupportError, setContactSupportError] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadContactSupport() {
+      try {
+        const result = await getContactSupport();
+        if (!cancelled) setContactSupport(result);
+      } catch (error) {
+        if (!cancelled) {
+          setContactSupportError(
+            error instanceof Error
+              ? error.message
+              : "Unable to load contact support information.",
+          );
+        }
+      }
+    }
+
+    loadContactSupport();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const contactValue = (value) =>
+    contactSupportError
+      ? "Contact details unavailable"
+      : value || "Not provided";
+
   return (
     <>
       <style>{`
@@ -116,7 +149,7 @@ export default function Footer() {
               }}
             >
               <PhoneIcon style={{ fontSize: 16, color: "#ff3366" }} />
-              <span>+95 9 123 456 789</span>
+              <span>{contactValue(contactSupport?.phone)}</span>
             </div>
             <div
               style={{
@@ -127,7 +160,7 @@ export default function Footer() {
               }}
             >
               <LanguageIcon style={{ fontSize: 16, color: "#ff3366" }} />
-              <span>www.nyxbadminton.com</span>
+              <span>{contactValue(contactSupport?.website)}</span>
             </div>
             <div
               style={{
@@ -138,7 +171,7 @@ export default function Footer() {
               }}
             >
               <EmailIcon style={{ fontSize: 16, color: "#ff3366" }} />
-              <span>support@nyxbadminton.com</span>
+              <span>{contactValue(contactSupport?.email)}</span>
             </div>
             <div
               style={{
@@ -156,10 +189,13 @@ export default function Footer() {
                   flexShrink: 0,
                 }}
               />
-              <span>
-                73 rd St, Between 102nd & 103rd, Chanmyathazi, Mandalay
-              </span>
+              <span>{contactValue(contactSupport?.address)}</span>
             </div>
+            {contactSupportError && (
+              <span role="alert" style={{ fontSize: "11px", color: "#fca5a5" }}>
+                {contactSupportError}
+              </span>
+            )}
           </div>
 
           {/* Right: Association & Copyright */}
