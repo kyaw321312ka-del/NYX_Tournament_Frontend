@@ -11,7 +11,6 @@ import {
   KeyboardArrowLeft,
   KeyboardArrowRight,
   SportsTennis,
-  AccessTime,
   MilitaryTech,
 } from "@mui/icons-material";
 import { getTournaments } from "../api/tournamentApi";
@@ -31,61 +30,6 @@ function formatTournamentDate(date) {
     timeZone: "UTC",
   }).format(parsedDate);
 }
-
-const initialMatches = [
-  {
-    id: 1,
-    court: "CRT 1",
-    category: "MS • QF",
-    status: "SET 3",
-    player1: "Aung Aung",
-    player2: "Kyaw Kyaw",
-    score1: 14,
-    score2: 11,
-    previous: "21-18, 18-21",
-    time: "LIVE NOW",
-    live: true,
-  },
-  {
-    id: 2,
-    court: "CRT 3",
-    category: "XD • R16",
-    status: "SET 2",
-    player1: "Thura / Lin Lin",
-    player2: "Min Min / Su Su",
-    score1: 15,
-    score2: 9,
-    previous: "21-16",
-    time: "LIVE NOW",
-    live: true,
-  },
-  {
-    id: 3,
-    court: "CRT 2",
-    category: "WS • SF",
-    status: "UPCOMING",
-    player1: "May Myat",
-    player2: "Thinzar Moe",
-    score1: "Seed 1",
-    score2: "Seed 4",
-    previous: "",
-    time: "Today 04:30 PM",
-    live: false,
-  },
-  {
-    id: 4,
-    court: "CRT 4",
-    category: "MD • QF",
-    status: "UPCOMING",
-    player1: "Zaw Zaw / Nyi Nyi",
-    player2: "Hein Htet / Kaung",
-    score1: "Seed 2",
-    score2: "Q-Spot",
-    previous: "",
-    time: "Today 05:15 PM",
-    live: false,
-  },
-];
 
 const initialPlayers = [
   {
@@ -200,8 +144,6 @@ export default function Home() {
   }, [tournaments.length]);
 
   const tournament = tournaments[activeTournament];
-  const liveCount = initialMatches.filter((match) => match.live).length;
-
   const changeTournament = (direction) => {
     if (tournaments.length < 2) return;
     setActiveTournament((current) => {
@@ -363,69 +305,44 @@ export default function Home() {
           </section>
         )}
 
-        {/* Today's Matches Section */}
-        <section className="nyx-section nyx-reveal" id="nyx-matches">
-          <div className="nyx-section-heading">
-            <div className="nyx-heading-left">
-              <h2>
-                <span className="nyx-heading-dot" />
-                Today's Matches
-              </h2>
-
-              <span className="nyx-section-count">
-                {liveCount} Events Active
-              </span>
+        {/* Today's Matches Hero */}
+        <section
+          className="nyx-hero nyx-match-hero nyx-reveal"
+          id="nyx-matches"
+        >
+          <div className="nyx-hero-content">
+            <div className="nyx-eyebrow">
+              MATCH DAY AT NYX
             </div>
 
-            <button
-              className="nyx-text-link"
-              onClick={() => navigate("/matches")}
-            >
-              View All Matches
-              <ArrowForward />
-            </button>
-          </div>
+            <h2 className="nyx-hero-title">
+              Catch the Match Day Action at{" "}
+              <span className="nyx-brand-name">nyx</span>
+            </h2>
 
-          <div className="nyx-match-grid">
-            {initialMatches.map((match) => (
-              <article
-                className={`nyx-match-card ${match.live ? "nyx-match-live" : ""}`}
-                key={match.id}
+            <p className="nyx-hero-description">
+              Explore tournaments, follow match updates, and stay close to
+              every game.
+            </p>
+
+            <div className="nyx-hero-actions">
+              <button
+                className="nyx-button nyx-button-dark"
+                onClick={() => navigate("/matches")}
               >
-                <div className="nyx-match-top">
-                  <div className="nyx-match-type">
-                    <span className="nyx-court-badge">{match.court}</span>
-                    <span>{match.category}</span>
-                  </div>
-
-                  <span
-                    className={`nyx-match-status ${
-                      match.live ? "nyx-status-live" : ""
-                    }`}
-                  >
-                    {match.live && <span className="nyx-live-dot" />}
-                    {match.status}
-                  </span>
-                </div>
-
-                <div className="nyx-match-player">
-                  <span className="nyx-player-name">{match.player1}</span>
-                  <strong className="nyx-player-score">{match.score1}</strong>
-                </div>
-
-                <div className="nyx-match-player">
-                  <span className="nyx-player-name nyx-player-muted">
-                    {match.player2}
-                  </span>
-                  <strong className="nyx-player-score">{match.score2}</strong>
-                </div>
-
-                <div className="nyx-match-footer">
-                  <span>{match.live ? "Past Sets" : <AccessTime />}</span>
-                  <strong>{match.previous || match.time}</strong>
-                </div>
-              </article>
-            ))}
+                View All Matches <ArrowForward />
+              </button>
+              <button
+                className="nyx-button nyx-button-light"
+                onClick={() =>
+                  document
+                    .getElementById("nyx-tournament")
+                    ?.scrollIntoView({ behavior: "smooth" })
+                }
+              >
+                Explore Tournaments
+              </button>
+            </div>
           </div>
         </section>
 
@@ -1016,147 +933,18 @@ const inlineStyles = `
   height: 16px;
 }
 
-.nyx-page .nyx-match-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 14px;
+.nyx-page .nyx-match-hero {
+  margin-bottom: 36px;
 }
 
-.nyx-page .nyx-match-card {
-  position: relative;
-  min-width: 0;
-  padding: 15px;
-  overflow: hidden;
-  border: 1px solid #ffffff;
-  border-left: 4px solid transparent;
-  border-radius: 14px;
-  background: #ffffff;
-  box-shadow: 0 5px 20px rgba(25, 33, 45, 0.025);
-  transition: border-color 0.25s ease, box-shadow 0.25s ease, transform 0.25s ease;
+.nyx-page .nyx-match-hero .nyx-hero-content {
+  flex: 1;
+  width: 100%;
+  padding: 40px;
 }
 
-.nyx-page .nyx-match-card:hover {
-  border-color: #f3dfe3;
-  border-left-color: var(--nyx-primary);
-  box-shadow: 0 10px 24px rgba(25, 33, 45, 0.07);
-  transform: translateY(-3px);
-}
-
-.nyx-page .nyx-match-card.nyx-match-live {
-  border-left-color: #a83b4d;
-}
-
-.nyx-page .nyx-match-top {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 14px;
-}
-
-.nyx-page .nyx-match-type {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 6px;
-  color: #767e8c;
-  font-size: 10.5px;
-  font-weight: 700;
-}
-
-.nyx-page .nyx-court-badge {
-  padding: 5px 8px;
-  border-radius: 6px;
-  background: var(--nyx-navy);
-  color: #ffffff;
-  font-size: 9.5px;
-  font-weight: 800;
-  letter-spacing: 0.3px;
-}
-
-.nyx-page .nyx-match-status {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 5px;
-  padding: 5px 8px;
-  border-radius: 6px;
-  background: #f0f2f5;
-  color: #6f7885;
-  font-size: 9.5px;
-  font-weight: 800;
-  white-space: nowrap;
-}
-
-.nyx-page .nyx-match-status.nyx-status-live {
-  background: #fff0f2;
-  color: var(--nyx-primary-dark);
-}
-
-.nyx-page .nyx-match-status .nyx-live-dot {
-  width: 5px;
-  height: 5px;
-}
-
-.nyx-page .nyx-match-player {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  min-height: 30px;
-}
-
-.nyx-page .nyx-player-name {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: #262e3a;
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.nyx-page .nyx-player-name.nyx-player-muted {
-  color: #7b8390;
-  font-weight: 500;
-}
-
-.nyx-page .nyx-player-score {
-  flex-shrink: 0;
-  color: var(--nyx-text);
-  font-family: "Outfit", sans-serif;
-  font-size: 15px;
-  font-weight: 800;
-}
-
-.nyx-page .nyx-match-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px solid #f0f2f5;
-}
-
-.nyx-page .nyx-match-footer span {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  color: #6e7684;
-  font-size: 10.5px;
-}
-
-.nyx-page .nyx-match-footer span svg {
-  width: 13px;
-  height: 13px;
-}
-
-.nyx-page .nyx-match-footer strong {
-  color: #5a6372;
-  font-size: 10.5px;
-  font-weight: 700;
-  text-align: right;
+.nyx-page .nyx-match-hero .nyx-hero-title {
+  font-size: clamp(26px, 3.2vw, 40px);
 }
 
 .nyx-page .nyx-leaderboard-title > svg {
@@ -1385,9 +1173,6 @@ const inlineStyles = `
 @media (max-width: 600px) {
   .nyx-page {
     padding: 12px 5px 30px;
-  }
-  .nyx-page .nyx-match-grid {
-    grid-template-columns: 1fr;
   }
   .nyx-page .nyx-feature-actions {
     flex-direction: column;
