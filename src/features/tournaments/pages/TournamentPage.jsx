@@ -11,6 +11,7 @@ import PublishOutlinedIcon from "@mui/icons-material/PublishOutlined";
 import {
   getTournaments,
   publishTournament,
+  unpublishTournament,
 } from "../api/tournamentApi";
 import { resolveApiAssetUrl } from "../../../core/api/apiClient";
 
@@ -64,7 +65,11 @@ export default function TournamentPage() {
       setTournaments((current) =>
         current.map((tournament) =>
           tournament.id === tournamentId
-            ? { ...tournament, publicationStatus: "published" }
+            ? {
+                ...tournament,
+                publicationStatus: "published",
+                publicationLocked: true,
+              }
             : tournament,
         ),
       );
@@ -73,6 +78,33 @@ export default function TournamentPage() {
         error instanceof Error
           ? error.message
           : "Unable to publish tournament.",
+      );
+    } finally {
+      setPublishingId(null);
+    }
+  };
+
+  const handleUnpublish = async (tournamentId) => {
+    setPublishingId(tournamentId);
+    setPublishError("");
+    try {
+      await unpublishTournament(tournamentId);
+      setTournaments((current) =>
+        current.map((tournament) =>
+          tournament.id === tournamentId
+            ? {
+                ...tournament,
+                publicationStatus: "draft",
+                publicationLocked: true,
+              }
+            : tournament,
+        ),
+      );
+    } catch (error) {
+      setPublishError(
+        error instanceof Error
+          ? error.message
+          : "Unable to unpublish tournament.",
       );
     } finally {
       setPublishingId(null);
@@ -484,7 +516,8 @@ export default function TournamentPage() {
 
                 <div style={{ display: "grid", gap: "8px" }}>
                   {(tournament.publicationStatus || "").toLowerCase() ===
-                    "draft" && (
+                    "draft" &&
+                    !tournament.publicationLocked && (
                     <button
                       type="button"
                       onClick={() => handlePublish(tournament.id)}
@@ -513,6 +546,61 @@ export default function TournamentPage() {
                       {publishingId === tournament.id
                         ? "Publishing..."
                         : "Publish Tournament"}
+                    </button>
+                  )}
+                  {(tournament.publicationStatus || "").toLowerCase() ===
+                    "draft" &&
+                    tournament.publicationLocked === true && (
+                    <button
+                      type="button"
+                      onClick={() => handlePublish(tournament.id)}
+                      disabled={publishingId === tournament.id}
+                      style={{
+                        width: "100%",
+                        padding: "10px",
+                        backgroundColor:
+                          publishingId === tournament.id ? "#94a3b8" : "#16a34a",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: "8px",
+                        fontSize: "12px",
+                        fontWeight: "700",
+                        cursor:
+                          publishingId === tournament.id ? "wait" : "pointer",
+                      }}
+                    >
+                      {publishingId === tournament.id
+                        ? "Publishing..."
+                        : "Publish Again"}
+                    </button>
+                  )}
+                  {(tournament.publicationStatus || "").toLowerCase() ===
+                    "published" && (
+                    <button
+                      type="button"
+                      onClick={() => handleUnpublish(tournament.id)}
+                      disabled={publishingId === tournament.id}
+                      style={{
+                        width: "100%",
+                        padding: "10px",
+                        backgroundColor:
+                          publishingId === tournament.id ? "#94a3b8" : "#b91c1c",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: "8px",
+                        fontSize: "12px",
+                        fontWeight: "700",
+                        cursor:
+                          publishingId === tournament.id ? "wait" : "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        gap: "6px",
+                      }}
+                    >
+                      {publishingId === tournament.id
+                        ? "Unpublishing..."
+                        : "Unpublish Tournament"}
                     </button>
                   )}
                   <button

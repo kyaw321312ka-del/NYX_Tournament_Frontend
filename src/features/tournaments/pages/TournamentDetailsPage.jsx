@@ -6,11 +6,13 @@ import AddIcon from "@mui/icons-material/Add";
 import DeleteOutlineIcon from "@mui/icons-material/DeleteOutlined";
 import CheckCircleIcon from "@mui/icons-material/CheckCircle";
 import EditModeIcon from "@mui/icons-material/Edit";
+import VisibilityOffOutlinedIcon from "@mui/icons-material/VisibilityOffOutlined";
 import {
   getDrawConfigurationOptions,
   getTournament,
   getTournamentCategories,
   publishTournament,
+  unpublishTournament,
   updateTournament,
 } from "../api/tournamentApi";
 import { resolveApiAssetUrl } from "../../../core/api/apiClient";
@@ -124,6 +126,7 @@ export default function TournamentDetailsPage() {
   const [bannerFile, setBannerFile] = useState(null);
   const [originalTournament, setOriginalTournament] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [isUnpublishing, setIsUnpublishing] = useState(false);
   const [updateError, setUpdateError] = useState("");
 
   // Edit Mode State (Default: Read-Only)
@@ -154,6 +157,9 @@ export default function TournamentDetailsPage() {
   const isPublished =
     (originalTournament?.publicationStatus || "").toLowerCase() ===
     "published";
+  const isPublicationLocked =
+    isPublished ||
+    originalTournament?.publicationLocked === true;
 
   useEffect(() => {
     let cancelled = false;
@@ -165,7 +171,12 @@ export default function TournamentDetailsPage() {
         const tournament = await getTournament(id, { authenticated: true });
         if (cancelled) return;
 
-        setOriginalTournament(tournament);
+        setOriginalTournament({
+          ...tournament,
+          publicationLocked:
+            tournament.publicationLocked === true ||
+            tournament.publicationStatus?.toLowerCase() === "published",
+        });
         setTitle(tournament.title || "");
         setFee(String(tournament.defaultEntryFee ?? ""));
         setStartDate(tournament.startDate?.slice(0, 10) || "");
@@ -559,13 +570,60 @@ export default function TournamentDetailsPage() {
     );
   };
 
+  const handleUnpublish = async () => {
+    if (!originalTournament || isUnpublishing) return;
+    setIsUnpublishing(true);
+    setUpdateError("");
+    try {
+      await unpublishTournament(id);
+      setOriginalTournament((current) => ({
+        ...current,
+        publicationStatus: "draft",
+        publicationLocked: true,
+      }));
+      setIsEditing(false);
+      setUpdateError("");
+    } catch (error) {
+      setUpdateError(
+        error instanceof Error
+          ? error.message
+          : "Unable to unpublish tournament.",
+      );
+    } finally {
+      setIsUnpublishing(false);
+    }
+  };
+
+  const handleRepublish = async () => {
+    if (!originalTournament || isUnpublishing) return;
+    setIsUnpublishing(true);
+    setUpdateError("");
+    try {
+      await publishTournament(id);
+      setOriginalTournament((current) => ({
+        ...current,
+        publicationStatus: "published",
+        publicationLocked: true,
+      }));
+      setIsEditing(false);
+    } catch (error) {
+      setUpdateError(
+        error instanceof Error
+          ? error.message
+          : "Unable to publish tournament.",
+      );
+    } finally {
+      setIsUnpublishing(false);
+    }
+  };
+
   // Comprehensive Validation on Update
   const handleUpdate = async (e, publishAfterSave = false) => {
     e.preventDefault();
     if (!isEditing) return;
-    if (isPublished) {
+    if (isPublicationLocked) {
       setIsEditing(false);
-      setUpdateError("Published tournaments cannot be edited.");
+      setUpdateError("Published and unpublished tournaments remain locked against edits.");
       return;
     }
 
@@ -1100,29 +1158,75 @@ export default function TournamentDetailsPage() {
               EDIT MODE
             </span>
           )}
+          {isPublished && (
+            <button
+              type="button"
+              disabled={isSaving || isUnpublishing}
+              onClick={handleUnpublish}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                backgroundColor: isUnpublishing ? "#94a3b8" : "#b91c1c",
+                color: "#ffffff",
+                border: "none",
+                padding: "10px 16px",
+                borderRadius: "8px",
+                fontSize: "13px",
+                fontWeight: "bold",
+                cursor: isSaving || isUnpublishing ? "wait" : "pointer",
+              }}
+            >
+              <VisibilityOffOutlinedIcon style={{ fontSize: "16px" }} />
+              {isUnpublishing ? "UNPUBLISHING..." : "UNPUBLISH"}
+            </button>
+          )}
+          {!isPublished && isPublicationLocked && (
+            <button
+              type="button"
+              disabled={isSaving || isUnpublishing}
+              onClick={handleRepublish}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                backgroundColor: isUnpublishing ? "#94a3b8" : "#16a34a",
+                color: "#ffffff",
+                border: "none",
+                padding: "10px 16px",
+                borderRadius: "8px",
+                fontSize: "13px",
+                fontWeight: "bold",
+                cursor: isSaving || isUnpublishing ? "wait" : "pointer",
+              }}
+            >
+              <CloudUploadOutlinedIcon style={{ fontSize: "16px" }} />
+              {isUnpublishing ? "PUBLISHING..." : "PUBLISH AGAIN"}
+            </button>
+          )}
           {/* Toggle Edit Mode Button */}
           <button
-            disabled={isSaving || isPublished}
+            disabled={isSaving || isPublicationLocked}
             onClick={() => {
               setIsEditing(!isEditing);
               setAttemptedSubmit(false);
               setUpdateError("");
             }}
             title={
-              isPublished
-                ? "Published tournaments cannot be edited."
+              isPublicationLocked
+                ? "Published or unpublished tournaments cannot be edited."
                 : undefined
             }
             style={{
               display: "flex",
               alignItems: "center",
               gap: "6px",
-              backgroundColor: isPublished
+              backgroundColor: isPublicationLocked
                 ? "#f1f5f9"
                 : isEditing
                   ? "#fee2e2"
                   : "#f1f5f9",
-              color: isPublished
+              color: isPublicationLocked
                 ? "#64748b"
                 : isEditing
                   ? "#dc2626"
@@ -1132,13 +1236,15 @@ export default function TournamentDetailsPage() {
               borderRadius: "8px",
               fontSize: "13px",
               fontWeight: "bold",
-              cursor: isPublished ? "not-allowed" : "pointer",
+              cursor: isPublicationLocked ? "not-allowed" : "pointer",
               transition: "all 0.2s",
             }}
           >
             <EditModeIcon style={{ fontSize: "16px" }} />
-            {isPublished
-              ? "Published (Read-Only)"
+            {isPublicationLocked
+              ? isPublished
+                ? "Published (Read-Only)"
+                : "Unpublished (Locked)"
               : isEditing
               ? "Edit Mode Active"
                 : "Enable Edit Mode"}
@@ -3098,8 +3204,7 @@ export default function TournamentDetailsPage() {
           >
             {isSaving ? "SAVING..." : "SAVE CHANGES & UPDATE"}
           </button>
-          {originalTournament?.publicationStatus?.toLowerCase() !==
-            "published" && (
+          {!isPublicationLocked && (
             <button
               type="button"
               onClick={(event) => handleUpdate(event, true)}

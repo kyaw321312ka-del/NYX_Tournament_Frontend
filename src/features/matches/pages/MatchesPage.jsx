@@ -51,6 +51,7 @@ const BRACKET_MATCH_HEIGHT = 68;
 const BRACKET_MATCH_BASE_GAP = 8;
 const BRACKET_MATCH_BASE_PITCH =
   BRACKET_MATCH_HEIGHT + BRACKET_MATCH_BASE_GAP;
+const THIRD_PLACE_FILTER = "__third_place_match__";
 
 function getBracketMatchGap(roundIndex) {
   return Math.max(
@@ -252,6 +253,36 @@ function getRoundName(match) {
   if (typeof match.round === "string") return match.round;
   if (match.roundNumber != null) return `Round ${match.roundNumber}`;
   return "Matches";
+}
+
+function isThirdPlaceMatch(match) {
+  if (
+    match?.isThirdPlaceMatch === true ||
+    match?.thirdPlaceMatch === true ||
+    match?.isBronzeMatch === true
+  ) {
+    return true;
+  }
+
+  const labels = [
+    match?.roundName,
+    match?.round?.name,
+    match?.round?.type,
+    match?.roundTitle,
+    match?.stageName,
+    typeof match?.stage === "string" ? match.stage : match?.stage?.name,
+    match?.matchType,
+    match?.type,
+    match?.bracketName,
+    match?.bracketType,
+    match?.title,
+    match?.name,
+  ];
+  return labels.some(
+    (label) =>
+      typeof label === "string" &&
+      /\b(?:third|3rd)[\s_-]*place\b|\bbronze\b/i.test(label),
+  );
 }
 
 function getDoubleEliminationSection(roundName, roundMatches) {
@@ -582,6 +613,41 @@ function getWinnerSide(match) {
   return null;
 }
 
+function getMatchWinnerName(match, registrationsById, registrationsByPosition) {
+  if (!match) return null;
+  const winnerSide = getWinnerSide(match);
+  if (winnerSide) {
+    const winnerName = getParticipant(
+      match,
+      winnerSide,
+      registrationsById,
+      registrationsByPosition,
+    );
+    if (winnerName !== "Awaiting player") return winnerName;
+  }
+
+  const winner = match.winner;
+  const namedWinner =
+    match.winnerName ||
+    winner?.name ||
+    winner?.athleteName ||
+    winner?.player?.name ||
+    winner?.user?.name;
+  if (namedWinner) return namedWinner;
+  if (typeof winner === "string" && !/^\d+$/.test(winner)) return winner;
+
+  const winnerId =
+    match.winnerRegistrationId ??
+    (winner && typeof winner === "object"
+      ? winner.registrationId ?? winner.registration?.id ?? winner.id
+      : winner) ??
+    match.winnerId ??
+    null;
+  return winnerId == null
+    ? null
+    : registrationsById.get(String(winnerId)) || null;
+}
+
 function formatTournamentDate(tournament) {
   const value =
     tournament?.startDate ||
@@ -833,6 +899,88 @@ export default function MatchesManagementPage() {
       section,
     ]);
   }, [isDoubleElimination, matches]);
+  const explicitlyMarkedMatches = rounds.flatMap(([, roundMatches]) =>
+    roundMatches.filter(isThirdPlaceMatch),
+  );
+  const thirdPlaceConfigured =
+    selectedCategory?.drawConfiguration?.thirdPlaceMatch ??
+    selectedCategory?.thirdPlaceMatch ??
+    draw?.drawConfiguration?.thirdPlaceMatch ??
+    draw?.thirdPlaceMatch;
+  let thirdPlaceMatches = explicitlyMarkedMatches;
+  if (
+    thirdPlaceMatches.length === 0 &&
+    !isDoubleElimination &&
+    thirdPlaceConfigured !== false &&
+    rounds.length >= 2
+  ) {
+    const [lastRoundName, lastRoundMatches] = rounds[rounds.length - 1];
+    const [previousRoundName, previousRoundMatches] =
+      rounds[rounds.length - 2];
+    const lastRoundNumber = String(lastRoundName).match(/^Round\s+(\d+)$/i);
+    const previousRoundNumber = String(previousRoundName).match(
+      /^Round\s+(\d+)$/i,
+    );
+    if (
+      lastRoundMatches.length === 1 &&
+      previousRoundMatches.length === 1 &&
+      lastRoundNumber &&
+      previousRoundNumber &&
+      Number(lastRoundNumber[1]) === Number(previousRoundNumber[1]) + 1
+    ) {
+      thirdPlaceMatches = lastRoundMatches;
+    }
+  }
+  const thirdPlaceMatchSet = new Set(thirdPlaceMatches);
+  const championshipRounds = rounds
+    .map(([roundName, roundMatches, section]) => [
+      roundName,
+      roundMatches.filter((match) => !thirdPlaceMatchSet.has(match)),
+      section,
+    ])
+    .filter(([, roundMatches]) => roundMatches.length > 0);
+  const finalRoundMatches =
+    championshipRounds[championshipRounds.length - 1]?.[1] || [];
+  const finalMatch =
+    [...matches]
+      .reverse()
+      .find(
+        (match) =>
+          !thirdPlaceMatchSet.has(match) &&
+          /\bfinal\b/i.test(getRoundName(match)),
+      ) ||
+    finalRoundMatches[finalRoundMatches.length - 1] ||
+    null;
+  const officialChampion = getChampion(draw);
+  const officialChampionId =
+    officialChampion && typeof officialChampion === "object"
+      ? officialChampion.registrationId ??
+        officialChampion.registration?.id ??
+        officialChampion.id
+      : null;
+  const championName =
+    officialChampion?.name ||
+    officialChampion?.athleteName ||
+    officialChampion?.player?.name ||
+    officialChampion?.user?.name ||
+    (typeof officialChampion === "string" &&
+    !/^\d+$/.test(officialChampion)
+      ? officialChampion
+      : null) ||
+    (officialChampionId != null
+      ? registrationsById.get(String(officialChampionId))
+      : null) ||
+    getMatchWinnerName(finalMatch, registrationsById, registrationsByPosition);
+  const thirdPlaceWinnerName =
+    thirdPlaceMatches
+      .map((match) =>
+        getMatchWinnerName(
+          match,
+          registrationsById,
+          registrationsByPosition,
+        ),
+      )
+      .find(Boolean) || null;
   const doubleEliminationSections = useMemo(() => {
     const sectionConfig = [
       {
@@ -1482,6 +1630,181 @@ export default function MatchesManagementPage() {
     );
   }
 
+  const thirdPlacePanel =
+    thirdPlaceMatches.length > 0 &&
+    (selectedBracketRound === "All" ||
+      selectedBracketRound === THIRD_PLACE_FILTER) && (
+      <section
+        aria-label="Third-place match"
+        style={{
+          marginTop: "12px",
+          padding: "14px",
+          border: "1px solid #f1d7a8",
+          borderLeft: "4px solid #b7791f",
+          borderRadius: "10px",
+          backgroundColor: "#fffbeb",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            alignItems: "center",
+            gap: "8px",
+            marginBottom: "12px",
+          }}
+        >
+          <span
+            style={{
+              padding: "4px 8px",
+              borderRadius: "999px",
+              backgroundColor: "#fef3c7",
+              color: "#92400e",
+              fontSize: "10px",
+              fontWeight: 800,
+              letterSpacing: "0.04em",
+            }}
+          >
+            BRONZE MEDAL
+          </span>
+          <h3
+            style={{
+              margin: 0,
+              color: "#78350f",
+              fontSize: "14px",
+            }}
+          >
+            Third-place match
+          </h3>
+        </div>
+        <p
+          style={{
+            margin: "0 0 12px",
+            color: "#854d0e",
+            fontSize: "12px",
+            lineHeight: 1.5,
+          }}
+        >
+          The two semifinal losers play here; the winner finishes in third
+          place.
+        </p>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(auto-fit, minmax(240px, 250px))",
+            gap: "10px",
+          }}
+        >
+          {thirdPlaceMatches.map((match, index) =>
+            renderBracketMatch(match, index, getRoundName(match), true),
+          )}
+        </div>
+      </section>
+    );
+  const placementColumn =
+    thirdPlaceMatches.length > 0 &&
+    selectedBracketRound === "All" && (
+      <aside
+        aria-label="Tournament placements"
+        style={{
+          flex: "0 0 230px",
+          width: "230px",
+          alignSelf: "center",
+          padding: "14px",
+          border: "1px solid #dbe3eb",
+          borderRadius: "10px",
+          backgroundColor: "#ffffff",
+          boxShadow: "0 1px 4px rgba(15, 23, 42, 0.06)",
+        }}
+      >
+        <h3
+          style={{
+            margin: "0 0 5px",
+            color: "#0f172a",
+            fontSize: "13px",
+          }}
+        >
+          Final placements
+        </h3>
+        <p
+          style={{
+            margin: "0 0 12px",
+            color: "#64748b",
+            fontSize: "10px",
+            lineHeight: 1.4,
+          }}
+        >
+          Match winners are placed here automatically.
+        </p>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "8px",
+          }}
+        >
+          <div
+            style={{
+              padding: "10px",
+              border: "1px solid #f1d58a",
+              borderRadius: "8px",
+              backgroundColor: "#fffbeb",
+            }}
+          >
+            <div
+              style={{
+                marginBottom: "4px",
+                color: "#92400e",
+                fontSize: "9px",
+                fontWeight: 900,
+                letterSpacing: "0.06em",
+              }}
+            >
+              CHAMPION
+            </div>
+            <strong
+              style={{
+                color: championName ? "#422006" : "#94a3b8",
+                fontSize: "12px",
+                overflowWrap: "anywhere",
+              }}
+            >
+              {championName || "Awaiting final result"}
+            </strong>
+          </div>
+          <div
+            style={{
+              padding: "10px",
+              border: "1px solid #e8c7a0",
+              borderRadius: "8px",
+              backgroundColor: "#fff7ed",
+            }}
+          >
+            <div
+              style={{
+                marginBottom: "4px",
+                color: "#9a3412",
+                fontSize: "9px",
+                fontWeight: 900,
+                letterSpacing: "0.06em",
+              }}
+            >
+              THIRD PLACE
+            </div>
+            <strong
+              style={{
+                color: thirdPlaceWinnerName ? "#431407" : "#94a3b8",
+                fontSize: "12px",
+                overflowWrap: "anywhere",
+              }}
+            >
+              {thirdPlaceWinnerName || "Awaiting third-place result"}
+            </strong>
+          </div>
+        </div>
+      </aside>
+    );
+
   return (
     <main
       style={{
@@ -2041,6 +2364,8 @@ export default function MatchesManagementPage() {
                   <p style={{ margin: 0, color: "#64748b", fontSize: "12px" }}>
                     {isDoubleElimination
                       ? "Winners, losers, and finals are grouped into separate bracket lanes."
+                      : thirdPlaceMatches.length > 0
+                        ? "The championship bracket leads to the final; the bronze match is shown separately."
                       : "Bracket and match data loaded from the selected draw. Long player and team names wrap inside each match."}
                   </p>
                 </div>
@@ -2124,24 +2449,37 @@ export default function MatchesManagementPage() {
                   }}
                 >
                   <div style={{ display: "flex", gap: "7px" }}>
-                    {["All", ...rounds.map(([roundName]) => roundName)].map(
-                      (roundName) => (
-                        <button
-                          key={roundName}
+                    {[
+                      { value: "All", label: "All" },
+                      ...championshipRounds.map(([roundName]) => ({
+                        value: roundName,
+                        label: roundName,
+                      })),
+                      ...(thirdPlaceMatches.length > 0
+                        ? [
+                            {
+                              value: THIRD_PLACE_FILTER,
+                              label: "Third-place match",
+                            },
+                          ]
+                        : []),
+                    ].map(({ value, label }) => (
+                      <button
+                          key={value}
                           type="button"
-                          onClick={() => setSelectedBracketRound(roundName)}
+                          onClick={() => setSelectedBracketRound(value)}
                           style={{
                             border:
-                              selectedBracketRound === roundName
+                              selectedBracketRound === value
                                 ? "1px solid #EF3340"
                                 : "1px solid #cbd5e1",
                             borderRadius: "999px",
                             backgroundColor:
-                              selectedBracketRound === roundName
+                              selectedBracketRound === value
                                 ? "#EF3340"
                                 : "#ffffff",
                             color:
-                              selectedBracketRound === roundName
+                              selectedBracketRound === value
                                 ? "#ffffff"
                                 : "#475569",
                             padding: "6px 10px",
@@ -2151,13 +2489,13 @@ export default function MatchesManagementPage() {
                             cursor: "pointer",
                           }}
                         >
-                          {roundName}
-                        </button>
-                      ),
-                    )}
+                          {label}
+                      </button>
+                    ))}
                   </div>
                 </div>
               )}
+              {thirdPlacePanel}
               {rounds.length === 0 ? (
                 <p style={{ color: "#64748b", fontSize: "13px" }}>
                   No bracket matches are available yet. Assign positions and
@@ -2173,11 +2511,19 @@ export default function MatchesManagementPage() {
                   }}
                 >
                   {doubleEliminationSections.map((section) => {
-                    const visibleRounds = section.rounds.filter(
-                      ([roundName]) =>
-                        selectedBracketRound === "All" ||
-                        selectedBracketRound === roundName,
-                    );
+                    const visibleRounds = section.rounds
+                      .map(([roundName, roundMatches]) => [
+                        roundName,
+                        roundMatches.filter(
+                          (match) => !thirdPlaceMatchSet.has(match),
+                        ),
+                      ])
+                      .filter(
+                        ([roundName, roundMatches]) =>
+                          roundMatches.length > 0 &&
+                          (selectedBracketRound === "All" ||
+                            selectedBracketRound === roundName),
+                      );
                     if (visibleRounds.length === 0) return null;
 
                     const sectionColor =
@@ -2346,6 +2692,7 @@ export default function MatchesManagementPage() {
                       </section>
                     );
                   })}
+                  {placementColumn}
                 </div>
               ) : (
                 <div
@@ -2374,33 +2721,36 @@ export default function MatchesManagementPage() {
                         overflow: "visible",
                       }}
                     >
-                      {rounds.map(([roundName, roundMatches], roundIndex) => {
-                        if (roundIndex >= rounds.length - 1) return null;
-                        const nextRoundMatches =
-                          rounds[roundIndex + 1]?.[1] || [];
-                        const cardGap = getBracketMatchGap(roundIndex);
-                        const nextCardGap = getBracketMatchGap(
-                          roundIndex + 1,
-                        );
-                        const cardPitch = BRACKET_MATCH_HEIGHT + cardGap;
-                        const nextCardPitch =
-                          BRACKET_MATCH_HEIGHT + nextCardGap;
-                        const roundPadding =
-                          getBracketRoundPadding(roundIndex);
-                        const nextRoundPadding =
-                          getBracketRoundPadding(roundIndex + 1);
-                        const sourceX =
-                          8 +
-                          roundIndex * BRACKET_TRACK_WIDTH +
-                          BRACKET_COLUMN_WIDTH;
-                        const targetX =
-                          8 +
-                          (roundIndex + 1) * BRACKET_TRACK_WIDTH;
-                        const joinX = sourceX + 9;
+                      {championshipRounds.map(
+                        ([roundName, roundMatches], roundIndex) => {
+                          if (roundIndex >= championshipRounds.length - 1) {
+                            return null;
+                          }
+                          const nextRoundMatches =
+                            championshipRounds[roundIndex + 1]?.[1] || [];
+                          const cardGap = getBracketMatchGap(roundIndex);
+                          const nextCardGap = getBracketMatchGap(
+                            roundIndex + 1,
+                          );
+                          const cardPitch = BRACKET_MATCH_HEIGHT + cardGap;
+                          const nextCardPitch =
+                            BRACKET_MATCH_HEIGHT + nextCardGap;
+                          const roundPadding =
+                            getBracketRoundPadding(roundIndex);
+                          const nextRoundPadding =
+                            getBracketRoundPadding(roundIndex + 1);
+                          const sourceX =
+                            8 +
+                            roundIndex * BRACKET_TRACK_WIDTH +
+                            BRACKET_COLUMN_WIDTH;
+                          const targetX =
+                            8 +
+                            (roundIndex + 1) * BRACKET_TRACK_WIDTH;
+                          const joinX = sourceX + 9;
 
-                        return roundMatches
-                          .filter((_, index) => index % 2 === 0)
-                          .map((_, pairIndex) => {
+                          return roundMatches
+                            .filter((_, index) => index % 2 === 0)
+                            .map((_, pairIndex) => {
                             const sourceIndex = pairIndex * 2;
                             const sourceMatch =
                               roundMatches[sourceIndex];
@@ -2458,17 +2808,19 @@ export default function MatchesManagementPage() {
                                 />
                               </g>
                             );
-                          });
-                      })}
+                            });
+                        },
+                      )}
                     </svg>
                   )}
-                  {rounds
-                    .filter(
-                      ([roundName]) =>
-                        selectedBracketRound === "All" ||
-                        selectedBracketRound === roundName,
-                    )
-                    .map(([roundName, roundMatches], roundIndex) => (
+                  {selectedBracketRound !== THIRD_PLACE_FILTER &&
+                    championshipRounds
+                      .filter(
+                        ([roundName]) =>
+                          selectedBracketRound === "All" ||
+                          selectedBracketRound === roundName,
+                      )
+                      .map(([roundName, roundMatches], roundIndex) => (
                       <div
                         key={roundName}
                         style={{
@@ -2508,12 +2860,12 @@ export default function MatchesManagementPage() {
                         </div>
                         {selectedBracketRound === "All" &&
                           roundIndex <
-                            rounds.filter(
-                              () => selectedBracketRound === "All",
-                            ).length -
-                              1 && <div style={{ width: "18px", flex: "0 0 18px" }} />}
+                            championshipRounds.length - 1 && (
+                            <div style={{ width: "18px", flex: "0 0 18px" }} />
+                          )}
                       </div>
                     ))}
+                  {placementColumn}
                 </div>
               )}
             </section>

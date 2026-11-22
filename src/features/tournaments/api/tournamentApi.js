@@ -111,6 +111,22 @@ export async function publishTournament(id) {
   return response;
 }
 
+export async function unpublishTournament(id) {
+  const response = await apiRequest(
+    `/tournaments/${encodeURIComponent(id)}/unpublish`,
+    { method: "POST" },
+  );
+
+  if (response?.success !== true) {
+    throw new Error(
+      (typeof response?.message === "string" && response.message) ||
+        "The server did not confirm tournament unpublishing.",
+    );
+  }
+
+  return response;
+}
+
 export async function createTournament(tournament, banner = null) {
   let body;
   if (banner) {
