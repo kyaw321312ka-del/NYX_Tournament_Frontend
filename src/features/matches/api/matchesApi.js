@@ -89,6 +89,34 @@ export async function getCategoryDraw(categoryId, drawId) {
   return getSuccessfulData(response, "Unable to refresh the draw.");
 }
 
+export async function getPublicCategoryDraw(categoryId) {
+  if (categoryId == null || String(categoryId).trim() === "") {
+    throw new Error("A tournament category is required to load its public draw.");
+  }
+
+  let response;
+  try {
+    response = await apiRequest(
+      `/tournament-categories/${encodeURIComponent(categoryId)}/draw`,
+      { authenticated: false },
+    );
+  } catch (error) {
+    if (error?.status === 404) return null;
+    throw error;
+  }
+
+  if (response?.success !== true) {
+    throw new Error(getErrorMessage(response, "Unable to load the public draw."));
+  }
+  if (response.data == null) return null;
+
+  const draw = response.data.draw || response.data;
+  if (!Array.isArray(draw.rounds)) {
+    throw new Error("The server returned an invalid public draw.");
+  }
+  return draw;
+}
+
 export async function assignDrawPositions(drawId, assignments) {
   const response = await apiRequest(
     `/admin/draws/${encodeURIComponent(drawId)}/positions`,

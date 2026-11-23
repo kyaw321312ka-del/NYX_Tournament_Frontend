@@ -1,18 +1,32 @@
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import {
-  AccessTimeRounded,
-  CalendarMonthRounded,
   CheckCircleRounded,
   EmojiEventsRounded,
-  SportsTennisRounded,
   AccountTreeRounded,
   CloseRounded,
-  FiberManualRecordRounded,
-  ScheduleRounded,
-  VerifiedRounded,
-  SyncRounded,
   KeyboardArrowDownRounded,
 } from "@mui/icons-material";
+import { getPublicCategoryDraw } from "../api/matchesApi";
+import { getTournaments } from "../../tournaments/api/tournamentApi";
+
+const PUBLIC_BRACKET_COLUMN_WIDTH = 250;
+const PUBLIC_BRACKET_COLUMN_GAP = 32;
+const PUBLIC_BRACKET_TRACK_WIDTH =
+  PUBLIC_BRACKET_COLUMN_WIDTH + PUBLIC_BRACKET_COLUMN_GAP;
+const PUBLIC_BRACKET_MATCH_HEIGHT = 108;
+const PUBLIC_BRACKET_BASE_GAP = 12;
+const PUBLIC_BRACKET_BASE_PITCH =
+  PUBLIC_BRACKET_MATCH_HEIGHT + PUBLIC_BRACKET_BASE_GAP;
+const publicBracketControlStyle = {
+  width: "32px",
+  height: "32px",
+  border: "1px solid #cbd5e1",
+  borderRadius: "7px",
+  backgroundColor: "#ffffff",
+  color: "#334155",
+  fontSize: "16px",
+  cursor: "pointer",
+};
 
 const tournamentDatabase = {
   "Mandalay Open Cup 2026": {
@@ -256,163 +270,228 @@ const tournamentDatabase = {
   },
 };
 
-const categories = [
-  { id: "MS", label: "MS", full: "Men's Singles" },
-  { id: "WS", label: "WS", full: "Women's Singles" },
-  { id: "MD", label: "MD", full: "Men's Doubles" },
-  { id: "XD", label: "XD", full: "Mixed Doubles" },
-];
+const EMPTY_TOURNAMENT_DATA = {
+  desc: "",
+};
 
-function SkeletonCard({ type = "match" }) {
+function getCategoryCode(category) {
+  return String(category.categoryCode || category.code || category.id || "");
+}
+
+function getCategoryName(category) {
+  return String(category.categoryName || category.name || getCategoryCode(category));
+}
+
+function getPublicMatchParticipant(match, side) {
+  const participant =
+    match?.participants?.[side - 1] ??
+    match?.slots?.[side - 1]?.participant ??
+    match?.[`participant${side}`] ??
+    match?.[`player${side}`] ??
+    match?.[`registration${side}`] ??
+    null;
+  if (typeof participant === "string") return participant;
+  if (typeof participant === "number") return `Registration #${participant}`;
+  if (participant && typeof participant === "object") {
+    const members = participant.members || participant.registration?.members;
+    const memberNames = Array.isArray(members)
+      ? members
+          .map((member) =>
+            typeof member === "string"
+              ? member
+              : member?.name || member?.playerName || member?.athleteName,
+          )
+          .filter(Boolean)
+          .join(" / ")
+      : "";
+    return (
+      participant.name ||
+      participant.athleteName ||
+      participant.playerName ||
+      participant.registrationName ||
+      participant.teamName ||
+      participant.player?.name ||
+      participant.user?.name ||
+      participant.registration?.name ||
+      memberNames ||
+      "Awaiting player"
+    );
+  }
   return (
-    <div className={`skeleton-card skeleton-${type}`} aria-hidden="true">
-      <div className="skeleton-line skeleton-line-wide" />
-      <div className="skeleton-body">
-        <div className="skeleton-stack">
-          <div className="skeleton-line skeleton-line-medium" />
-          <div className="skeleton-line skeleton-line-short" />
-        </div>
-        <div className="skeleton-score" />
-        <div className="skeleton-score skeleton-score-small" />
-      </div>
-    </div>
+    match?.[`participant${side}Name`] ||
+    match?.[`player${side}Name`] ||
+    "Awaiting player"
   );
 }
 
-function MatchCard({ match, onSync, synced }) {
+function getPublicMatchParticipantId(match, side) {
+  const participant =
+    match?.participants?.[side - 1] ??
+    match?.slots?.[side - 1]?.participant ??
+    match?.[`participant${side}`] ??
+    match?.[`player${side}`] ??
+    match?.[`registration${side}`] ??
+    null;
+  if (participant && typeof participant === "object") {
+    return (
+      participant.registrationId ??
+      participant.registration?.id ??
+      participant.registration?.registrationId ??
+      participant.id ??
+      null
+    );
+  }
   return (
-    <section className="live-card">
-      <div className="live-card-top">
-        <div className="match-meta">
-          <span className="court-badge">{match.court}</span>
-          <span className="match-meta-text">
-            {match.tournament} · {match.categoryFull || match.category} ·{" "}
-            {match.round}
-          </span>
-        </div>
-        <button
-          className={`sync-button ${synced ? "sync-button-active" : ""}`}
-          onClick={() => onSync(match.id)}
-        >
-          <SyncRounded className="button-icon" />
-          {synced ? "Synced" : "Court Sync"}
-        </button>
-      </div>
-
-      <div className="live-score-panel">
-        <div className="players-column">
-          {match.players.map((player) => (
-            <div className="player-row" key={player.name}>
-              <FiberManualRecordRounded className="player-dot" />
-              <div className="player-name-wrap">
-                <span className="player-name">{player.name}</span>
-                <span className="player-sub">
-                  {player.region} · {player.seed}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        <div className="racket-mark">
-          <SportsTennisRounded />
-        </div>
-
-        <div className="past-sets">
-          {[0, 1].map((setIndex) => (
-            <div className="set-column" key={setIndex}>
-              <span className="set-heading">S{setIndex + 1}</span>
-              {match.players.map((player) => (
-                <span className="past-score" key={player.name}>
-                  {player.scores[setIndex] ?? "–"}
-                </span>
-              ))}
-            </div>
-          ))}
-        </div>
-
-        <div className="current-set">
-          <span className="current-set-label">{match.setLabel}</span>
-          {match.players.map((player) => (
-            <span className="current-score" key={player.name}>
-              {String(player.current).padStart(2, "0")}
-            </span>
-          ))}
-        </div>
-      </div>
-    </section>
+    match?.[`participant${side}RegistrationId`] ??
+    match?.[`registration${side}Id`] ??
+    match?.[`participant${side}Id`] ??
+    null
   );
 }
 
-function ScheduleCard({ match }) {
+function getPublicMatchWinnerSide(match) {
+  const winnerValue =
+    match?.winnerSide ??
+    match?.winnerParticipant ??
+    match?.winnerPosition ??
+    match?.result?.winnerSide;
+  const normalizedWinner = String(winnerValue ?? "").toLowerCase();
+  if (["1", "participant1", "player1", "a"].includes(normalizedWinner)) {
+    return 1;
+  }
+  if (["2", "participant2", "player2", "b"].includes(normalizedWinner)) {
+    return 2;
+  }
+
+  const winner =
+    match?.winnerName ||
+    match?.winner?.name ||
+    match?.winner?.athleteName ||
+    match?.winner?.player?.name ||
+    match?.winner?.user?.name ||
+    (typeof match?.winner === "string" ? match.winner : "");
+  if (winner) {
+    for (const side of [1, 2]) {
+      if (getPublicMatchParticipant(match, side) === winner) return side;
+    }
+  }
+  const winnerId =
+    match?.winnerRegistrationId ??
+    match?.winnerId ??
+    match?.winner?.registrationId ??
+    match?.winner?.registration?.id ??
+    match?.winner?.id;
+  if (winnerId != null) {
+    for (const side of [1, 2]) {
+      if (
+        String(getPublicMatchParticipantId(match, side)) === String(winnerId)
+      ) {
+        return side;
+      }
+    }
+  }
+  return null;
+}
+
+function getPublicMatchScores(match) {
+  const games = Array.isArray(match?.result?.games)
+    ? match.result.games
+    : Array.isArray(match?.games)
+      ? match.games
+      : Array.isArray(match?.scores)
+        ? match.scores
+        : [];
+  return games
+    .map((game, index) => {
+      const score1 =
+        game?.participant1Score ??
+        game?.player1Score ??
+        game?.score1 ??
+        game?.scores?.[0];
+      const score2 =
+        game?.participant2Score ??
+        game?.player2Score ??
+        game?.score2 ??
+        game?.scores?.[1];
+      if (score1 == null && score2 == null) return null;
+      return `G${game?.gameNumber ?? game?.setNumber ?? index + 1} ${score1 ?? "–"}-${score2 ?? "–"}`;
+    })
+    .filter(Boolean);
+}
+
+function getPublicRoundName(round, index) {
   return (
-    <section className="schedule-card">
-      <div className="schedule-main">
-        <div className="schedule-topline">
-          <span className="time-badge">{match.time}</span>
-          <span className="schedule-location">
-            {match.court} · {match.tournament}
-          </span>
-          <span
-            className={`schedule-status ${
-              match.estimate === "Rescheduled" ? "status-muted" : ""
-            }`}
-          >
-            {match.estimate}
-          </span>
-        </div>
-        <div className="schedule-category">{match.category}</div>
-        <div className="team-name">
-          {match.teamA} <span className="team-code">({match.teamACode})</span>
-        </div>
-        <div className="versus">VS</div>
-        <div className="team-name">
-          {match.teamB} <span className="team-code">({match.teamBCode})</span>
-        </div>
-      </div>
-    </section>
+    round?.name ||
+    round?.roundName ||
+    round?.title ||
+    (round?.roundNumber != null
+      ? `Round ${round.roundNumber}`
+      : `Round ${index + 1}`)
   );
 }
 
-function FinishedCard({ match }) {
-  return (
-    <section className="finished-card">
-      <div className="finished-card-top">
-        <div className="finished-meta">
-          {match.tournament} · {match.court} · {match.time}
-        </div>
-        <span className="match-id">Match ID: {match.matchId}</span>
-      </div>
-      <div className="finished-content">
-        <div className="finished-players">
-          <div className="finished-player winner-player">
-            <CheckCircleRounded className="winner-icon" />
-            <span className="finished-player-name">{match.winner}</span>
-            <span className="team-code">({match.winnerCode})</span>
-          </div>
-          <div className="finished-player runner-player">
-            <span className="winner-icon-placeholder" />
-            <span className="finished-player-name">{match.runnerUp}</span>
-            <span className="team-code">({match.runnerUpCode})</span>
-          </div>
-        </div>
-
-        <div className="finished-scores">
-          {match.scores[0].map((score, index) => (
-            <div className="finished-set" key={index}>
-              <span className="finished-score winner-score">{score}</span>
-              <span className="finished-score">
-                {match.scores[1][index] ?? "–"}
-              </span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
+function getPublicBracketMatchGap(roundIndex) {
+  return Math.max(
+    PUBLIC_BRACKET_BASE_GAP,
+    PUBLIC_BRACKET_BASE_PITCH * 2 ** roundIndex -
+      PUBLIC_BRACKET_MATCH_HEIGHT,
   );
 }
 
-function BracketModal({ onClose, tournamentName }) {
+function getPublicBracketRoundPadding(roundIndex) {
+  return (
+    (PUBLIC_BRACKET_BASE_PITCH / 2) * (2 ** roundIndex - 1)
+  );
+}
+
+function BracketModal({ onClose, tournamentName, category }) {
+  const [draw, setDraw] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState("");
+  const [selectedRound, setSelectedRound] = useState("All");
+  const [bracketZoom, setBracketZoom] = useState(1);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadDraw() {
+      setLoading(true);
+      setLoadError("");
+      setDraw(null);
+      try {
+        const result = await getPublicCategoryDraw(category.id);
+        if (!cancelled) setDraw(result);
+      } catch (error) {
+        if (!cancelled) {
+          setLoadError(
+            error instanceof Error ? error.message : "Unable to load the draw.",
+          );
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    loadDraw();
+    return () => {
+      cancelled = true;
+    };
+  }, [category.id]);
+
+  const rounds = Array.isArray(draw?.rounds) ? draw.rounds : [];
+  const roundEntries = rounds
+    .map((round, index) => ({
+      index,
+      name: getPublicRoundName(round, index),
+      matches: Array.isArray(round.matches) ? round.matches : [],
+    }))
+    .filter((round) => round.matches.length > 0);
+  const hasMatches = roundEntries.length > 0;
+  const visibleRounds =
+    selectedRound === "All"
+      ? roundEntries
+      : roundEntries.filter((round) => `round-${round.index}` === selectedRound);
+
   return (
     <div className="modal-backdrop" onClick={onClose} role="presentation">
       <section
@@ -424,10 +503,13 @@ function BracketModal({ onClose, tournamentName }) {
       >
         <div className="modal-header">
           <div>
-            <span className="eyebrow">TOURNAMENT OVERVIEW</span>
+            <span className="eyebrow">BRACKET ROUNDS</span>
             <h2 className="modal-title" id="bracket-title">
               {tournamentName}
             </h2>
+            <p style={{ margin: "5px 0 0", color: "#64748b", fontSize: "13px" }}>
+              {getCategoryCode(category)} · {getCategoryName(category)}
+            </p>
           </div>
           <button
             className="icon-button"
@@ -438,7 +520,6 @@ function BracketModal({ onClose, tournamentName }) {
           </button>
         </div>
 
-        {/* ဤနေရာတွင် ဘယ်ညာနှင့် အပေါ်အောက် နှစ်ဖက်စလုံး Scroll ဆွဲ၍ရအောင် ပြင်ဆင်ထားပါသည် */}
         <div
           style={{
             overflow: "auto",
@@ -448,55 +529,372 @@ function BracketModal({ onClose, tournamentName }) {
             boxSizing: "border-box",
           }}
         >
-          <div className="bracket-grid" style={{ minWidth: "750px" }}>
-            <div className="bracket-round">
-              <span className="bracket-round-title">ROUND OF 16</span>
-              <div className="bracket-team">
-                Min Thant <b>2</b>
+          {!loading && !loadError && hasMatches && (
+            <>
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  gap: "12px",
+                  margin: "4px 4px 10px",
+                }}
+              >
+                <div>
+                  <h3
+                    style={{
+                      margin: "0 0 4px",
+                      color: "#0f172a",
+                      fontSize: "16px",
+                    }}
+                  >
+                    Bracket rounds
+                  </h3>
+                  <p
+                    style={{
+                      margin: 0,
+                      color: "#64748b",
+                      fontSize: "12px",
+                    }}
+                  >
+                    Bracket and match data loaded from the selected draw.
+                  </p>
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "7px" }}>
+                  <button
+                    type="button"
+                    aria-label="Zoom out"
+                    onClick={() =>
+                      setBracketZoom((zoom) =>
+                        Math.max(0.75, Number((zoom - 0.1).toFixed(2))),
+                      )
+                    }
+                    style={publicBracketControlStyle}
+                  >
+                    −
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Reset bracket zoom"
+                    onClick={() => setBracketZoom(1)}
+                    style={{
+                      ...publicBracketControlStyle,
+                      width: "auto",
+                      padding: "0 10px",
+                    }}
+                  >
+                    {Math.round(bracketZoom * 100)}%
+                  </button>
+                  <button
+                    type="button"
+                    aria-label="Zoom in"
+                    onClick={() =>
+                      setBracketZoom((zoom) =>
+                        Math.min(1.25, Number((zoom + 0.1).toFixed(2))),
+                      )
+                    }
+                    style={publicBracketControlStyle}
+                  >
+                    +
+                  </button>
+                </div>
               </div>
-              <div className="bracket-team">
-                Kyaw Swar <b>0</b>
+              <div
+                role="group"
+                aria-label="Filter bracket rounds"
+                style={{
+                  display: "flex",
+                  gap: "7px",
+                  overflowX: "auto",
+                  padding: "2px 4px 8px",
+                }}
+              >
+                {[
+                  { value: "All", label: "All" },
+                  ...roundEntries.map((round) => ({
+                    value: `round-${round.index}`,
+                    label: round.name,
+                  })),
+                ].map(({ value, label }) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setSelectedRound(value)}
+                    style={{
+                      flex: "0 0 auto",
+                      padding: "7px 12px",
+                      border: `1px solid ${
+                        selectedRound === value ? "#ef3340" : "#cbd5e1"
+                      }`,
+                      borderRadius: "999px",
+                      backgroundColor:
+                        selectedRound === value ? "#ef3340" : "#ffffff",
+                      color: selectedRound === value ? "#ffffff" : "#475569",
+                      fontSize: "11px",
+                      fontWeight: 700,
+                      cursor: "pointer",
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
               </div>
-              <div className="bracket-team">
-                Zarni Tun <b>2</b>
-              </div>
-              <div className="bracket-team">
-                Aung Myo <b>1</b>
-              </div>
+            </>
+          )}
+          {loading ? (
+            <p role="status" style={{ color: "#64748b" }}>
+              Loading published bracket…
+            </p>
+          ) : loadError ? (
+            <p role="alert" style={{ color: "#b91c1c" }}>
+              Unable to load bracket: {loadError}
+            </p>
+          ) : !draw || !hasMatches ? (
+            <p role="status" style={{ color: "#64748b" }}>
+              No published bracket is available for this category yet.
+            </p>
+          ) : (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "stretch",
+                gap: 0,
+                minWidth: `${visibleRounds.length * PUBLIC_BRACKET_TRACK_WIDTH}px`,
+                padding: "28px 8px 12px",
+                position: "relative",
+                transform: `scale(${bracketZoom})`,
+                transformOrigin: "top left",
+                width: `${100 / bracketZoom}%`,
+              }}
+            >
+              {selectedRound === "All" && visibleRounds.length > 1 && (
+                <svg
+                  aria-hidden="true"
+                  style={{
+                    position: "absolute",
+                    inset: 0,
+                    width: "100%",
+                    height: "100%",
+                    overflow: "visible",
+                    pointerEvents: "none",
+                  }}
+                >
+                  {visibleRounds.map((round, roundIndex) => {
+                    if (roundIndex >= visibleRounds.length - 1) return null;
+                    const roundMatches = round.matches;
+                    const nextRoundMatches =
+                      visibleRounds[roundIndex + 1].matches;
+                    const cardPitch =
+                      PUBLIC_BRACKET_MATCH_HEIGHT +
+                      getPublicBracketMatchGap(roundIndex);
+                    const nextCardPitch =
+                      PUBLIC_BRACKET_MATCH_HEIGHT +
+                      getPublicBracketMatchGap(roundIndex + 1);
+                    const roundPadding =
+                      getPublicBracketRoundPadding(roundIndex);
+                    const nextRoundPadding =
+                      getPublicBracketRoundPadding(roundIndex + 1);
+                    const sourceX =
+                      8 +
+                      roundIndex * PUBLIC_BRACKET_TRACK_WIDTH +
+                      PUBLIC_BRACKET_COLUMN_WIDTH;
+                    const targetX =
+                      8 + (roundIndex + 1) * PUBLIC_BRACKET_TRACK_WIDTH;
+                    const joinX = sourceX + 9;
+
+                    return roundMatches
+                      .filter((_, index) => index % 2 === 0)
+                      .map((_, pairIndex) => {
+                        const sourceIndex = pairIndex * 2;
+                        const hasPairedMatch =
+                          roundMatches[sourceIndex + 1] != null;
+                        const firstY =
+                          8 +
+                          roundPadding +
+                          sourceIndex * cardPitch +
+                          PUBLIC_BRACKET_MATCH_HEIGHT / 2;
+                        const secondY =
+                          8 +
+                          roundPadding +
+                          (sourceIndex + 1) * cardPitch +
+                          PUBLIC_BRACKET_MATCH_HEIGHT / 2;
+                        const targetY =
+                          8 +
+                          nextRoundPadding +
+                          pairIndex * nextCardPitch +
+                          PUBLIC_BRACKET_MATCH_HEIGHT / 2;
+                        const topY = Math.min(firstY, secondY);
+                        const bottomY = hasPairedMatch ? secondY : firstY;
+                        const targetYWithinNext =
+                          pairIndex < nextRoundMatches.length
+                            ? targetY
+                            : (topY + bottomY) / 2;
+
+                        return (
+                          <g
+                            key={`${roundIndex}-connector-${pairIndex}`}
+                            fill="none"
+                            stroke="#94a3b8"
+                            strokeWidth="1.5"
+                            strokeLinecap="square"
+                            strokeLinejoin="round"
+                          >
+                            <path d={`M ${sourceX} ${firstY} H ${joinX}`} />
+                            {hasPairedMatch && (
+                              <>
+                                <path
+                                  d={`M ${sourceX} ${secondY} H ${joinX}`}
+                                />
+                                <path
+                                  d={`M ${joinX} ${topY} V ${bottomY}`}
+                                />
+                              </>
+                            )}
+                            <path
+                              d={`M ${joinX} ${targetYWithinNext} H ${targetX}`}
+                            />
+                          </g>
+                        );
+                      });
+                  })}
+                </svg>
+              )}
+              {visibleRounds.map((round, roundIndex) => {
+                const matches = round.matches;
+                const roundName = round.name;
+                return (
+                  <div
+                    key={`${roundName}-${round.index}`}
+                    style={{
+                      display: "flex",
+                      flex: `0 0 ${PUBLIC_BRACKET_TRACK_WIDTH}px`,
+                      width: `${PUBLIC_BRACKET_TRACK_WIDTH}px`,
+                      position: "relative",
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: `${PUBLIC_BRACKET_COLUMN_WIDTH}px`,
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: `${getPublicBracketMatchGap(roundIndex)}px`,
+                        paddingTop: `${getPublicBracketRoundPadding(roundIndex)}px`,
+                      }}
+                    >
+                      <h3
+                        style={{
+                          height: "18px",
+                          margin: 0,
+                          color: "#475569",
+                          fontSize: "11px",
+                          textTransform: "uppercase",
+                          letterSpacing: "0.04em",
+                          position: "absolute",
+                          transform: "translateY(-22px)",
+                        }}
+                      >
+                        {roundName}
+                      </h3>
+                      {matches.map((match, matchIndex) => {
+                        const winnerSide = getPublicMatchWinnerSide(match);
+                        const scores = getPublicMatchScores(match);
+                        const status = String(
+                          match.status || match.matchStatus || "Scheduled",
+                        ).replace(/[_-]+/g, " ");
+                        const matchId =
+                          match.id ??
+                          match.matchId ??
+                          `${roundIndex}-${matchIndex}`;
+
+                        return (
+                          <article
+                            key={matchId}
+                            style={{
+                              height: `${PUBLIC_BRACKET_MATCH_HEIGHT}px`,
+                              flex: `0 0 ${PUBLIC_BRACKET_MATCH_HEIGHT}px`,
+                              boxSizing: "border-box",
+                              padding: "6px",
+                              border: "1px solid #dbe3eb",
+                              borderRadius: "8px",
+                              backgroundColor: "#ffffff",
+                              boxShadow: "0 1px 3px rgba(15, 23, 42, 0.06)",
+                              position: "relative",
+                              zIndex: 1,
+                            }}
+                          >
+                            <div
+                              style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                gap: "8px",
+                                height: "14px",
+                                marginBottom: "4px",
+                                color: "#64748b",
+                                fontSize: "9px",
+                                fontWeight: 700,
+                                textTransform: "capitalize",
+                              }}
+                            >
+                              <span>Match {matchIndex + 1}</span>
+                              <span>{status}</span>
+                            </div>
+                            {[1, 2].map((side) => (
+                              <div
+                                key={side}
+                                style={{
+                                  height: "27px",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  padding: "0 7px",
+                                  marginTop: side === 2 ? "3px" : 0,
+                                  borderRadius: "4px",
+                                  backgroundColor:
+                                    winnerSide === side ? "#86efac" : "#536b7e",
+                                  color:
+                                    winnerSide === side ? "#14532d" : "#ffffff",
+                                  fontSize: "11px",
+                                  fontWeight: 700,
+                                  overflow: "hidden",
+                                }}
+                              >
+                                <span
+                                  style={{
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                    whiteSpace: "nowrap",
+                                  }}
+                                >
+                                  {winnerSide === side ? "✓ " : ""}
+                                  {getPublicMatchParticipant(match, side)}
+                                </span>
+                              </div>
+                            ))}
+                            {scores.length > 0 && (
+                              <div
+                                style={{
+                                  height: "14px",
+                                  overflow: "hidden",
+                                  marginTop: "4px",
+                                  color: "#475569",
+                                  fontSize: "9px",
+                                  fontWeight: 700,
+                                  whiteSpace: "nowrap",
+                                  textOverflow: "ellipsis",
+                                }}
+                              >
+                                {scores.join(" · ")}
+                              </div>
+                            )}
+                          </article>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
-            <div className="bracket-round">
-              <span className="bracket-round-title">QUARTER-FINAL</span>
-              <div className="bracket-team">
-                Min Thant <b>2</b>
-              </div>
-              <div className="bracket-team">
-                Zarni Tun <b>1</b>
-              </div>
-              <div className="bracket-team bracket-pending">
-                Match 3 <b>—</b>
-              </div>
-              <div className="bracket-team bracket-pending">
-                Match 4 <b>—</b>
-              </div>
-            </div>
-            <div className="bracket-round">
-              <span className="bracket-round-title">SEMI-FINAL</span>
-              <div className="bracket-team bracket-pending">
-                Winner QF 1 <b>—</b>
-              </div>
-              <div className="bracket-team bracket-pending">
-                Winner QF 2 <b>—</b>
-              </div>
-            </div>
-            <div className="bracket-round">
-              <span className="bracket-round-title">FINAL</span>
-              <div className="bracket-champion">
-                <EmojiEventsRounded />
-                Champion
-                <b>TBD</b>
-              </div>
-            </div>
-          </div>
+          )}
         </div>
       </section>
     </div>
@@ -504,32 +902,70 @@ function BracketModal({ onClose, tournamentName }) {
 }
 
 export default function WebMatches() {
-  const [activeDay, setActiveDay] = useState("TODAY");
-  const [activeCategory, setActiveCategory] = useState("MS");
-  const [selectedTournament, setSelectedTournament] = useState(
-    "Mandalay Open Cup 2026",
-  );
-  const [loading, setLoading] = useState(true);
-  const [syncedMatches, setSyncedMatches] = useState([]);
+  const [activeCategory, setActiveCategory] = useState("");
+  const [selectedTournamentId, setSelectedTournamentId] = useState("");
+  const [availableTournaments, setAvailableTournaments] = useState([]);
+  const [tournamentLoadError, setTournamentLoadError] = useState("");
+  const [loadingTournaments, setLoadingTournaments] = useState(true);
   const [showBracket, setShowBracket] = useState(false);
-  const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTourneyDropdown, setShowTourneyDropdown] = useState(false);
-  const [selectedDate, setSelectedDate] = useState("2026-12-06");
   const [notice, setNotice] = useState("");
 
-  const datePickerRef = useRef(null);
   const tourneyDropdownRef = useRef(null);
 
-  const tournaments = Object.keys(tournamentDatabase);
+  const selectedTournament = availableTournaments.find(
+    (tournament) => String(tournament.id) === selectedTournamentId,
+  );
+  const categories = Array.isArray(selectedTournament?.categories)
+    ? selectedTournament.categories.filter(
+        (category) => getCategoryCode(category) && getCategoryName(category),
+      )
+    : [];
+  const selectedCategory = categories.find(
+    (category) => getCategoryCode(category) === activeCategory,
+  );
+  const tournaments = availableTournaments;
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadTournaments() {
+      setLoadingTournaments(true);
+      setTournamentLoadError("");
+      try {
+        const result = await getTournaments({ page: 1, pageSize: 100 });
+        if (cancelled) return;
+        const publishedTournaments = result.tournaments.filter(
+          (tournament) =>
+            String(tournament.publicationStatus || "").toLowerCase() ===
+            "published",
+        );
+        setAvailableTournaments(publishedTournaments);
+        const firstTournament = publishedTournaments[0];
+        setSelectedTournamentId(String(firstTournament?.id ?? ""));
+        const firstCategory = firstTournament?.categories?.[0];
+        setActiveCategory(firstCategory ? getCategoryCode(firstCategory) : "");
+      } catch (error) {
+        if (!cancelled) {
+          setTournamentLoadError(
+            error instanceof Error
+              ? error.message
+              : "Unable to load tournaments.",
+          );
+        }
+      } finally {
+        if (!cancelled) setLoadingTournaments(false);
+      }
+    }
+
+    loadTournaments();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(event) {
-      if (
-        datePickerRef.current &&
-        !datePickerRef.current.contains(event.target)
-      ) {
-        setShowDatePicker(false);
-      }
       if (
         tourneyDropdownRef.current &&
         !tourneyDropdownRef.current.contains(event.target)
@@ -544,13 +980,6 @@ export default function WebMatches() {
   }, []);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => {
-      setLoading(false);
-    }, 900);
-    return () => window.clearTimeout(timer);
-  }, [selectedTournament, activeDay, activeCategory, selectedDate]);
-
-  useEffect(() => {
     if (!notice) return undefined;
     const timer = window.setTimeout(() => {
       setNotice("");
@@ -558,43 +987,9 @@ export default function WebMatches() {
     return () => window.clearTimeout(timer);
   }, [notice]);
 
-  const dayLabel = useMemo(() => {
-    if (activeDay === "YESTERDAY") return "DEC 05";
-    if (activeDay === "TOMORROW") return "DEC 07";
-    if (selectedDate === "2026-12-06") return "DEC 06";
-    return new Date(`${selectedDate}T12:00:00`)
-      .toLocaleDateString("en-US", { month: "short", day: "2-digit" })
-      .toUpperCase();
-  }, [activeDay, selectedDate]);
-
+  const selectedTournamentName = selectedTournament?.title || "";
   const currentData =
-    tournamentDatabase[selectedTournament] ||
-    tournamentDatabase["Mandalay Open Cup 2026"];
-
-  const filteredLive = useMemo(() => {
-    return currentData.live.filter((m) => m.category === activeCategory);
-  }, [currentData, activeCategory]);
-
-  const filteredSchedule = useMemo(() => {
-    return currentData.schedule.filter((m) =>
-      m.category.includes(activeCategory),
-    );
-  }, [currentData, activeCategory]);
-
-  const filteredFinished = useMemo(() => {
-    return currentData.finished.filter((m) =>
-      m.category.toLowerCase().includes(activeCategory.toLowerCase()),
-    );
-  }, [currentData, activeCategory]);
-
-  const handleSync = (id) => {
-    setSyncedMatches((current) =>
-      current.includes(id)
-        ? current.filter((item) => item !== id)
-        : [...current, id],
-    );
-    setNotice("Court sync status updated.");
-  };
+    tournamentDatabase[selectedTournamentName] || EMPTY_TOURNAMENT_DATA;
 
   return (
     <>
@@ -1473,75 +1868,39 @@ export default function WebMatches() {
         <div className="tournament-container">
           <header className="topbar">
             <div className="topbar-actions">
-              <div className="date-picker-wrap" ref={datePickerRef}>
-                <button
-                  className={`select-date-button ${showDatePicker ? "control-active" : ""}`}
-                  onClick={() => {
-                    setShowDatePicker((v) => !v);
-                    setShowTourneyDropdown(false);
-                  }}
-                >
-                  <CalendarMonthRounded style={{ fontSize: 18 }} />
-                  Select Date
-                </button>
-
-                {showDatePicker && (
-                  <div className="date-popover">
-                    <label className="date-label" htmlFor="match-date">
-                      Choose match date
-                    </label>
-                    <input
-                      id="match-date"
-                      className="date-input"
-                      type="date"
-                      value={selectedDate}
-                      onChange={(e) => {
-                        setSelectedDate(e.target.value);
-                      }}
-                    />
-                    <button
-                      className="date-apply"
-                      onClick={() => {
-                        setShowDatePicker(false);
-                        setNotice(`Showing schedule for ${selectedDate}.`);
-                      }}
-                    >
-                      Apply date
-                    </button>
-                  </div>
-                )}
-              </div>
-
               <div className="tourney-dropdown-wrap" ref={tourneyDropdownRef}>
                 <div
                   className={`tournament-select-custom ${showTourneyDropdown ? "control-active" : ""}`}
                   onClick={() => {
                     setShowTourneyDropdown((v) => !v);
-                    setShowDatePicker(false);
                   }}
                 >
                   <span>
                     <EmojiEventsRounded
                       style={{ fontSize: 17, color: "#ae1236" }}
                     />
-                    {selectedTournament}
+                    {selectedTournamentName || "Select tournament"}
                   </span>
                   <KeyboardArrowDownRounded />
                 </div>
 
                 {showTourneyDropdown && (
                   <div className="tourney-menu">
-                    {tournaments.map((tName) => (
+                    {tournaments.map((tournament) => (
                       <button
-                        key={tName}
-                        className={`tourney-option ${selectedTournament === tName ? "tourney-option-active" : ""}`}
+                        key={tournament.id}
+                        className={`tourney-option ${selectedTournamentId === String(tournament.id) ? "tourney-option-active" : ""}`}
                         onClick={() => {
-                          setSelectedTournament(tName);
+                          setSelectedTournamentId(String(tournament.id));
+                          const firstCategory = tournament.categories?.[0];
+                          setActiveCategory(
+                            firstCategory ? getCategoryCode(firstCategory) : "",
+                          );
                           setShowTourneyDropdown(false);
-                          setNotice(`Switched to ${tName}`);
+                          setNotice(`Switched to ${tournament.title}`);
                         }}
                       >
-                        {tName}
+                        {tournament.title}
                       </button>
                     ))}
                   </div>
@@ -1553,120 +1912,53 @@ export default function WebMatches() {
           <nav className="category-tabs" aria-label="Match category">
             {categories.map((category) => (
               <button
-                key={category.id}
-                className={`category-tab ${activeCategory === category.id ? "category-tab-active" : ""}`}
+                key={getCategoryCode(category)}
+                className={`category-tab ${activeCategory === getCategoryCode(category) ? "category-tab-active" : ""}`}
                 onClick={() => {
-                  setActiveCategory(category.id);
-                  setNotice(`Filtered by ${category.full}`);
+                  setActiveCategory(getCategoryCode(category));
+                  setNotice(`Filtered by ${getCategoryName(category)}`);
                 }}
               >
-                <span className="category-code">{category.label}</span>
-                <span className="category-full">{category.full}</span>
+                <span className="category-code">{getCategoryCode(category)}</span>
+                <span className="category-full">{getCategoryName(category)}</span>
               </button>
             ))}
           </nav>
 
+          {tournamentLoadError && (
+            <div className="empty-state" role="alert">
+              Unable to load tournaments: {tournamentLoadError}
+            </div>
+          )}
+          {!loadingTournaments &&
+            !tournamentLoadError &&
+            availableTournaments.length === 0 && (
+              <div className="empty-state" role="status">
+                No published tournaments are available.
+              </div>
+            )}
+
           <section className="tournament-info">
             <div className="info-copy">
               <div className="info-heading-row">
-                <h1 className="tournament-title">{selectedTournament}</h1>
+                <h1 className="tournament-title">{selectedTournamentName}</h1>
                 <button
                   className="bracket-button"
+                  disabled={!selectedCategory || loadingTournaments}
                   onClick={() => setShowBracket(true)}
+                  title={
+                    selectedCategory
+                      ? "View the published draw for this category"
+                      : "Select a tournament category first"
+                  }
                 >
                   <AccountTreeRounded style={{ fontSize: 16 }} />
                   View Tournament Bracket Tree
                 </button>
               </div>
-              <p className="tournament-description">{currentData.desc}</p>
-            </div>
-          </section>
-
-          <section className="section-block">
-            <div className="section-heading-row">
-              <h2 className="section-heading">
-                <span className="live-pulse" />
-                LIVE MATCHES NOW
-              </h2>
-              <span className="live-status">LIVE SCORE</span>
-            </div>
-
-            <div className="live-list">
-              {loading ? (
-                <>
-                  <SkeletonCard />
-                  <SkeletonCard />
-                </>
-              ) : filteredLive.length > 0 ? (
-                filteredLive.map((match) => (
-                  <MatchCard
-                    match={match}
-                    onSync={handleSync}
-                    synced={syncedMatches.includes(match.id)}
-                    key={match.id}
-                  />
-                ))
-              ) : (
-                <div className="empty-state">
-                  No live matches found in this category.
-                </div>
-              )}
-            </div>
-          </section>
-
-          <section className="section-block schedule-section">
-            <div className="section-heading-row">
-              <h2 className="section-heading">
-                <ScheduleRounded style={{ fontSize: 18 }} />
-                UPCOMING SCHEDULE ({dayLabel})
-              </h2>
-              <span className="upcoming-status">Up Next</span>
-            </div>
-
-            <div className="schedule-list">
-              {loading ? (
-                <>
-                  <SkeletonCard type="schedule" />
-                  <SkeletonCard type="schedule" />
-                </>
-              ) : filteredSchedule.length > 0 ? (
-                filteredSchedule.map((match) => (
-                  <ScheduleCard match={match} key={match.id} />
-                ))
-              ) : (
-                <div className="empty-state">
-                  No upcoming matches scheduled in this category.
-                </div>
-              )}
-            </div>
-          </section>
-
-          <section className="section-block finished-section">
-            <div className="section-heading-row">
-              <h2 className="section-heading">
-                <CheckCircleRounded
-                  style={{ fontSize: 18, color: "#087b59" }}
-                />
-                FINISHED MATCHES ({dayLabel})
-              </h2>
-              <span className="verified-status">Verified Result</span>
-            </div>
-
-            <div className="finished-list">
-              {loading ? (
-                <>
-                  <SkeletonCard type="finished" />
-                  <SkeletonCard type="finished" />
-                </>
-              ) : filteredFinished.length > 0 ? (
-                filteredFinished.map((match) => (
-                  <FinishedCard match={match} key={match.id} />
-                ))
-              ) : (
-                <div className="empty-state">
-                  No finished match results available for this category today.
-                </div>
-              )}
+              <p className="tournament-description">
+                {currentData.desc || selectedTournament?.description || ""}
+              </p>
             </div>
           </section>
         </div>
@@ -1678,10 +1970,11 @@ export default function WebMatches() {
           </div>
         )}
 
-        {showBracket && (
+        {showBracket && selectedCategory && (
           <BracketModal
             onClose={() => setShowBracket(false)}
-            tournamentName={selectedTournament}
+            tournamentName={selectedTournamentName}
+            category={selectedCategory}
           />
         )}
       </main>
