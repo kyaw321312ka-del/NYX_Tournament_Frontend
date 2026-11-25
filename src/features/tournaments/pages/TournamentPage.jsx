@@ -33,6 +33,11 @@ function getTournamentStatus(publicationStatus) {
   const status = (publicationStatus || "unknown").toLowerCase();
   const statusStyles = {
     published: { label: "Published", color: "#16a34a", background: "#f0fdf4" },
+    unpublished: {
+      label: "Unpublished",
+      color: "#64748b",
+      background: "#f1f5f9",
+    },
     draft: { label: "Draft", color: "#d97706", background: "#fef3c7" },
     archived: { label: "Archived", color: "#64748b", background: "#f1f5f9" },
   };
@@ -94,7 +99,7 @@ export default function TournamentPage() {
           tournament.id === tournamentId
             ? {
                 ...tournament,
-                publicationStatus: "draft",
+              publicationStatus: "unpublished",
                 publicationLocked: true,
               }
             : tournament,
@@ -244,6 +249,7 @@ export default function TournamentPage() {
             </option>
             <option value="draft">Status: Draft</option>
             <option value="published">Status: Published</option>
+            <option value="unpublished">Status: Unpublished</option>
             <option value="archived">Status: Archived</option>
           </select>
 
@@ -516,8 +522,7 @@ export default function TournamentPage() {
 
                 <div style={{ display: "grid", gap: "8px" }}>
                   {(tournament.publicationStatus || "").toLowerCase() ===
-                    "draft" &&
-                    !tournament.publicationLocked && (
+                    "draft" && (
                     <button
                       type="button"
                       onClick={() => handlePublish(tournament.id)}
@@ -545,12 +550,11 @@ export default function TournamentPage() {
                       <PublishOutlinedIcon style={{ fontSize: "16px" }} />
                       {publishingId === tournament.id
                         ? "Publishing..."
-                        : "Publish Tournament"}
+                        : "Publish"}
                     </button>
                   )}
                   {(tournament.publicationStatus || "").toLowerCase() ===
-                    "draft" &&
-                    tournament.publicationLocked === true && (
+                    "unpublished" && (
                     <button
                       type="button"
                       onClick={() => handlePublish(tournament.id)}

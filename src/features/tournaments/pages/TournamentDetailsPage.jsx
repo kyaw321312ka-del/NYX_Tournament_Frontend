@@ -154,11 +154,14 @@ export default function TournamentDetailsPage() {
     useState("");
 
   const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const isPublished =
-    (originalTournament?.publicationStatus || "").toLowerCase() ===
-    "published";
+  const publicationStatus = (
+    originalTournament?.publicationStatus || ""
+  ).toLowerCase();
+  const isPublished = publicationStatus === "published";
+  const isUnpublished = publicationStatus === "unpublished";
   const isPublicationLocked =
     isPublished ||
+    isUnpublished ||
     originalTournament?.publicationLocked === true;
 
   useEffect(() => {
@@ -175,7 +178,9 @@ export default function TournamentDetailsPage() {
           ...tournament,
           publicationLocked:
             tournament.publicationLocked === true ||
-            tournament.publicationStatus?.toLowerCase() === "published",
+            ["published", "unpublished"].includes(
+              tournament.publicationStatus?.toLowerCase(),
+            ),
         });
         setTitle(tournament.title || "");
         setFee(String(tournament.defaultEntryFee ?? ""));
@@ -578,7 +583,7 @@ export default function TournamentDetailsPage() {
       await unpublishTournament(id);
       setOriginalTournament((current) => ({
         ...current,
-        publicationStatus: "draft",
+        publicationStatus: "unpublished",
         publicationLocked: true,
       }));
       setIsEditing(false);
@@ -1181,7 +1186,7 @@ export default function TournamentDetailsPage() {
               {isUnpublishing ? "UNPUBLISHING..." : "UNPUBLISH"}
             </button>
           )}
-          {!isPublished && isPublicationLocked && (
+          {isUnpublished && (
             <button
               type="button"
               disabled={isSaving || isUnpublishing}
@@ -1202,6 +1207,29 @@ export default function TournamentDetailsPage() {
             >
               <CloudUploadOutlinedIcon style={{ fontSize: "16px" }} />
               {isUnpublishing ? "PUBLISHING..." : "PUBLISH AGAIN"}
+            </button>
+          )}
+          {publicationStatus === "draft" && (
+            <button
+              type="button"
+              disabled={isSaving || isUnpublishing}
+              onClick={handleRepublish}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                backgroundColor: isUnpublishing ? "#94a3b8" : "#16a34a",
+                color: "#ffffff",
+                border: "none",
+                padding: "10px 16px",
+                borderRadius: "8px",
+                fontSize: "13px",
+                fontWeight: "bold",
+                cursor: isSaving || isUnpublishing ? "wait" : "pointer",
+              }}
+            >
+              <CloudUploadOutlinedIcon style={{ fontSize: "16px" }} />
+              {isUnpublishing ? "PUBLISHING..." : "PUBLISH"}
             </button>
           )}
           {/* Toggle Edit Mode Button */}
