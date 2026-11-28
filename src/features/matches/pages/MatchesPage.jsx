@@ -2069,26 +2069,27 @@ export default function MatchesManagementPage() {
                   marginLeft: "14px",
                 }}
               />
-              {(!draw || isPublished || drawRegistrationSetChanged) &&
-                !isFinalized && (
-                  <button
-                    type="button"
-                    onClick={handleCreateDraw}
-                    disabled={
-                      busyAction !== "" ||
-                      loadingCategory ||
-                      eligibleRegistrations.length < 2
-                    }
-                    style={buttonStyle}
-                  >
-                    <AddIcon style={{ fontSize: "16px", verticalAlign: "middle" }} />{" "}
-                    {busyAction === "create"
-                      ? "Creating…"
-                      : isPublished || drawRegistrationSetChanged
-                        ? "Create draft for current entries"
-                        : "Create draft once"}
-                  </button>
-                )}
+              {!isFinalized && (
+                <button
+                  type="button"
+                  onClick={handleCreateDraw}
+                  disabled={
+                    busyAction !== "" ||
+                    loadingCategory ||
+                    eligibleRegistrations.length < 2
+                  }
+                  style={buttonStyle}
+                >
+                  <AddIcon style={{ fontSize: "16px", verticalAlign: "middle" }} />{" "}
+                  {busyAction === "create"
+                    ? "Creating…"
+                    : isPublished || drawRegistrationSetChanged
+                      ? "Create draft for current entries"
+                      : draw
+                        ? "Create another draft"
+                        : "Create draft"}
+                </button>
+              )}
             </div>
             {draw && !isPublished && (
               <p
