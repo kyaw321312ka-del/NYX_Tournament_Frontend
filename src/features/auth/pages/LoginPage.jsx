@@ -299,7 +299,7 @@ export default function Login({ onForgotPassword }) {
                   type="button"
                   onClick={
                     onForgotPassword ||
-                    (() => navigate("/admin/forgot-password"))
+                    (() => navigate("/forgot-password"))
                   }
                   style={{
                     color: "#be123c",

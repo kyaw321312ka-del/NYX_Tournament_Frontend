@@ -161,8 +161,7 @@ export default function TournamentDetailsPage() {
   const isUnpublished = publicationStatus === "unpublished";
   const isPublicationLocked =
     isPublished ||
-    isUnpublished ||
-    originalTournament?.publicationLocked === true;
+    (!isUnpublished && originalTournament?.publicationLocked === true);
 
   useEffect(() => {
     let cancelled = false;
@@ -177,10 +176,10 @@ export default function TournamentDetailsPage() {
         setOriginalTournament({
           ...tournament,
           publicationLocked:
-            tournament.publicationLocked === true ||
-            ["published", "unpublished"].includes(
-              tournament.publicationStatus?.toLowerCase(),
-            ),
+            tournament.publicationStatus?.toLowerCase() === "unpublished"
+              ? false
+              : tournament.publicationLocked === true ||
+                tournament.publicationStatus?.toLowerCase() === "published",
         });
         setTitle(tournament.title || "");
         setFee(String(tournament.defaultEntryFee ?? ""));
@@ -584,7 +583,7 @@ export default function TournamentDetailsPage() {
       setOriginalTournament((current) => ({
         ...current,
         publicationStatus: "unpublished",
-        publicationLocked: true,
+        publicationLocked: false,
       }));
       setIsEditing(false);
       setUpdateError("");
@@ -628,7 +627,7 @@ export default function TournamentDetailsPage() {
     if (!isEditing) return;
     if (isPublicationLocked) {
       setIsEditing(false);
-      setUpdateError("Published and unpublished tournaments remain locked against edits.");
+      setUpdateError("Published tournaments remain locked against edits.");
       return;
     }
 
@@ -1242,7 +1241,7 @@ export default function TournamentDetailsPage() {
             }}
             title={
               isPublicationLocked
-                ? "Published or unpublished tournaments cannot be edited."
+                ? "Published tournaments cannot be edited."
                 : undefined
             }
             style={{
@@ -1270,11 +1269,9 @@ export default function TournamentDetailsPage() {
           >
             <EditModeIcon style={{ fontSize: "16px" }} />
             {isPublicationLocked
-              ? isPublished
-                ? "Published (Read-Only)"
-                : "Unpublished (Locked)"
+              ? "Published (Read-Only)"
               : isEditing
-              ? "Edit Mode Active"
+                ? "Edit Mode Active"
                 : "Enable Edit Mode"}
           </button>
         </div>

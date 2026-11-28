@@ -92,6 +92,58 @@ export async function login(credentials) {
   };
 }
 
+export async function requestPasswordReset(email) {
+  const response = await apiRequest("/auth/forgot-password", {
+    method: "POST",
+    authenticated: false,
+    body: JSON.stringify({ email }),
+  });
+
+  if (response?.success !== true) {
+    throw new Error(
+      (typeof response?.message === "string" && response.message) ||
+        "Unable to request a password reset.",
+    );
+  }
+
+  return response;
+}
+
+export async function verifyPasswordResetOtp({ email, otp }) {
+  const response = await apiRequest("/auth/verify-reset-otp", {
+    method: "POST",
+    authenticated: false,
+    body: JSON.stringify({ email, otp }),
+  });
+  const resetToken = response?.data?.resetToken ?? response?.resetToken;
+
+  if (response?.success !== true || typeof resetToken !== "string" || !resetToken) {
+    throw new Error(
+      (typeof response?.message === "string" && response.message) ||
+        "The server did not return a valid password reset token.",
+    );
+  }
+
+  return resetToken;
+}
+
+export async function resetPassword({ resetToken, newPassword }) {
+  const response = await apiRequest("/auth/reset-password", {
+    method: "POST",
+    authenticated: false,
+    body: JSON.stringify({ resetToken, newPassword }),
+  });
+
+  if (response?.success !== true) {
+    throw new Error(
+      (typeof response?.message === "string" && response.message) ||
+        "Unable to reset the password.",
+    );
+  }
+
+  return response;
+}
+
 export async function logout() {
   const response = await apiRequest("/auth/logout", {
     method: "POST",

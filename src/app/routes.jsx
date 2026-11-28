@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useNavigate } from "react-router-dom";
 import Home from "../features/tournaments/pages/HomePage";
 import Tournaments from "../features/tournaments/pages/TournamentsPage";
 import TournamentDetails from "../features/tournaments/pages/PublicTournamentDetailsPage";
@@ -10,7 +10,13 @@ import Register from "../features/auth/pages/RegisterPage";
 import RegisterAccount from "../features/auth/pages/RegisterAccountPage";
 import RegisterVerify from "../features/auth/pages/RegisterVerifyPage";
 import Login from "../features/auth/pages/LoginPage";
+import ForgotPassword from "../features/auth/pages/ForgotPassword";
 import AdminDashboard from "../layouts/AdminLayout";
+
+function ForgotPasswordRoute() {
+  const navigate = useNavigate();
+  return <ForgotPassword onBackToLogin={() => navigate("/login")} />;
+}
 
 export default function AppRoutes() {
   return (
@@ -29,6 +35,7 @@ export default function AppRoutes() {
       <Route path="/register/account" element={<RegisterAccount />} />
       <Route path="/register/verify" element={<RegisterVerify />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/forgot-password" element={<ForgotPasswordRoute />} />
       <Route path="/admin/*" element={<AdminDashboard />} />
     </Routes>
   );
